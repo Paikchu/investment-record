@@ -42,8 +42,7 @@ test("provides a private full-report route with complete report sections", async
 
   assert.match(page, /requireChatGPTUser/);
   assert.match(page, /cleanSecAccession/);
-  assert.match(page, /getCachedSecFeed/);
-  assert.match(page, /filing\.accessionNumber === accession/);
+  assert.match(page, /getCloudflareSecFiling/);
   assert.match(page, /notFound\(\)/);
   assert.match(document, /核心结论/);
   assert.match(document, /验证指标/);
@@ -57,27 +56,31 @@ test("provides a private full-report route with complete report sections", async
   assert.match(css, /\.sec-report-body/);
 });
 
-test("provides authenticated feed and protected background refresh routes", async () => {
+test("reads the Cloudflare feed and keeps legacy refresh routes disabled", async () => {
   await Promise.all([
     access(new URL("../app/api/sec/[ticker]/filings/route.ts", import.meta.url)),
     access(new URL("../app/api/sec/[ticker]/filings/refresh/route.ts", import.meta.url)),
     access(new URL("../app/api/internal/sec/watchlist/route.ts", import.meta.url)),
     access(new URL("../app/api/internal/sec/refresh/[ticker]/route.ts", import.meta.url)),
   ]);
-  const [feedRoute, watchlistRoute, refreshRoute, clientSection] = await Promise.all([
+  const [feedRoute, watchlistRoute, refreshRoute, clientRefreshRoute, modelKeyRoute, clientSection] = await Promise.all([
     readFile(new URL("../app/api/sec/[ticker]/filings/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/internal/sec/watchlist/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/internal/sec/refresh/[ticker]/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/sec/[ticker]/filings/refresh/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/internal/sec/model-key/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/positions/[ticker]/SecFilingsSection.tsx", import.meta.url), "utf8"),
   ]);
 
   assert.match(feedRoute, /getChatGPTUser/);
-  assert.match(watchlistRoute, /hasInternalSecAccess/);
-  assert.match(refreshRoute, /hasInternalSecAccess/);
-  assert.match(refreshRoute, /requestSecAnalysis/);
-  assert.doesNotMatch(refreshRoute, /refreshSecTicker/);
+  assert.match(feedRoute, /getCloudflareSecFeed/);
+  assert.match(watchlistRoute, /status: 410/);
+  assert.match(refreshRoute, /status: 410/);
+  assert.match(clientRefreshRoute, /status: 410/);
+  assert.match(modelKeyRoute, /status: 410/);
+  assert.doesNotMatch(modelKeyRoute, /encryptSecModelKey/);
   assert.match(clientSection, /const feedUrl = `\/api\/sec\/\$\{encodeURIComponent\(ticker\)\}\/filings`/);
-  assert.match(clientSection, /fetch\(`\$\{feedUrl\}\/refresh`/);
+  assert.doesNotMatch(clientSection, /fetch\(`\$\{feedUrl\}\/refresh`/);
 });
 
 test("ships SEC analysis as a durable worker workflow instead of a page request", async () => {
@@ -92,7 +95,7 @@ test("ships SEC analysis as a durable worker workflow instead of a page request"
   assert.match(workerConfig, /"r2_buckets"/);
 });
 
-test("exposes only short authenticated bridge routes to the independent SEC worker", async () => {
+test("freezes every legacy SEC worker bridge route", async () => {
   const routeUrls = [
     "../app/api/internal/sec/feed/route.ts",
     "../app/api/internal/sec/context/route.ts",
@@ -105,12 +108,8 @@ test("exposes only short authenticated bridge routes to the independent SEC work
     return readFile(new URL(url, import.meta.url), "utf8");
   }));
 
-  for (const source of sources) assert.match(source, /hasInternalSecAccess/);
-  assert.match(sources[2], /encryptSecModelKey/);
-  assert.match(sources[3], /saveAnalysis/);
-  assert.match(sources[3], /\^\(8-K\|6-K\)/);
-  assert.match(sources[3], /body\.summary\.accessionNumber === eventAccession/);
-  assert.doesNotMatch(sources.join("\n"), /refreshSecTicker/);
+  for (const source of sources) assert.match(source, /status: 410/);
+  assert.doesNotMatch(sources.join("\n"), /getD1|encryptSecModelKey|saveAnalysis|refreshSecTicker/);
 });
 
 test("uses the shared AI credential with the supported SEC model", async () => {

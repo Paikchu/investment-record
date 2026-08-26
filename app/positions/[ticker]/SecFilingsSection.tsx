@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-import { isSecFeedRefreshDue, SEC_SUMMARY_VERSION, type SecFilingFeed, type SecFilingWithSummary } from "@/lib/sec";
+import { SEC_SUMMARY_VERSION, type SecFilingFeed, type SecFilingWithSummary } from "@/lib/sec";
 
 type LoadState =
   | { status: "loading" }
@@ -28,13 +28,6 @@ export function SecFilingsSection({ ticker }: { ticker: string }) {
         setState({ status: "ready", feed });
         setOpenAccession(feed.filings[0]?.accessionNumber ?? null);
 
-        if (!isSecFeedRefreshDue(feed)) return;
-        const refreshResponse = await fetch(`${feedUrl}/refresh`, {
-          method: "POST",
-          cache: "no-store",
-          signal: controller.signal,
-        });
-        if (!refreshResponse.ok) return;
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
           setState({ status: "error", message: error instanceof Error ? error.message : "SEC 数据读取失败。" });
