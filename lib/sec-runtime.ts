@@ -4,6 +4,7 @@ type SecRuntimeConfig = SecServiceRuntime & {
   refreshKey: string;
   pipelineOrigin: string;
   bootstrapPublicKey: string;
+  migrationKey: string;
 };
 
 export async function getSecRuntimeConfig(): Promise<SecRuntimeConfig> {
@@ -16,6 +17,7 @@ export async function getSecRuntimeConfig(): Promise<SecRuntimeConfig> {
     refreshKey: stringValue(values.SEC_REFRESH_KEY),
     pipelineOrigin: stringValue(values.SEC_PIPELINE_ORIGIN) || "https://max-investment-record-sec-cron.max-zhangyuchen.workers.dev",
     bootstrapPublicKey: stringValue(values.SEC_BOOTSTRAP_PUBLIC_KEY),
+    migrationKey: stringValue(values.SEC_MIGRATION_KEY),
   };
 }
 
