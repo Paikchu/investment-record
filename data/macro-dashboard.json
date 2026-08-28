@@ -1,61 +1,27 @@
 {
   "version": 1,
-  "reviewDate": "2026-08-27",
-  "generatedAt": "2026-08-27T00:47:25.000Z",
+  "reviewDate": "2026-08-28",
+  "generatedAt": "2026-08-28T01:29:05.000Z",
   "portfolioSnapshotGeneratedAt": "2026-08-24T23:32:23.306Z",
   "coverageStatus": "complete",
-  "headline": "需求仍有韧性，高通胀与实际消费停滞形成拉扯",
-  "summary": "7 月耐用品订单增长 1.1%，二季度实际 GDP 年化增长 1.5%且私人国内最终销售上修至 4.2%，显示企业与私人需求仍有支撑；但 7 月实际消费几乎持平，核心 PCE 同比仍达 3.3%。对当前组合，盈利与资本开支背景偏正面，通胀和利率约束仍是主要估值逆风。",
+  "headline": "裁员仍低，就业韧性与利率约束并存",
+  "summary": "8 月 22 日当周初请失业金降至 20.3 万，续请人数也回落，未显示裁员明显扩散；这为短期增长与消费提供支撑，但劳动力市场韧性也可能限制利率下行。未来七天重点关注 JOLTS、下一次初请和 8 月就业报告。",
   "impacts": [
     {
-      "eventId": "durable-goods-2026-07",
-      "title": "7 月耐用品订单",
-      "fact": "美国人口普查局披露，7 月制造业耐用品新订单增加 36 亿美元、环比增长 1.1%至 3393 亿美元；剔除运输设备后增长 0.4%，剔除国防后增长 1.3%，运输设备订单增长 2.3%。",
-      "transmission": "订单扩张为未来数月制造业生产与设备需求提供支撑；剔除运输后仍为正增长，说明改善并非完全由大型运输订单驱动，但单月总量数据不能直接映射到具体公司的订单与收入。",
-      "channels": ["growth"],
-      "direction": "tailwind",
-      "horizon": "medium_term",
-      "confidence": "medium",
-      "tickers": ["NVDA", "AVGO", "MRVL", "INTC"],
-      "implication": "数据为半导体与设备需求提供温和宏观顺风，但不足以确认 AI 或数据中心订单加速；NVDA、AVGO、MRVL 与 INTC 仍需由公司订单、库存和指引验证。",
-      "sourceIds": ["census-durable-goods-2026-07"]
-    },
-    {
-      "eventId": "gdp-second-estimate-2026-q2",
-      "title": "二季度 GDP 第二次估算",
-      "fact": "美国经济分析局披露，二季度实际 GDP 年化增长 1.5%，与初值相同；私人国内最终销售上修至增长 4.2%，国内购买价格指数上修至增长 5.8%，核心 PCE 价格指数年化增长 3.6%；当季企业利润增加 4009 亿美元。",
-      "transmission": "更强的私人最终需求和企业利润支撑收入与盈利预期，但价格指标上修意味着通胀压力仍高，可能限制利率下行并提高长久期资产的折现率。",
-      "channels": ["growth", "inflation", "rates"],
+      "eventId": "initial-claims-2026-08-27",
+      "title": "8 月 22 日当周初请失业金",
+      "fact": "美国劳工部披露，8 月 22 日当周经季调初请失业金人数为 20.3 万，较前一周修订后的 20.7 万减少 0.4 万；四周移动平均为 20.55 万，增加 0.125 万。8 月 15 日当周续请失业金人数为 177.8 万，减少 1.8 万。",
+      "transmission": "初请与续请人数下降表明裁员尚未明显扩散，有利于收入和消费韧性；但就业市场保持稳健也可能降低快速宽松的必要性，使长端利率和成长股折现率维持约束。",
+      "channels": ["growth", "rates"],
       "direction": "mixed",
-      "horizon": "medium_term",
-      "confidence": "high",
-      "tickers": ["VOO", "MSFT", "NVDA", "AVGO", "META", "AMZN", "TSLA"],
-      "implication": "需求与利润数据对 VOO 及大型科技收入背景偏正面；价格指标上修则压制 MSFT、NVDA、AVGO、META 等高久期仓位的估值扩张，净影响取决于利率反应。",
-      "sourceIds": ["bea-gdp-q2-second-2026"]
-    },
-    {
-      "eventId": "pce-2026-07",
-      "title": "7 月个人收入、支出与 PCE",
-      "fact": "美国经济分析局披露，7 月个人收入环比增长 0.4%，名义个人消费支出增长 0.2%，实际个人消费支出增幅不足 0.1%；PCE 与核心 PCE 价格指数均环比增长 0.2%，同比分别增长 3.7%和 3.3%。",
-      "transmission": "实际消费近乎停滞显示需求动能减弱，而核心通胀仍明显高于 2%，形成增长放缓与通胀黏性并存的组合，削弱快速宽松的空间。",
-      "channels": ["growth", "inflation", "rates"],
-      "direction": "headwind",
       "horizon": "near_term",
       "confidence": "high",
       "tickers": ["VOO", "AMZN", "TSLA", "MSFT", "NVDA", "META"],
-      "implication": "实际消费偏弱直接增加 AMZN 与 TSLA 的需求风险；若核心通胀使长期利率维持高位，MSFT、NVDA、META 等成长仓位也面临估值压力。",
-      "sourceIds": ["bea-pce-2026-07"]
+      "implication": "较低裁员率为 VOO 以及 AMZN、TSLA 的需求背景提供温和支撑；若就业韧性使利率维持高位，MSFT、NVDA、META 等长久期成长仓位的估值扩张仍会受限。",
+      "sourceIds": ["dol-claims-2026-08-27"]
     }
   ],
   "upcomingEvents": [
-    {
-      "id": "initial-claims-2026-08-27",
-      "title": "初请失业金人数",
-      "scheduledAt": "2026-08-27T12:30:00.000Z",
-      "importance": "medium",
-      "status": "scheduled",
-      "sourceIds": ["dol-claims-schedule"]
-    },
     {
       "id": "jolts-2026-07",
       "title": "7 月职位空缺与劳动力流动调查（JOLTS）",
@@ -63,36 +29,30 @@
       "importance": "high",
       "status": "scheduled",
       "sourceIds": ["bls-september-calendar"]
+    },
+    {
+      "id": "initial-claims-2026-09-03",
+      "title": "初请失业金人数",
+      "scheduledAt": "2026-09-03T12:30:00.000Z",
+      "importance": "medium",
+      "status": "scheduled",
+      "sourceIds": ["dol-claims-schedule"]
+    },
+    {
+      "id": "employment-situation-2026-08",
+      "title": "8 月就业报告",
+      "scheduledAt": "2026-09-04T12:30:00.000Z",
+      "importance": "high",
+      "status": "scheduled",
+      "sourceIds": ["bls-september-calendar"]
     }
   ],
   "sources": [
     {
-      "id": "census-durable-goods-2026-07",
-      "title": "U.S. Census Bureau — Advance Report on Durable Goods, July 2026",
-      "url": "https://www.census.gov/manufacturing/m3/adv/current/index.html",
-      "publishedAt": "2026-08-26T12:30:00.000Z"
-    },
-    {
-      "id": "bea-gdp-q2-second-2026",
-      "title": "Bureau of Economic Analysis — GDP Second Estimate and Corporate Profits, Q2 2026",
-      "url": "https://www.bea.gov/news/2026/gdp-second-estimate-and-corporate-profits-2nd-quarter-2026",
-      "publishedAt": "2026-08-26T12:30:00.000Z"
-    },
-    {
-      "id": "bea-pce-2026-07",
-      "title": "Bureau of Economic Analysis — Personal Income and Outlays, July 2026",
-      "url": "https://www.bea.gov/news/2026/personal-income-and-outlays-july-2026",
-      "publishedAt": "2026-08-26T12:30:00.000Z"
-    },
-    {
-      "id": "census-calendar",
-      "title": "U.S. Census Bureau — Economic Indicator Release Schedule",
-      "url": "https://www.census.gov/economic-indicators/calendar-listview.html"
-    },
-    {
-      "id": "bea-schedule",
-      "title": "Bureau of Economic Analysis — Release Schedule",
-      "url": "https://www.bea.gov/news/schedule/full"
+      "id": "dol-claims-2026-08-27",
+      "title": "U.S. Department of Labor — Unemployment Insurance Weekly Claims, August 27, 2026",
+      "url": "https://www.dol.gov/ui/data.pdf",
+      "publishedAt": "2026-08-27T12:30:00.000Z"
     },
     {
       "id": "dol-claims-schedule",
@@ -110,14 +70,29 @@
       "url": "https://www.bls.gov/schedule/2026/09_sched_list.htm"
     },
     {
+      "id": "census-calendar",
+      "title": "U.S. Census Bureau — Economic Indicator Release Schedule",
+      "url": "https://www.census.gov/economic-indicators/calendar-listview.html"
+    },
+    {
+      "id": "bea-schedule",
+      "title": "Bureau of Economic Analysis — Release Schedule",
+      "url": "https://www.bea.gov/news/schedule/full"
+    },
+    {
       "id": "fed-august-calendar",
       "title": "Federal Reserve — August 2026 Calendar",
       "url": "https://www.federalreserve.gov/newsevents/2026-august.htm"
     },
     {
-      "id": "treasury-q3-auction-schedule",
-      "title": "U.S. Treasury — Tentative Auction Schedule, Third Quarter 2026",
-      "url": "https://home.treasury.gov/system/files/221/TentativeAuctionScheduleQ32026.pdf"
+      "id": "fed-september-calendar",
+      "title": "Federal Reserve — September 2026 Calendar",
+      "url": "https://www.federalreserve.gov/newsevents/2026-september.htm"
+    },
+    {
+      "id": "treasury-auction-schedule",
+      "title": "U.S. Treasury — Tentative Auction Schedule",
+      "url": "https://home.treasury.gov/system/files/221/Tentative-Auction-Schedule.pdf"
     }
   ]
 }
