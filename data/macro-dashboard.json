@@ -1,26 +1,12 @@
 {
   "version": 1,
-  "reviewDate": "2026-08-28",
-  "generatedAt": "2026-08-28T01:29:05.000Z",
+  "reviewDate": "2026-08-29",
+  "generatedAt": "2026-08-29T01:17:36.000Z",
   "portfolioSnapshotGeneratedAt": "2026-08-24T23:32:23.306Z",
   "coverageStatus": "complete",
-  "headline": "裁员仍低，就业韧性与利率约束并存",
-  "summary": "8 月 22 日当周初请失业金降至 20.3 万，续请人数也回落，未显示裁员明显扩散；这为短期增长与消费提供支撑，但劳动力市场韧性也可能限制利率下行。未来七天重点关注 JOLTS、下一次初请和 8 月就业报告。",
-  "impacts": [
-    {
-      "eventId": "initial-claims-2026-08-27",
-      "title": "8 月 22 日当周初请失业金",
-      "fact": "美国劳工部披露，8 月 22 日当周经季调初请失业金人数为 20.3 万，较前一周修订后的 20.7 万减少 0.4 万；四周移动平均为 20.55 万，增加 0.125 万。8 月 15 日当周续请失业金人数为 177.8 万，减少 1.8 万。",
-      "transmission": "初请与续请人数下降表明裁员尚未明显扩散，有利于收入和消费韧性；但就业市场保持稳健也可能降低快速宽松的必要性，使长端利率和成长股折现率维持约束。",
-      "channels": ["growth", "rates"],
-      "direction": "mixed",
-      "horizon": "near_term",
-      "confidence": "high",
-      "tickers": ["VOO", "AMZN", "TSLA", "MSFT", "NVDA", "META"],
-      "implication": "较低裁员率为 VOO 以及 AMZN、TSLA 的需求背景提供温和支撑；若就业韧性使利率维持高位，MSFT、NVDA、META 等长久期成长仓位的估值扩张仍会受限。",
-      "sourceIds": ["dol-claims-2026-08-27"]
-    }
-  ],
+  "headline": "过去 24 小时无新增纳入范围的美国宏观发布",
+  "summary": "已检查美国官方发布与日程，过去 24 小时没有 FOMC、通胀、就业、增长、消费、制造业、住房、初请失业金或指定国债融资项目的新发布。未来七天重点关注 JOLTS、下一次初请失业金和 8 月就业报告。",
+  "impacts": [],
   "upcomingEvents": [
     {
       "id": "jolts-2026-07",
@@ -48,12 +34,6 @@
     }
   ],
   "sources": [
-    {
-      "id": "dol-claims-2026-08-27",
-      "title": "U.S. Department of Labor — Unemployment Insurance Weekly Claims, August 27, 2026",
-      "url": "https://www.dol.gov/ui/data.pdf",
-      "publishedAt": "2026-08-27T12:30:00.000Z"
-    },
     {
       "id": "dol-claims-schedule",
       "title": "U.S. Department of Labor — Weekly Claims Publication Schedule",
