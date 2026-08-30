@@ -1,15 +1,15 @@
 {
   "version": 1,
-  "reviewDate": "2026-08-30",
-  "generatedAt": "2026-08-29T23:30:18.501Z",
-  "snapshotGeneratedAt": "2026-08-29T23:30:18.501Z",
+  "reviewDate": "2026-08-31",
+  "generatedAt": "2026-08-30T23:31:21.424Z",
+  "snapshotGeneratedAt": "2026-08-30T23:31:21.424Z",
   "tone": "balanced",
-  "headline": "NVDA 强劲财报支撑 AI 链，但现金降至 8.9% 后集中度继续上升",
-  "summary": "最新 IBKR 快照净值为 62,365.27 美元，现金为 5,565.00 美元，约占净值 8.9%。组合新增 2 股 AMZN 与 5 股 ORCL，交易总数增至 357；MSFT 仍约占净值 28.9%，NVDA 正股与空头看跌期权合计净市值约占 11.4%。NVIDIA 第二季度收入与下一季指引显示 AI 基础设施需求仍强，但周五利率预期转鹰，组合同时面对基本面支撑与估值压力。",
+  "headline": "周末净值持平，NVDA 基本面强势与利率压力形成拉锯",
+  "summary": "最新 IBKR 快照净值为 62,365.27 美元，现金为 5,565.00 美元，约占净值 8.9%；周末没有新增交易。MSFT 约占净值 28.9%，仍是最大单一仓位；NVDA 正股与空头看跌期权合计净市值约占 11.4%。NVIDIA 第二季度业绩继续验证 AI 基础设施需求，但美联储对通胀的强硬表态提高了高估值科技仓位的折现率风险。",
   "drivers": [
     {
-      "title": "NVIDIA 业绩验证 AI 基础设施需求",
-      "detail": "披露事实：NVIDIA FY2027 第二季度收入为 962 亿美元，同比增长 106%；数据中心收入为 890 亿美元，同比增长 117%。公司预计第三季度收入为 1,080 亿美元，上下浮动 2%。",
+      "title": "NVIDIA 业绩继续支撑组合 AI 链",
+      "detail": "披露事实：NVIDIA FY2027 第二季度收入为 962 亿美元，同比增长 106%；数据中心收入为 890 亿美元，同比增长 117%，第三季度收入指引为 1,080 亿美元，上下浮动 2%。",
       "implication": "组合含义：NVDA 净市值暴露约占净值 11.4%，强劲需求也支撑 AVGO、MRVL、DRAM、MSFT、ORCL 与 AMZN 的 AI 资本开支逻辑。",
       "tickers": [
         "NVDA",
@@ -22,28 +22,22 @@
       ]
     },
     {
-      "title": "AMZN 与 ORCL 加仓压低现金缓冲",
-      "detail": "披露事实：组合新增 2 股 AMZN 与 5 股 ORCL；AMZN 当前共 4 股，ORCL 共 37.0655 股。现金降至 5,565.00 美元，约占净值 8.9%。",
-      "implication": "组合含义：新增仓位继续集中于云与 AI 基础设施链，现金对科技股共振回撤的缓冲能力随之下降。",
+      "title": "低现金与 MSFT 集中度并存",
+      "detail": "披露事实：现金为 5,565.00 美元，约占净值 8.9%；MSFT 市值约 18,046.68 美元，占净值约 28.9%，未实现盈利约 2,982.83 美元。",
+      "implication": "组合含义：现金缓冲偏低，而第一大仓位接近三成，MSFT 与 AI 链共振回撤时净值敏感度较高。",
       "tickers": [
-        "AMZN",
-        "ORCL",
+        "MSFT",
         "NVDA",
-        "MSFT"
+        "AVGO",
+        "MRVL",
+        "ORCL",
+        "AMZN"
       ]
     },
     {
-      "title": "MSFT 仍是组合主导仓位",
-      "detail": "披露事实：MSFT 市值约 17,996.92 美元，占净值约 28.9%，未实现盈利约 2,933.06 美元，为组合最大的单一正股盈利来源。",
-      "implication": "组合含义：即使 NVDA 财报改善 AI 情绪，MSFT 的云增长、AI 回报与估值变化仍最容易主导日度净值。",
-      "tickers": [
-        "MSFT"
-      ]
-    },
-    {
-      "title": "利率风险重新压制高估值资产",
-      "detail": "披露事实：AP 数据显示 8 月 28 日 S&P 500 下跌 0.2%、纳斯达克下跌 0.5%；美联储主席 Warsh 强调 2% 通胀目标固定不变，并称当前通胀仍高于目标。",
-      "implication": "组合含义：若市场继续提高加息概率，软件、云与半导体持仓可能同时遭遇折现率上升带来的估值压缩。",
+      "title": "利率预期限制估值扩张",
+      "detail": "披露事实：8 月 28 日 S&P 500 下跌 0.2%、纳斯达克下跌 0.5%；美联储主席 Warsh 表示 12 个月 PCE 通胀为 3.7%，仍高于 2%目标。",
+      "implication": "组合含义：软件、云与半导体持仓的基本面虽有支撑，但若加息预期升温，估值倍数仍可能同步收缩。",
       "tickers": [
         "MSFT",
         "NOW",
@@ -55,20 +49,29 @@
         "MRVL",
         "DRAM"
       ]
+    },
+    {
+      "title": "DRAM 与 TSLA 仍是主要浮亏来源",
+      "detail": "披露事实：DRAM 未实现亏损约 517.33 美元，TSLA 未实现亏损约 567.21 美元；两者合计市值约占净值 15.1%。",
+      "implication": "组合含义：存储周期与电动车个股风险构成 AI 主线之外的第二层回撤来源。",
+      "tickers": [
+        "DRAM",
+        "TSLA"
+      ]
     }
   ],
   "watchItems": [
     {
-      "label": "NVIDIA 财报后的持续性",
-      "detail": "关注 1,080 亿美元收入指引能否继续带动 AVGO、MRVL、DRAM 与云平台，而非只形成短期情绪反弹。"
+      "label": "AI 需求持续性",
+      "detail": "关注 NVIDIA 的 1,080 亿美元收入指引能否持续带动 AVGO、MRVL、DRAM 与云平台。"
     },
     {
       "label": "现金与集中度",
-      "detail": "现金约占 8.9%，MSFT 约占 28.9%；后续净值对单一科技仓位和共同因子的敏感度已经提高。"
+      "detail": "现金约占 8.9%，MSFT 约占 28.9%；观察下一次交易后缓冲与集中度的变化。"
     },
     {
       "label": "ORCL 九月财报",
-      "detail": "Oracle 官方指引下一次季度业绩在九月中旬公布；关注云基础设施增长与 AI 资本开支回报。"
+      "detail": "Oracle 官方预计下一次季度业绩在九月中旬公布；关注云基础设施增长与 AI 资本开支回报。"
     }
   ],
   "sources": [
@@ -77,8 +80,8 @@
       "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx"
     },
     {
-      "title": "AP: How major US stock indexes fared Friday 8/28/2026",
-      "url": "https://apnews.com/article/3f3477bcea915ac53ec2ae905ae57919"
+      "title": "AP: The bond market prepares for a rate hike",
+      "url": "https://apnews.com/article/0a655f1c042b059279343443d5802907"
     },
     {
       "title": "Federal Reserve: Chairman Warsh Jackson Hole remarks",
