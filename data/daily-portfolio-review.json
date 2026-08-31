@@ -1,95 +1,26 @@
 {
   "version": 1,
-  "reviewDate": "2026-08-31",
-  "generatedAt": "2026-08-30T23:31:21.424Z",
-  "snapshotGeneratedAt": "2026-08-30T23:31:21.424Z",
+  "reviewDate": "2026-09-01",
+  "generatedAt": "2026-08-31T23:30:28.868Z",
+  "snapshotGeneratedAt": "2026-08-31T23:30:28.868Z",
   "tone": "balanced",
-  "headline": "周末净值持平，NVDA 基本面强势与利率压力形成拉锯",
-  "summary": "最新 IBKR 快照净值为 62,365.27 美元，现金为 5,565.00 美元，约占净值 8.9%；周末没有新增交易。MSFT 约占净值 28.9%，仍是最大单一仓位；NVDA 正股与空头看跌期权合计净市值约占 11.4%。NVIDIA 第二季度业绩继续验证 AI 基础设施需求，但美联储对通胀的强硬表态提高了高估值科技仓位的折现率风险。",
+  "headline": "GOOGL 新仓与 MRVL 加仓延伸 AI 链暴露，现金降至 7.1%",
+  "summary": "最新 IBKR 快照净值为 62,772.71 美元，现金为 4,467.91 美元，约占净值 7.1%；本次新增 GOOGL 2 股并加仓 MRVL 2 股。MSFT 约占净值 28.3%，仍是最大单一仓位；NVDA 正股与空头看跌期权合计净市值约占 11.5%。组合进一步集中于云与 AI 资本开支链，同时利率、能源价格与偏低现金缓冲仍限制短期容错空间。",
   "drivers": [
-    {
-      "title": "NVIDIA 业绩继续支撑组合 AI 链",
-      "detail": "披露事实：NVIDIA FY2027 第二季度收入为 962 亿美元，同比增长 106%；数据中心收入为 890 亿美元，同比增长 117%，第三季度收入指引为 1,080 亿美元，上下浮动 2%。",
-      "implication": "组合含义：NVDA 净市值暴露约占净值 11.4%，强劲需求也支撑 AVGO、MRVL、DRAM、MSFT、ORCL 与 AMZN 的 AI 资本开支逻辑。",
-      "tickers": [
-        "NVDA",
-        "AVGO",
-        "MRVL",
-        "DRAM",
-        "MSFT",
-        "ORCL",
-        "AMZN"
-      ]
-    },
-    {
-      "title": "低现金与 MSFT 集中度并存",
-      "detail": "披露事实：现金为 5,565.00 美元，约占净值 8.9%；MSFT 市值约 18,046.68 美元，占净值约 28.9%，未实现盈利约 2,982.83 美元。",
-      "implication": "组合含义：现金缓冲偏低，而第一大仓位接近三成，MSFT 与 AI 链共振回撤时净值敏感度较高。",
-      "tickers": [
-        "MSFT",
-        "NVDA",
-        "AVGO",
-        "MRVL",
-        "ORCL",
-        "AMZN"
-      ]
-    },
-    {
-      "title": "利率预期限制估值扩张",
-      "detail": "披露事实：8 月 28 日 S&P 500 下跌 0.2%、纳斯达克下跌 0.5%；美联储主席 Warsh 表示 12 个月 PCE 通胀为 3.7%，仍高于 2%目标。",
-      "implication": "组合含义：软件、云与半导体持仓的基本面虽有支撑，但若加息预期升温，估值倍数仍可能同步收缩。",
-      "tickers": [
-        "MSFT",
-        "NOW",
-        "ORCL",
-        "AMZN",
-        "META",
-        "NVDA",
-        "AVGO",
-        "MRVL",
-        "DRAM"
-      ]
-    },
-    {
-      "title": "DRAM 与 TSLA 仍是主要浮亏来源",
-      "detail": "披露事实：DRAM 未实现亏损约 517.33 美元，TSLA 未实现亏损约 567.21 美元；两者合计市值约占净值 15.1%。",
-      "implication": "组合含义：存储周期与电动车个股风险构成 AI 主线之外的第二层回撤来源。",
-      "tickers": [
-        "DRAM",
-        "TSLA"
-      ]
-    }
+    {"title": "GOOGL 新仓与 MRVL 加仓提高 AI 链集中度", "detail": "披露事实：本次买入 GOOGL 2 股并增持 MRVL 2 股；更新后 GOOGL 市值约 679.74 美元，MRVL 市值约 1,477.91 美元，现金降至 4,467.91 美元。", "implication": "组合含义：新增资金继续配置到云平台和 AI 基础设施链，主题一致性增强，但现金缓冲降至净值约 7.1%。", "tickers": ["GOOGL", "MRVL"]},
+    {"title": "Marvell 数据中心增长支撑加仓逻辑", "detail": "披露事实：Marvell FY2027 第二季度净收入为 27.393 亿美元，同比增长 36.5%；数据中心销售同比增长 46%，公司称主要由 AI 需求推动。", "implication": "组合含义：数据中心增长为 MRVL 的 AI 敞口提供基本面支撑，但该仓位当前仍有约 281.28 美元未实现亏损，后续执行质量仍重要。", "tickers": ["MRVL"]},
+    {"title": "Alphabet 资本开支强化云与 AI 投资周期", "detail": "披露事实：Alphabet 在投资者活动中预计 2026 年资本开支为 1,750 亿至 1,850 亿美元，并表示将继续投资 AI 与云基础设施以满足需求。", "implication": "组合含义：GOOGL 新仓直接增加对超大规模云厂商 AI 投资回报的暴露，也与 MSFT、AMZN、ORCL 及半导体持仓形成同一资本开支周期。", "tickers": ["GOOGL", "MSFT", "AMZN", "ORCL", "NVDA", "AVGO", "MRVL"]},
+    {"title": "油价与利率共同压制高估值科技", "detail": "披露事实：8 月 31 日 S&P 500 下跌 0.3%、纳斯达克下跌 0.1%，布伦特原油上涨 2.7%，美国 10 年期国债收益率升至 4.75%；美联储此前表示 12 个月 PCE 通胀为 3.7%，仍高于 2%目标。", "implication": "组合含义：能源价格与长端利率上行会提高科技持仓的折现率压力，而组合对 MSFT、NVDA 及云与半导体链的集中度较高。", "tickers": ["MSFT", "NVDA", "GOOGL", "AMZN", "META", "NOW", "ORCL", "AVGO", "MRVL"]}
   ],
   "watchItems": [
-    {
-      "label": "AI 需求持续性",
-      "detail": "关注 NVIDIA 的 1,080 亿美元收入指引能否持续带动 AVGO、MRVL、DRAM 与云平台。"
-    },
-    {
-      "label": "现金与集中度",
-      "detail": "现金约占 8.9%，MSFT 约占 28.9%；观察下一次交易后缓冲与集中度的变化。"
-    },
-    {
-      "label": "ORCL 九月财报",
-      "detail": "Oracle 官方预计下一次季度业绩在九月中旬公布；关注云基础设施增长与 AI 资本开支回报。"
-    }
+    {"label": "现金与集中度", "detail": "现金约占净值 7.1%，MSFT 约占 28.3%；关注新增仓位后组合缓冲和第一大仓位敏感度。"},
+    {"label": "Alphabet AI 投资回报", "detail": "关注高额资本开支能否继续转化为云业务增长与利润，验证 GOOGL 新仓的基本面逻辑。"},
+    {"label": "Marvell 执行质量", "detail": "关注数据中心增长、毛利率及 AI 需求兑现，判断 MRVL 加仓后浮亏能否收窄。"}
   ],
   "sources": [
-    {
-      "title": "NVIDIA announces FY2027 second-quarter results",
-      "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx"
-    },
-    {
-      "title": "AP: The bond market prepares for a rate hike",
-      "url": "https://apnews.com/article/0a655f1c042b059279343443d5802907"
-    },
-    {
-      "title": "Federal Reserve: Chairman Warsh Jackson Hole remarks",
-      "url": "https://www.federalreserve.gov/newsevents/speech/warsh20260828a.htm"
-    },
-    {
-      "title": "Oracle investor relations FAQ",
-      "url": "https://investor.oracle.com/faq/default.aspx"
-    }
+    {"title": "Marvell FY2027 second-quarter Form 10-Q", "url": "https://investor.marvell.com/sec-filings/all-sec-filings/content/0001835632-26-000025/mrvl-20260801.htm"},
+    {"title": "Alphabet 2025 fourth-quarter earnings call", "url": "https://abc.xyz/investor/events/event-details/2026/2025-Q4-Earnings-Call-2026-Dr_C033hS6/default.aspx"},
+    {"title": "AP: Stocks slip as oil and Treasury yields rise", "url": "https://apnews.com/article/0de14aa6532e16ff1c9e52a2cf09bc4a"},
+    {"title": "Federal Reserve: Chairman Warsh Jackson Hole remarks", "url": "https://www.federalreserve.gov/newsevents/speech/warsh20260828a.htm"}
   ]
 }
