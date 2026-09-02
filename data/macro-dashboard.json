@@ -1,21 +1,13 @@
 {
   "version": 1,
-  "reviewDate": "2026-09-01",
-  "generatedAt": "2026-09-01T00:45:29.144Z",
-  "portfolioSnapshotGeneratedAt": "2026-08-31T23:30:28.868Z",
+  "reviewDate": "2026-09-02",
+  "generatedAt": "2026-09-02T14:08:28.855Z",
+  "portfolioSnapshotGeneratedAt": "2026-09-02T14:08:28.870Z",
   "coverageStatus": "complete",
   "headline": "过去 24 小时无新增纳入范围的美国宏观发布",
-  "summary": "已检查美国官方发布与日程，过去 24 小时没有 FOMC、通胀、就业、增长、消费、制造业、住房、初请失业金或指定国债融资项目的新发布。未来七天重点关注 JOLTS、下一次初请失业金和 8 月就业报告。",
+  "summary": "已检查美国官方发布与日程，过去 24 小时没有 FOMC、通胀、就业、增长、消费、制造业、住房、初请失业金或指定国债融资项目的新发布。未来七天重点关注下一次初请失业金和 8 月就业报告。",
   "impacts": [],
   "upcomingEvents": [
-    {
-      "id": "jolts-2026-07",
-      "title": "7 月职位空缺与劳动力流动调查（JOLTS）",
-      "scheduledAt": "2026-09-01T14:00:00.000Z",
-      "importance": "high",
-      "status": "scheduled",
-      "sourceIds": ["bls-september-calendar"]
-    },
     {
       "id": "initial-claims-2026-09-03",
       "title": "初请失业金人数",
@@ -40,11 +32,6 @@
       "url": "https://oui.doleta.gov/unemploy/claims_arch.asp"
     },
     {
-      "id": "bls-august-calendar",
-      "title": "U.S. Bureau of Labor Statistics — August 2026 Release Calendar",
-      "url": "https://www.bls.gov/schedule/2026/08_sched_list.htm"
-    },
-    {
       "id": "bls-september-calendar",
       "title": "U.S. Bureau of Labor Statistics — September 2026 Release Calendar",
       "url": "https://www.bls.gov/schedule/2026/09_sched_list.htm"
@@ -58,11 +45,6 @@
       "id": "bea-schedule",
       "title": "Bureau of Economic Analysis — Release Schedule",
       "url": "https://www.bea.gov/news/schedule/full"
-    },
-    {
-      "id": "fed-august-calendar",
-      "title": "Federal Reserve — August 2026 Calendar",
-      "url": "https://www.federalreserve.gov/newsevents/2026-august.htm"
     },
     {
       "id": "fed-september-calendar",
