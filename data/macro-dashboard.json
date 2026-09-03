@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "reviewDate": "2026-09-02",
-  "generatedAt": "2026-09-02T14:08:28.855Z",
-  "portfolioSnapshotGeneratedAt": "2026-09-02T14:08:28.870Z",
+  "reviewDate": "2026-09-03",
+  "generatedAt": "2026-09-03T00:46:44.325Z",
+  "portfolioSnapshotGeneratedAt": "2026-09-02T23:31:44.029Z",
   "coverageStatus": "complete",
   "headline": "过去 24 小时无新增纳入范围的美国宏观发布",
-  "summary": "已检查美国官方发布与日程，过去 24 小时没有 FOMC、通胀、就业、增长、消费、制造业、住房、初请失业金或指定国债融资项目的新发布。未来七天重点关注下一次初请失业金和 8 月就业报告。",
+  "summary": "已检查美国官方发布与日程，过去 24 小时没有 FOMC、通胀、就业、增长、消费、制造业、住房、初请失业金或指定国债融资项目的新发布。未来七天重点关注两次初请失业金、8 月就业报告、8 月 PPI 和 10 年期国债续发行拍卖。",
   "impacts": [],
   "upcomingEvents": [
     {
@@ -20,6 +20,30 @@
       "id": "employment-situation-2026-08",
       "title": "8 月就业报告",
       "scheduledAt": "2026-09-04T12:30:00.000Z",
+      "importance": "high",
+      "status": "scheduled",
+      "sourceIds": ["bls-september-calendar"]
+    },
+    {
+      "id": "treasury-10y-reopening-2026-09-09",
+      "title": "10 年期美国国债续发行拍卖",
+      "scheduledAt": "2026-09-09T17:00:00.000Z",
+      "importance": "high",
+      "status": "scheduled",
+      "sourceIds": ["treasury-auction-schedule"]
+    },
+    {
+      "id": "initial-claims-2026-09-10",
+      "title": "初请失业金人数",
+      "scheduledAt": "2026-09-10T12:30:00.000Z",
+      "importance": "medium",
+      "status": "scheduled",
+      "sourceIds": ["dol-claims-schedule"]
+    },
+    {
+      "id": "ppi-2026-08",
+      "title": "8 月生产者价格指数（PPI）",
+      "scheduledAt": "2026-09-10T12:30:00.000Z",
       "importance": "high",
       "status": "scheduled",
       "sourceIds": ["bls-september-calendar"]
