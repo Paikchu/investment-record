@@ -28,6 +28,17 @@ npm run build
 npm run snapshot:update -- --input /absolute/path/to/ibkr-export.json
 ```
 
+通过 IBKR Flex Web Service API 生成更新器输入：
+
+```bash
+npm run ibkr:flex:fetch -- --query-id 1628251 --output /absolute/path/to/ibkr-flex-input.json
+node --experimental-strip-types scripts/update-portfolio-snapshot.ts --input /absolute/path/to/ibkr-flex-input.json
+```
+
+macOS 默认从 Keychain 服务 `com.max-investment-record.ibkr-flex` 读取 Token；其他环境使用未提交的 `IBKR_FLEX_TOKEN`。Token 不得写入仓库、命令参数或日志。Flex Query 必须使用 CSV、section code/line descriptor、分 section column headers，以及带时区的成交时间。
+
+生产环境由 `max-investment-record-sec-cron` Cloudflare Worker 在上海时间周二至周六 14:00 调用 Flex Web Service API。Worker 通过受保护的内部接口把新报告原子写入 D1；首页、持仓详情和证券搜索在请求时优先读取 D1，因此日常同步不需要 Codex、Git 提交或重新部署站点。`IBKR_FLEX_TOKEN` 只保存在 Worker Secret，`PORTFOLIO_SYNC_KEY` 同时作为 Worker Secret 和 Sites Secret 保存。
+
 更新证券目录：
 
 ```bash

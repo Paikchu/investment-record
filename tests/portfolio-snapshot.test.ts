@@ -83,6 +83,15 @@ test("upserts overlapping trades by tradeId and keeps the corrected value", () =
   assert.equal(merged[0].tradeId, "trade-2");
 });
 
+test("keeps a New Year's Eve trade in its Flex statement year", () => {
+  const merged = mergeTrades([], [trade({
+    tradeDate: "2026-12-31",
+    tradeTime: "2027-01-01T04:30:00.000Z",
+  })], 2026);
+
+  assert.equal(merged.length, 1);
+});
+
 test("aggregates stock and option realized PnL by canonical underlying", () => {
   const totals = realizedPnlByUnderlying([
     trade(),

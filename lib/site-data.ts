@@ -1,5 +1,7 @@
 import portfolioSnapshotData from "@/data/portfolio-snapshot.json";
 import symbolDirectoryData from "@/data/us-securities.json";
+import { getD1 } from "@/db";
+import { readPortfolioSnapshot } from "@/lib/portfolio-store";
 import { buildPortfolioViewModel } from "@/lib/portfolio-view-model";
 import type { PortfolioSnapshotV1 } from "@/lib/portfolio-snapshot";
 import { normalizeTicker, type SymbolDirectoryEntry } from "@/lib/symbol-directory";
@@ -15,9 +17,18 @@ export const symbolSearchEntries = [
     .map((group): SymbolDirectoryEntry => ({ symbol: group.symbol, name: group.name, exchange: "IBKR", type: "stock" })),
 ];
 
-export function findSecurity(rawTicker: string): SymbolDirectoryEntry | null {
+export async function currentPortfolioSnapshot(): Promise<PortfolioSnapshotV1> {
+  if (!("WebSocketPair" in globalThis)) return portfolioSnapshot;
+  try {
+    return await readPortfolioSnapshot(await getD1());
+  } catch {
+    return portfolioSnapshot;
+  }
+}
+
+export function findSecurity(rawTicker: string, currentViewModel = portfolioViewModel): SymbolDirectoryEntry | null {
   const ticker = normalizeTicker(rawTicker);
-  const held = portfolioViewModel.positionGroups.find((group) => group.symbol === ticker);
+  const held = currentViewModel.positionGroups.find((group) => group.symbol === ticker);
   const listed = symbolDirectory.securities.find((security) => security.symbol === ticker);
   if (held) return listed ? { ...listed, name: held.name } : { symbol: ticker, name: held.name, exchange: "IBKR", type: "stock" };
   return listed ?? null;

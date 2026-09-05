@@ -5,6 +5,7 @@ import { executeSecMemoryWorkflow } from "./memory-workflow.ts";
 import { createSecPipelineOperations, type SecPipelineEnv } from "./operations.ts";
 import { retryDelayForAttempt } from "./retry-policy.ts";
 import { executeSecAnalysisWorkflow, type WorkflowStepContextLike, type WorkflowStepLike } from "./workflow-core.ts";
+import { runIbkrFlexSync, type IbkrSyncEnv } from "./ibkr-sync.ts";
 
 const WORKFLOW_RETRY = {
   retries: {
@@ -45,7 +46,13 @@ const worker = {
     return handleSecAnalysisRequest(request, env);
   },
 
-  async scheduled(_controller: ScheduledController, env: SecPipelineEnv, context: ExecutionContext) {
+  async scheduled(controller: ScheduledController, env: SecPipelineEnv & IbkrSyncEnv, context: ExecutionContext) {
+    if (controller.cron === "0 6 * * 2-6") {
+      context.waitUntil(runIbkrFlexSync(env).then((result) => {
+        console.log(JSON.stringify({ event: "ibkr-flex-sync", ...result }));
+      }));
+      return;
+    }
     context.waitUntil(Promise.allSettled([runSecRefresh(env), runSecMemorySweep(env)]).then((results) => {
       console.log(JSON.stringify({ event: "sec-workflows", analysis: results[0], memory: results[1] }));
     }));

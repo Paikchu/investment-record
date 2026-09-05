@@ -15,7 +15,7 @@ import {
   type TradeQueryPeriod,
 } from "../lib/portfolio-snapshot.ts";
 
-interface RawSyncInput {
+export interface RawSyncInput {
   generatedAt?: string;
   summary: { net_liquidation?: number };
   balances: { balances?: Array<{ currency?: string; cash_balance?: number }> };
@@ -24,6 +24,7 @@ interface RawSyncInput {
   tradeStatus: "current" | "delayed";
   queryPeriod: TradeQueryPeriod;
   tradeMessage?: string;
+  source?: PortfolioSnapshotV1["source"];
 }
 
 const argument = (name: string, fallback?: string) => {
@@ -48,6 +49,16 @@ const [previous, raw, previousHistory] = await Promise.all([
       throw error;
     }),
 ]);
+if (
+  raw.source?.method === "FLEX"
+  && previous.source?.method === "FLEX"
+  && raw.source.reportDate
+  && previous.source.reportDate
+  && raw.source.reportDate <= previous.source.reportDate
+) {
+  console.log(`No new IBKR Flex report after ${previous.source.reportDate}`);
+  process.exit(0);
+}
 const usdBalance = raw.balances.balances?.find((balance) => balance.currency === "USD");
 const positions = (raw.positions.positions ?? [])
   .filter((position) => position.asset_class === "STK" || position.asset_class === "OPT")
@@ -65,6 +76,7 @@ const snapshot = buildPortfolioSnapshot(previous, {
     cashBalance: usdBalance?.cash_balance ?? Number.NaN,
   },
   positions,
+  source: raw.source,
   tradeSync,
 });
 const history = upsertPortfolioHistory(previousHistory, {

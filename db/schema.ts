@@ -21,6 +21,21 @@ export const planLevels = sqliteTable("plan_levels", {
   sortOrder: integer("sort_order").notNull(),
 });
 
+export const portfolioState = sqliteTable("portfolio_state", {
+  id: text("id").primaryKey(),
+  reportDate: text("report_date").notNull(),
+  generatedAt: text("generated_at").notNull(),
+  payload: text("payload").notNull(),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const portfolioHistory = sqliteTable("portfolio_history", {
+  date: text("date").primaryKey(),
+  generatedAt: text("generated_at").notNull(),
+  netLiquidation: text("net_liquidation").notNull(),
+  netDeposits: text("net_deposits").notNull(),
+});
+
 export const secCache = sqliteTable("sec_cache", {
   cacheKey: text("cache_key").primaryKey(),
   payload: text("payload").notNull(),

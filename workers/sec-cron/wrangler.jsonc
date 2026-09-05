@@ -6,6 +6,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
     "MAX_SITE_ORIGIN": "https://max-investment-record.max-zhangyuchen.chatgpt.site",
+    "IBKR_FLEX_QUERY_ID": "1628251",
     "SEC_USER_AGENT": "max-investment-record/1.0 max.zhangyuchen@gmail.com",
     "SEC_ANALYSIS_MODEL": "deepseek-v4-flash"
   },
@@ -28,7 +29,7 @@
     }
   ],
   "triggers": {
-    "crons": []
+    "crons": ["0 6 * * 2-6"]
   },
   "observability": {
     "enabled": true,

@@ -113,7 +113,7 @@ test("removes the disposable starter preview", async () => {
   assert.doesNotMatch(page, /PageTab|activePage|switchPage|持仓分析|className="tabs"/);
   assert.match(viewModel, /actualCost/);
   assert.match(viewModel, /\(position\.costBasis - realized\) \/ position\.quantity/);
-  assert.match(page, /portfolio-snapshot\.json/);
+  assert.match(page, /currentPortfolioSnapshot/);
   assert.doesNotMatch(page, /const holdings = \[/);
   assert.doesNotMatch(page, /const optionContracts = \[/);
   assert.doesNotMatch(page, /const recentTrades = \[/);

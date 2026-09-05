@@ -1,7 +1,8 @@
 import { requireChatGPTUser } from "@/app/chatgpt-auth";
 import { getD1 } from "@/db";
 import { getHoldingPlan, type HoldingPlanRecord } from "@/lib/holding-plan-store";
-import { findSecurity, portfolioViewModel } from "@/lib/site-data";
+import { buildPortfolioViewModel } from "@/lib/portfolio-view-model";
+import { currentPortfolioSnapshot, findSecurity } from "@/lib/site-data";
 import { normalizeTicker } from "@/lib/symbol-directory";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,8 @@ export const dynamic = "force-dynamic";
 
 export default async function PositionPage({ params }: { params: Promise<{ ticker: string }> }) {
   const ticker = normalizeTicker((await params).ticker);
-  const security = findSecurity(ticker);
+  const portfolioViewModel = buildPortfolioViewModel(await currentPortfolioSnapshot());
+  const security = findSecurity(ticker, portfolioViewModel);
   if (!security) notFound();
   const user = await requireChatGPTUser(`/positions/${encodeURIComponent(ticker)}`);
   const position = portfolioViewModel.positionGroups.find((group) => group.symbol === ticker);

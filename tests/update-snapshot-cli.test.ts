@@ -87,3 +87,36 @@ test("the snapshot CLI rejects a current trade status without a trades response"
     /trades response is required/i,
   );
 });
+
+test("the snapshot CLI does not rewrite files for an already published Flex report", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "portfolio-snapshot-stale-flex-"));
+  const previousPath = join(directory, "previous.json");
+  const inputPath = join(directory, "input.json");
+  const outputPath = join(directory, "output.json");
+  const previous: PortfolioSnapshotV1 = {
+    ...JSON.parse(await readFile(new URL("../data/portfolio-snapshot.json", import.meta.url), "utf8")),
+    source: { provider: "IBKR", method: "FLEX", reportDate: "2026-09-04", queryId: "1628251" },
+  };
+  const input = {
+    generatedAt: "2026-09-05T06:00:00.000Z",
+    source: { provider: "IBKR", method: "FLEX", reportDate: "2026-09-04", queryId: "1628251" },
+    summary: { net_liquidation: 68_000 },
+    balances: { balances: [{ currency: "USD", cash_balance: 1_500 }] },
+    positions: { positions: [] },
+    trades: { trades: [] },
+    tradeStatus: "current",
+    queryPeriod: "DAYS_7",
+  };
+  await Promise.all([writeFile(previousPath, JSON.stringify(previous)), writeFile(inputPath, JSON.stringify(input))]);
+
+  const { stdout } = await execFileAsync(process.execPath, [
+    "--experimental-strip-types",
+    "scripts/update-portfolio-snapshot.ts",
+    "--previous", previousPath,
+    "--input", inputPath,
+    "--output", outputPath,
+  ], { cwd: new URL("../", import.meta.url) });
+
+  assert.match(stdout, /No new IBKR Flex report/);
+  await assert.rejects(readFile(outputPath), /ENOENT/);
+});

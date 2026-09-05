@@ -26,6 +26,7 @@ export interface PortfolioPosition {
 export interface PortfolioTrade {
   tradeId: string;
   tradeTime: string;
+  tradeDate?: string;
   symbol: string;
   contractDescription: string;
   securityType: SecurityType;
@@ -51,12 +52,19 @@ export interface PortfolioSnapshotV1 {
     lastSuccessfulTradeAt: string | null;
     message: string | null;
   };
+  source?: {
+    provider: "IBKR";
+    method: "CONNECTOR" | "FLEX";
+    reportDate?: string;
+    queryId?: string;
+  };
 }
 
 export interface SnapshotSyncInput {
   generatedAt: string;
   account: Pick<PortfolioAccount, "netLiquidation" | "cashBalance">;
   positions: PortfolioPosition[];
+  source?: PortfolioSnapshotV1["source"];
   tradeSync:
     | { status: "current"; queryPeriod: TradeQueryPeriod; trades: PortfolioTrade[]; message?: null }
     | { status: "delayed"; queryPeriod: TradeQueryPeriod; message: string };
@@ -88,6 +96,7 @@ export interface IbkrTrade {
   size?: number;
   symbol?: string;
   trade_id?: string;
+  trade_date?: string;
   trade_time?: string;
 }
 
@@ -139,6 +148,7 @@ export function normalizeIbkrTrade(trade: IbkrTrade): PortfolioTrade {
   return {
     tradeId: trade.trade_id,
     tradeTime: new Date(trade.trade_time).toISOString(),
+    tradeDate: trade.trade_date,
     symbol: canonicalUnderlying(trade.symbol),
     contractDescription: trade.company_name?.trim() || canonicalUnderlying(trade.symbol),
     securityType: trade.sec_type ?? "UNKNOWN",
@@ -158,7 +168,7 @@ export function mergeTrades(existing: PortfolioTrade[], incoming: PortfolioTrade
   for (const item of incoming) byId.set(item.tradeId, item);
 
   return [...byId.values()]
-    .filter((item) => new Date(item.tradeTime).getUTCFullYear() === year)
+    .filter((item) => Number(item.tradeDate?.slice(0, 4) ?? new Date(item.tradeTime).getUTCFullYear()) === year)
     .sort((left, right) => right.tradeTime.localeCompare(left.tradeTime) || right.tradeId.localeCompare(left.tradeId));
 }
 
@@ -166,7 +176,7 @@ export function realizedPnlByUnderlying(trades: PortfolioTrade[], year: number):
   const totals: Record<string, number> = {};
 
   for (const item of trades) {
-    if (new Date(item.tradeTime).getUTCFullYear() !== year) continue;
+    if (Number(item.tradeDate?.slice(0, 4) ?? new Date(item.tradeTime).getUTCFullYear()) !== year) continue;
     if (item.securityType !== "STK" && item.securityType !== "OPT") continue;
     const symbol = canonicalUnderlying(item.symbol);
     totals[symbol] = (totals[symbol] ?? 0) + item.realizedPnl;
@@ -199,11 +209,11 @@ export function buildPortfolioSnapshot(previous: PortfolioSnapshotV1, input: Sna
     throw new Error("Position values must be finite and quantities must be non-zero");
   }
 
-  const currentTradeSync = input.tradeSync.status === "current";
-  const trades = currentTradeSync
-    ? mergeTrades(previous.trades, input.tradeSync.trades, 2026)
+  const snapshotYear = Number(input.source?.reportDate?.slice(0, 4) ?? new Date(input.generatedAt).getUTCFullYear());
+  const trades = input.tradeSync.status === "current"
+    ? mergeTrades(previous.trades, input.tradeSync.trades, snapshotYear)
     : previous.trades;
-  const lastSuccessfulTradeAt = currentTradeSync
+  const lastSuccessfulTradeAt = input.tradeSync.status === "current"
     ? trades[0]?.tradeTime ?? previous.tradeSync.lastSuccessfulTradeAt
     : previous.tradeSync.lastSuccessfulTradeAt;
 
@@ -224,5 +234,6 @@ export function buildPortfolioSnapshot(previous: PortfolioSnapshotV1, input: Sna
       lastSuccessfulTradeAt,
       message: input.tradeSync.status === "delayed" ? input.tradeSync.message : null,
     },
+    source: input.source ?? previous.source,
   };
 }

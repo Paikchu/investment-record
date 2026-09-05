@@ -43,6 +43,13 @@
       "when": 1787705388031,
       "tag": "0005_fresh_bloodaxe",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1788621093655,
+      "tag": "0006_gigantic_pepper_potts",
+      "breakpoints": true
     }
   ]
 }
