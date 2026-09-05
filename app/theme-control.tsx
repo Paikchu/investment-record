@@ -1,7 +1,7 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useEffect, useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const key = "max-investment-record:theme";
 type Mode = "system" | "light" | "dark";
@@ -27,9 +27,7 @@ export function useResolvedTheme() {
   return theme;
 }
 
-const ThemeContext = createContext<{ mode: Mode; choose: (value: string) => void } | null>(null);
-
-export function ThemeProvider({ children }: { children: ReactNode }) {
+export function ThemeControl() {
   const [mode, setMode] = useState<Mode>("system");
   useEffect(() => {
     let current: Mode = "system";
@@ -49,25 +47,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     window.addEventListener("max-theme-choice", chosen);
     return () => { media.removeEventListener("change", systemChanged); window.removeEventListener("storage", storageChanged); window.removeEventListener("max-theme-choice", chosen); };
   }, []);
-  const choose = (value: string) => {
+  return <div className="theme-toolbar"><Select value={mode} onValueChange={(value) => {
     if (!valid(value)) return;
     setMode(value);
     try { localStorage.setItem(key, value); } catch {}
     window.dispatchEvent(new CustomEvent("max-theme-choice", { detail: value }));
     apply(value);
-  };
-  return <ThemeContext.Provider value={{ mode, choose }}>{children}</ThemeContext.Provider>;
-}
-
-export function ThemeControl() {
-  const context = useContext(ThemeContext);
-  if (!context) throw new Error("ThemeControl requires ThemeProvider");
-  return <Select value={context.mode} onValueChange={context.choose}>
-    <SelectTrigger aria-label="外观主题" size="sm"><SelectValue /></SelectTrigger>
-    <SelectContent><SelectGroup>
-      <SelectItem value="system">跟随系统</SelectItem>
-      <SelectItem value="light">浅色</SelectItem>
-      <SelectItem value="dark">深色</SelectItem>
-    </SelectGroup></SelectContent>
-  </Select>;
+  }}><SelectTrigger aria-label="外观主题" size="sm"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="system">跟随系统</SelectItem><SelectItem value="light">浅色</SelectItem><SelectItem value="dark">深色</SelectItem></SelectContent></Select></div>;
 }
