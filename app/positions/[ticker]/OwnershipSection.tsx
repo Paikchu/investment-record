@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { OwnershipFeed } from "@/lib/ownership-service";
 
 type LoadState =
@@ -39,8 +41,8 @@ export function OwnershipSection({ ticker }: { ticker: string }) {
         {state.status === "ready" && state.feed.fetchedAt && <span className="ownership-updated">本次扫描 {formatDateTime(state.feed.fetchedAt)}</span>}
       </div>
 
-      {state.status === "loading" && <p className="ownership-state" role="status">正在检查最新披露…</p>}
-      {state.status === "error" && <p className="ownership-state ownership-state-error" role="alert">{state.message}</p>}
+      {state.status === "loading" && <div role="status" aria-label="正在检查最新披露" className="mt-4"><Skeleton className="h-24 w-full" /></div>}
+      {state.status === "error" && <Alert variant="destructive" className="mt-4"><AlertDescription>{state.message}</AlertDescription></Alert>}
       {state.status === "ready" && <OwnershipContent feed={state.feed} />}
     </section>
   );
@@ -58,7 +60,7 @@ function OwnershipContent({ feed }: { feed: OwnershipFeed }) {
 
   return (
     <>
-      {feed.status === "stale" && <p className="ownership-stale">{feed.error}</p>}
+      {feed.status === "stale" && <Alert className="mt-4"><AlertDescription>{feed.error}</AlertDescription></Alert>}
       <div className="ownership-composition-bar" aria-label={`${feed.ticker} 持仓结构占比`} role="img">
         {segments.map((segment) => segment.value !== null && <span className={`ownership-bar-segment ${segment.className}`} key={segment.key} style={{ width: `${segment.value}%` }} />)}
       </div>

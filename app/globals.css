@@ -1279,6 +1279,7 @@ td { font-size: 14px; }
 .option-contract { font: 600 14px/1 var(--serif); }
 
 .detail-shell {
+  --serif: var(--sans);
   width: min(1180px, calc(100% - 48px));
   min-height: 100vh;
   margin: 0 auto;
@@ -1304,8 +1305,8 @@ td { font-size: 14px; }
   align-items: flex-end;
   justify-content: space-between;
   gap: 40px;
-  border-top: 1px solid var(--ink);
-  border-bottom: 1px solid var(--ink);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
 .detail-hero h1 { font-size: clamp(46px, 6vw, 70px); }
@@ -1337,6 +1338,8 @@ td { font-size: 14px; }
 .detail-rsi i { color: var(--ink-muted); font-size: 11px; }
 
 .detail-section-nav {
+  gap: 6px;
+  padding: 10px 0;
   position: sticky;
   z-index: 8;
   top: 0;
@@ -1348,7 +1351,7 @@ td { font-size: 14px; }
 }
 
 .detail-section-nav::-webkit-scrollbar { display: none; }
-.detail-section-nav a {
+.detail-section-nav a:not([data-slot]) {
   min-width: max-content;
   min-height: 48px;
   padding: 0 22px;
@@ -1360,7 +1363,7 @@ td { font-size: 14px; }
   font-weight: 650;
   text-decoration: none;
 }
-.detail-section-nav a:first-child { padding-left: 0; }
+.detail-section-nav a:not([data-slot]):first-child { padding-left: 0; }
 .detail-section-nav a:hover,
 .detail-section-nav a:focus-visible { color: var(--ink); }
 .instrument-section,
@@ -1395,7 +1398,7 @@ td { font-size: 14px; }
   gap: 24px;
 }
 
-.instrument-section .table-wrap { margin-top: 16px; padding: 8px 0; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
+.instrument-section .table-wrap { margin-top: 16px; border: 1px solid var(--border); border-radius: var(--radius); }
 
 .no-position {
   margin-top: 30px;
@@ -1546,7 +1549,7 @@ td { font-size: 14px; }
 .sec-ai-note { padding-bottom: 3px; color: var(--ink-muted); font-size: 12px; }
 .sec-summary-pending,
 .sec-summary-error { margin: 0 0 14px; font-size: 14px; }
-.sec-full-report-ready > a {
+.sec-full-report-ready > a:not([data-slot]) {
   width: fit-content;
   padding-bottom: 3px;
   color: var(--ink);
@@ -1554,7 +1557,7 @@ td { font-size: 14px; }
   font: 650 13px/1.2 var(--sans);
   text-decoration: none;
 }
-.sec-full-report-ready > a:hover { color: var(--color-loss); border-color: var(--color-loss); }
+.sec-full-report-ready > a:not([data-slot]):hover { color: var(--color-loss); border-color: var(--color-loss); }
 
 .sec-report-shell {
   width: min(1280px, calc(100% - 40px));
@@ -2016,6 +2019,7 @@ td { font-size: 14px; }
     scrollbar-gutter: auto;
     touch-action: pan-y;
   }
+  .instrument-section [data-slot="table-container"] { overflow: visible; }
   .instrument-table {
     min-width: 0;
     display: block;

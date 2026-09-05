@@ -5,6 +5,12 @@ import Link from "next/link";
 
 import { SEC_SUMMARY_VERSION, type SecFilingFeed, type SecFilingWithSummary } from "@/lib/sec";
 
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+
 type LoadState =
   | { status: "loading" }
   | { status: "error"; message: string }
@@ -46,27 +52,25 @@ export function SecFilingsSection({ ticker }: { ticker: string }) {
         )}
       </div>
 
-      {state.status === "loading" && <p className="sec-state" role="status">正在读取 SEC 文件…</p>}
-      {state.status === "error" && <p className="sec-state sec-state-error" role="alert">{state.message}</p>}
+      {state.status === "loading" && <div role="status" aria-label="正在读取 SEC 文件" className="flex flex-col gap-3 mt-4"><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /></div>}
+      {state.status === "error" && <Alert variant="destructive" className="mt-4"><AlertDescription>{state.message}</AlertDescription></Alert>}
       {state.status === "ready" && (
         <>
           {state.feed.status === "not_applicable" && <p className="sec-state">该标的是 ETF，暂不提供公司型 10-K / 10-Q 解读。</p>}
           {state.feed.status === "unsupported" && <p className="sec-state">SEC 暂无该标的对应的 CIK，当前无法提供文件解读。</p>}
           {state.feed.status === "pending" && <p className="sec-state">后台正在准备 SEC 文件，完成后会自动显示在这里。</p>}
           {state.feed.status === "empty" && <p className="sec-state">最近没有 10-K、10-Q、8-K、20-F 或 6-K 文件。</p>}
-          {state.feed.status === "stale" && <p className="sec-stale">{state.feed.error}</p>}
+          {state.feed.status === "stale" && <Alert className="mt-4"><AlertDescription>{state.feed.error}</AlertDescription></Alert>}
           {state.feed.filings.length > 0 && (
-            <div className="sec-filing-list">
+            <Accordion type="single" collapsible value={openAccession ?? ""} onValueChange={setOpenAccession} className="mt-4">
               {state.feed.filings.map((filing, index) => (
                 <SecFilingCard
                   filing={filing}
                   isLatestPeriodic={isPeriodicFiling(filing.form) && !state.feed.filings.slice(0, index).some((candidate) => isPeriodicFiling(candidate.form))}
-                  isOpen={openAccession === filing.accessionNumber}
                   key={filing.accessionNumber}
-                  onToggle={() => setOpenAccession((current) => current === filing.accessionNumber ? null : filing.accessionNumber)}
                 />
               ))}
-            </div>
+            </Accordion>
           )}
         </>
       )}
@@ -77,33 +81,29 @@ export function SecFilingsSection({ ticker }: { ticker: string }) {
 function SecFilingCard({
   filing,
   isLatestPeriodic,
-  isOpen,
-  onToggle,
 }: {
   filing: SecFilingWithSummary;
   isLatestPeriodic: boolean;
-  isOpen: boolean;
-  onToggle: () => void;
 }) {
-  const panelId = `sec-filing-${filing.accessionNumber.replace(/[^A-Za-z0-9]/g, "")}`;
   return (
-    <article className="sec-filing-card">
-      <button aria-controls={panelId} aria-expanded={isOpen} onClick={onToggle} type="button">
-        <span className="sec-form-badge">{filing.form}</span>
+    <AccordionItem value={filing.accessionNumber}>
+      <AccordionTrigger>
+        <span className="flex min-w-0 flex-1 flex-wrap items-center gap-4">
+        <Badge variant="outline">{filing.form}</Badge>
         <span className="sec-filing-date"><strong>{formatDate(filing.filingDate)}</strong><small>申报日</small></span>
         <span className="sec-filing-description">
           <strong>{filing.description || formDescription(filing.form)}</strong>
           <small>{filing.reportDate ? `报告期 ${formatDate(filing.reportDate)}` : filing.items ? `事项 ${filing.items}` : "SEC filing"}</small>
         </span>
-        <span className="sec-disclosure" aria-hidden="true">{isOpen ? "−" : "+"}</span>
-      </button>
-      {isOpen && (
-        <div className="sec-filing-body" id={panelId}>
+        </span>
+      </AccordionTrigger>
+      <AccordionContent>
+        <div className="flex flex-col gap-4">
           <FilingSummary filing={filing} isLatestPeriodic={isLatestPeriodic} />
-          <a href={filing.indexUrl} rel="noopener noreferrer" target="_blank">查看 SEC EDGAR 原文 ↗</a>
+          <Button variant="outline" asChild className="self-start"><a href={filing.indexUrl} rel="noopener noreferrer" target="_blank">查看 SEC EDGAR 原文 ↗</a></Button>
         </div>
-      )}
-    </article>
+      </AccordionContent>
+    </AccordionItem>
   );
 }
 
@@ -112,7 +112,7 @@ function FilingSummary({ filing, isLatestPeriodic }: { filing: SecFilingWithSumm
     return (
       <div className="sec-summary sec-full-report-ready">
         <p className="sec-summary-headline">{filing.summary.headline || filing.analysis?.headline}</p>
-        <Link href={`/positions/${encodeURIComponent(filing.ticker)}/sec/${encodeURIComponent(filing.accessionNumber)}`}>阅读完整报告 →</Link>
+        <Button asChild className="justify-self-start"><Link href={`/positions/${encodeURIComponent(filing.ticker)}/sec/${encodeURIComponent(filing.accessionNumber)}`}>阅读完整报告 →</Link></Button>
         <small className="sec-ai-note">基于 SEC 原始申报 · {formatDateTime(filing.summary.generatedAt)}</small>
       </div>
     );

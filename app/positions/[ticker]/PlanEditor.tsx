@@ -4,6 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import type { HoldingPlanRecord } from "@/lib/holding-plan-store";
 import type { PlanAction } from "@/lib/holding-plan";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from "@/components/ui/select";
+import { Empty, EmptyHeader, EmptyDescription } from "@/components/ui/empty";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PlusIcon, ArrowUpIcon, ArrowDownIcon, Trash2Icon, LoaderCircleIcon } from "lucide-react";
+
 type EditableLevel = {
   id: string;
   action: PlanAction;
@@ -52,7 +62,7 @@ export function PlanEditor({
   const editVersionRef = useRef(0);
   const savingRef = useRef(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const saveRef = useRef<(automatic: boolean) => Promise<void>>();
+  const saveRef = useRef<((automatic: boolean) => Promise<void>) | undefined>(undefined);
 
   const markDirty = () => {
     editVersionRef.current += 1;
@@ -161,49 +171,49 @@ export function PlanEditor({
 
   return (
     <section className="plan-editor" id="plan-editor" aria-labelledby="plan-title">
-      <div className="detail-section-heading">
-        <h2 id="plan-title">持仓计划</h2>
-        {message && <p className={`save-status ${status}`} role="status">{message}</p>}
+      <div className="detail-section-heading"><h2 id="plan-title">持仓计划</h2>
+        {message && status !== "error" && !unavailable && <p className="text-sm text-muted-foreground" role="status">{message}</p>}
       </div>
-
-      <label className="field-block">
-        <span>持仓原因</span>
-        <textarea
-          value={holdingReason}
-          onChange={(event) => { setHoldingReason(event.target.value); markDirty(); }}
-          placeholder="为什么持有它？什么事实支持这个判断？"
-          maxLength={5_000}
-          rows={6}
-          disabled={unavailable}
-        />
-      </label>
-
-      <div className="levels-heading">
-        <div><h3>规划点位</h3><p>把价格、动作和触发条件写在决策发生之前。</p></div>
-        <button className="secondary-button" type="button" onClick={addLevel} disabled={unavailable || levels.length >= 20}>添加点位</button>
+      {(status === "error" || unavailable) && <Alert variant="destructive" className="mt-4"><AlertDescription>{message}</AlertDescription></Alert>}
+      <FieldGroup className="mt-5">
+        <Field data-disabled={unavailable}>
+          <FieldLabel htmlFor="holding-reason">持仓原因</FieldLabel>
+          <Textarea id="holding-reason" value={holdingReason} onChange={(event) => { setHoldingReason(event.target.value); markDirty(); }} placeholder="为什么持有它？什么事实支持这个判断？" maxLength={5_000} rows={6} className="min-h-36" disabled={unavailable} />
+        </Field>
+      </FieldGroup>
+      <div className="flex flex-wrap items-center justify-between gap-3 mt-8 mb-4">
+        <div><h3 className="font-medium">规划点位</h3><p className="text-sm text-muted-foreground mt-1">把价格、动作和触发条件写在决策发生之前。</p></div>
+        <Button variant="outline" type="button" onClick={addLevel} disabled={unavailable || levels.length >= 20}><PlusIcon data-icon="inline-start" />添加点位</Button>
       </div>
-
-      <div className="plan-levels">
+      <div className="flex flex-col gap-4">
         {levels.map((level, index) => (
-          <article className="plan-level" key={level.id}>
-            <div className="level-index">{String(index + 1).padStart(2, "0")}</div>
-            <label><span>动作</span><select value={level.action} onChange={(event) => updateLevel(level.id, { action: event.target.value as PlanAction })} disabled={unavailable}>{Object.entries(ACTION_LABELS).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
-            <label><span>目标价格</span><div className="price-input"><i>$</i><input value={level.price} onChange={(event) => updateLevel(level.id, { price: event.target.value })} inputMode="decimal" placeholder="0.00" disabled={unavailable} /></div></label>
-            <label><span>执行规模</span><input value={level.sizeNote} onChange={(event) => updateLevel(level.id, { sizeNote: event.target.value })} placeholder="20 股 / 目标 8%" maxLength={200} disabled={unavailable} /></label>
-            <label className="trigger-field"><span>触发条件</span><input value={level.triggerNote} onChange={(event) => updateLevel(level.id, { triggerNote: event.target.value })} placeholder="估值回落且基本面未变" maxLength={500} disabled={unavailable} /></label>
-            <div className="level-actions">
-              <button type="button" onClick={() => moveLevel(index, -1)} disabled={unavailable || index === 0} aria-label={`上移第 ${index + 1} 条点位`}>↑</button>
-              <button type="button" onClick={() => moveLevel(index, 1)} disabled={unavailable || index === levels.length - 1} aria-label={`下移第 ${index + 1} 条点位`}>↓</button>
-              <button type="button" onClick={() => removeLevel(level.id)} disabled={unavailable} aria-label={`删除第 ${index + 1} 条点位`}>删除</button>
+          <article className="rounded-xl border border-border bg-card p-4" key={level.id} aria-label={`第 ${index + 1} 条点位`}>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <span className="text-sm text-muted-foreground">点位 {String(index + 1).padStart(2, "0")}</span>
+              <div className="flex gap-1">
+                <Button variant="ghost" size="icon" type="button" onClick={() => moveLevel(index, -1)} disabled={unavailable || index === 0} aria-label={`上移第 ${index + 1} 条点位`}><ArrowUpIcon /></Button>
+                <Button variant="ghost" size="icon" type="button" onClick={() => moveLevel(index, 1)} disabled={unavailable || index === levels.length - 1} aria-label={`下移第 ${index + 1} 条点位`}><ArrowDownIcon /></Button>
+                <Button variant="destructive" size="icon" type="button" onClick={() => removeLevel(level.id)} disabled={unavailable} aria-label={`删除第 ${index + 1} 条点位`}><Trash2Icon /></Button>
+              </div>
             </div>
+            <FieldGroup className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Field data-disabled={unavailable}><FieldLabel htmlFor={`action-${level.id}`}>动作</FieldLabel>
+                <Select value={level.action} onValueChange={(value) => updateLevel(level.id, {action:value as PlanAction})} disabled={unavailable}>
+                  <SelectTrigger id={`action-${level.id}`} className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectGroup>{Object.entries(ACTION_LABELS).map(([value,label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectGroup></SelectContent>
+                </Select>
+              </Field>
+              <Field data-disabled={unavailable}><FieldLabel htmlFor={`price-${level.id}`}>目标价格</FieldLabel><InputGroup><InputGroupAddon>$</InputGroupAddon><InputGroupInput id={`price-${level.id}`} value={level.price} onChange={(event) => updateLevel(level.id, {price:event.target.value})} inputMode="decimal" placeholder="0.00" disabled={unavailable} /></InputGroup></Field>
+              <Field data-disabled={unavailable}><FieldLabel htmlFor={`size-${level.id}`}>执行规模</FieldLabel><Input id={`size-${level.id}`} value={level.sizeNote} onChange={(event) => updateLevel(level.id, {sizeNote:event.target.value})} placeholder="20 股 / 目标 8%" maxLength={200} disabled={unavailable} /></Field>
+              <Field data-disabled={unavailable}><FieldLabel htmlFor={`trigger-${level.id}`}>触发条件</FieldLabel><Input id={`trigger-${level.id}`} value={level.triggerNote} onChange={(event) => updateLevel(level.id, {triggerNote:event.target.value})} placeholder="估值回落且基本面未变" maxLength={500} disabled={unavailable} /></Field>
+            </FieldGroup>
           </article>
         ))}
-        {levels.length === 0 && <p className="plan-empty">尚未设置点位。可以先保存持仓原因，再逐步补充。</p>}
+        {levels.length === 0 && <Empty><EmptyHeader><EmptyDescription>尚未设置点位。可以先保存持仓原因，再逐步补充。</EmptyDescription></EmptyHeader></Empty>}
       </div>
-
-      <div className="plan-save-row">
-        <span>{holdingReason.length.toLocaleString("zh-CN")} / 5,000</span>
-        <button className="primary-button" type="button" onClick={() => void saveRef.current?.(false)} disabled={unavailable || status === "saving"}>{status === "saving" ? "保存中…" : "立即保存"}</button>
+      <div className="flex items-center justify-between gap-4 mt-5">
+        <span className="text-xs text-muted-foreground">{holdingReason.length.toLocaleString("zh-CN")} / 5,000</span>
+        <Button type="button" onClick={() => void saveRef.current?.(false)} disabled={unavailable || status === "saving"}>{status === "saving" && <LoaderCircleIcon data-icon="inline-start" className="animate-spin" />}{status === "saving" ? "保存中…" : "立即保存"}</Button>
       </div>
     </section>
   );

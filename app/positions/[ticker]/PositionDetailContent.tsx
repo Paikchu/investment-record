@@ -9,6 +9,12 @@ import { PlanEditor } from "./PlanEditor";
 import { SecFilingsSection } from "./SecFilingsSection";
 import { OwnershipSection } from "./OwnershipSection";
 
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+
 export type PositionPlanStatus = "ready" | "loading" | "unavailable";
 
 export function PositionDetailContent({
@@ -44,7 +50,7 @@ export function PositionDetailContent({
     <>
       <header className="detail-hero">
         <div>
-          <p className="detail-status">{position ? "当前持仓" : "未持有 · 预先规划"}</p>
+          <Badge variant="secondary">{position ? "当前持仓" : "未持有 · 预先规划"}</Badge>
           <h1 id="position-detail-title">{ticker}</h1>
           <p className="detail-company">{companyName}</p>
         </div>
@@ -63,17 +69,17 @@ export function PositionDetailContent({
                 <small>{quoteTime}</small>
               </>
             ) : (
-              <strong className="quote-unavailable">{activeQuoteStatus === "loading" ? "行情读取中" : "行情暂不可用"}</strong>
+              activeQuoteStatus === "loading" ? <Skeleton className="h-8 w-32" aria-label="行情读取中" /> : <span className="text-sm text-muted-foreground">行情暂不可用</span>
             )}
           </div>
         </div>
       </header>
 
       <nav className="detail-section-nav" aria-label="详情章节">
-        <a href="#position-structure">持仓构成</a>
-        <a href="#plan-editor">持仓计划</a>
-        <a href="#ownership-structure">股权结构</a>
-        <a href="#sec-filings">SEC 文件</a>
+        <Button variant="ghost" asChild><a href="#position-structure">持仓构成</a></Button>
+        <Button variant="ghost" asChild><a href="#plan-editor">持仓计划</a></Button>
+        <Button variant="ghost" asChild><a href="#ownership-structure">股权结构</a></Button>
+        <Button variant="ghost" asChild><a href="#sec-filings">SEC 文件</a></Button>
       </nav>
 
       {position ? (
@@ -89,18 +95,18 @@ export function PositionDetailContent({
           <section className="instrument-section" id="position-structure" aria-labelledby="instrument-title">
             <div className="detail-section-heading"><h2 id="instrument-title">持仓构成</h2></div>
             <div className="table-wrap">
-              <table className="instrument-table" aria-label={`${ticker} 正股与期权明细`}>
-                <thead><tr><th>类型</th><th>资产 / 合约</th><th>数量</th><th>现价</th><th>平均成本</th><th>实际成本</th><th>持仓成本</th><th>市值</th><th>权重</th><th>未实现盈亏</th></tr></thead>
-                <tbody>
-                  {position.stock && <tr><td className="instrument-type" data-label="类型"><span className="asset-pill stock-pill">正股</span></td><td className="instrument-name" data-label="资产 / 合约"><strong>{position.stock.name}</strong></td><td data-label="数量">{number(position.stock.quantity, 0, 4)}</td><td data-label="现价">{money(position.stock.price)}</td><td data-label="平均成本">{money(position.stock.averageCost)}</td><td data-label="实际成本">{money(position.stock.actualCost)}</td><td data-label="持仓成本">{money(position.stock.cost)}</td><td data-label="市值">{money(position.stock.value)}</td><td data-label="权重">{percent(position.stock.weight)}</td><td data-label="未实现盈亏" className={position.stock.unrealized < 0 ? "loss" : "gain"}>{money(position.stock.unrealized)}</td></tr>}
-                  {position.options.map((option) => <tr key={option.contract}><td className="instrument-type" data-label="类型"><span className="asset-pill option-pill">期权</span></td><td className="instrument-name" data-label="资产 / 合约"><strong className="option-contract">{option.contract}</strong></td><td data-label="数量">{number(option.quantity, 0, 4)}</td><td data-label="现价">{money(option.price)}</td><td data-label="平均成本">{money(option.averageCost)}</td><td className="muted" data-label="实际成本">—</td><td data-label="持仓成本">{money(option.cost)}</td><td data-label="市值">{money(option.marketValue)}</td><td data-label="权重">{percent(option.weight)}</td><td data-label="未实现盈亏" className={option.unrealized < 0 ? "loss" : "gain"}>{money(option.unrealized)}</td></tr>)}
-                </tbody>
-              </table>
+              <Table className="instrument-table" aria-label={`${ticker} 正股与期权明细`}>
+                <TableHeader><TableRow><TableHead>类型</TableHead><TableHead>资产 / 合约</TableHead><TableHead>数量</TableHead><TableHead>现价</TableHead><TableHead>平均成本</TableHead><TableHead>实际成本</TableHead><TableHead>持仓成本</TableHead><TableHead>市值</TableHead><TableHead>权重</TableHead><TableHead>未实现盈亏</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {position.stock && <TableRow><TableCell className="instrument-type" data-label="类型"><Badge variant="secondary">正股</Badge></TableCell><TableCell className="instrument-name" data-label="资产 / 合约"><strong>{position.stock.name}</strong></TableCell><TableCell data-label="数量">{number(position.stock.quantity, 0, 4)}</TableCell><TableCell data-label="现价">{money(position.stock.price)}</TableCell><TableCell data-label="平均成本">{money(position.stock.averageCost)}</TableCell><TableCell data-label="实际成本">{money(position.stock.actualCost)}</TableCell><TableCell data-label="持仓成本">{money(position.stock.cost)}</TableCell><TableCell data-label="市值">{money(position.stock.value)}</TableCell><TableCell data-label="权重">{percent(position.stock.weight)}</TableCell><TableCell data-label="未实现盈亏" className={position.stock.unrealized < 0 ? "loss" : "gain"}>{money(position.stock.unrealized)}</TableCell></TableRow>}
+                  {position.options.map((option) => <TableRow key={option.contract}><TableCell className="instrument-type" data-label="类型"><Badge variant="outline">期权</Badge></TableCell><TableCell className="instrument-name" data-label="资产 / 合约"><strong className="option-contract">{option.contract}</strong></TableCell><TableCell data-label="数量">{number(option.quantity, 0, 4)}</TableCell><TableCell data-label="现价">{money(option.price)}</TableCell><TableCell data-label="平均成本">{money(option.averageCost)}</TableCell><TableCell className="muted" data-label="实际成本">—</TableCell><TableCell data-label="持仓成本">{money(option.cost)}</TableCell><TableCell data-label="市值">{money(option.marketValue)}</TableCell><TableCell data-label="权重">{percent(option.weight)}</TableCell><TableCell data-label="未实现盈亏" className={option.unrealized < 0 ? "loss" : "gain"}>{money(option.unrealized)}</TableCell></TableRow>)}
+                </TableBody>
+              </Table>
             </div>
           </section>
         </>
       ) : (
-        <section className="no-position" id="position-structure"><strong>暂无持仓数据</strong><span>这份计划不会写入 IBKR 账本；建立持仓后，快照数据会自动出现在这里。</span></section>
+        <section id="position-structure" className="mt-6"><Empty><EmptyHeader><EmptyTitle>暂无持仓数据</EmptyTitle><EmptyDescription>这份计划不会写入 IBKR 账本；建立持仓后，快照数据会自动出现在这里。</EmptyDescription></EmptyHeader></Empty></section>
       )}
 
       {planStatus === "loading" ? (
@@ -108,7 +114,7 @@ export function PositionDetailContent({
           <div className="detail-section-heading">
             <h2 id="plan-loading-title">持仓计划</h2>
           </div>
-          <p role="status">正在读取计划…</p>
+          <div role="status" aria-label="正在读取计划" className="mt-4"><Skeleton className="h-36 w-full" /></div>
         </section>
       ) : (
         <PlanEditor

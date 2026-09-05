@@ -4,6 +4,7 @@ import { getHoldingPlan, type HoldingPlanRecord } from "@/lib/holding-plan-store
 import { findSecurity, portfolioViewModel } from "@/lib/site-data";
 import { normalizeTicker } from "@/lib/symbol-directory";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
 import { PositionDetailContent } from "./PositionDetailContent";
 
@@ -25,7 +26,7 @@ export default async function PositionPage({ params }: { params: Promise<{ ticke
 
   return (
     <main className="detail-shell">
-      <Link className="back-link" href="/#ledger-title">← 返回投资账本</Link>
+      <Button variant="ghost" asChild className="mb-4"><Link href="/#ledger-title">← 返回投资账本</Link></Button>
       <PositionDetailContent
         companyName={security.name}
         plan={plan}
