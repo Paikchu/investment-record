@@ -3,12 +3,13 @@
 import type { ReactNode, CSSProperties } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, History, Building2, Workflow, CircleFadingPlus } from "lucide-react";
-import { ThemeControl } from "@/app/theme-control";
+import { Home, History, Building2, Workflow, CircleFadingPlus, Palette, UserRound, MoreVertical } from "lucide-react";
+import { ThemeControl, ThemeProvider } from "@/app/theme-control";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
-  SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
+  SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   SidebarProvider, SidebarInset, SidebarTrigger, useSidebar,
 } from "@/components/ui/sidebar";
 
@@ -36,13 +37,27 @@ function AppSidebar() {
         </SidebarMenuButton></SidebarMenuItem>;
       })}</SidebarMenu></nav>
     </SidebarGroupContent></SidebarGroup></SidebarContent>
+    <SidebarFooter>
+      <div className="flex items-center justify-between gap-2 px-2 py-2">
+        <span className="flex items-center gap-2 text-sm"><Palette className="size-4" />外观</span>
+        <ThemeControl />
+      </div>
+      <div className="flex items-center gap-2 rounded-lg p-2" aria-label="默认用户占位">
+        <Avatar className="rounded-lg"><AvatarFallback className="rounded-lg"><UserRound className="size-4" /></AvatarFallback></Avatar>
+        <div className="grid min-w-0 flex-1 gap-1 text-left text-sm leading-tight">
+          <span className="truncate font-semibold">User</span>
+          <span className="truncate text-xs text-muted-foreground">user@example.com</span>
+        </div>
+        <MoreVertical className="size-4 text-muted-foreground" aria-hidden="true" />
+      </div>
+    </SidebarFooter>
   </Sidebar>;
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const title = items.find((item) => item.href === pathname)?.title ?? "首页";
-  return <SidebarProvider style={{ "--sidebar-width": "calc(var(--spacing) * 72)", "--header-height": "calc(var(--spacing) * 12)" } as CSSProperties}>
+  return <ThemeProvider><SidebarProvider style={{ "--sidebar-width": "calc(var(--spacing) * 72)", "--header-height": "calc(var(--spacing) * 12)" } as CSSProperties}>
     <AppSidebar />
     <SidebarInset className="min-w-0">
       <header className="app-toolbar flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">
@@ -50,10 +65,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           <SidebarTrigger className="-ml-1" aria-label="展开或收起侧栏" />
           <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
           <span className="text-base font-medium">{title}</span>
-          <div className="ml-auto flex items-center gap-2"><ThemeControl /></div>
         </div>
       </header>
       {children}
     </SidebarInset>
-  </SidebarProvider>;
+  </SidebarProvider></ThemeProvider>;
 }
