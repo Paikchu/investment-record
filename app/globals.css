@@ -1312,10 +1312,6 @@ td { font-size: 14px; }
 .detail-status { margin: 0 0 5px; color: var(--ink-muted); font-size: 12px; font-weight: 650; }
 .detail-company { max-width: 640px; margin: 7px 0 0; color: var(--ink-muted); font-size: 13px; }
 
-.snapshot-note { min-width: 170px; display: grid; gap: 3px; text-align: right; }
-.snapshot-note span { color: var(--ink-muted); font-size: 12px; }
-.snapshot-note strong { font: 600 14px/1.2 var(--serif); }
-
 .detail-market-panel {
   min-width: 190px;
   display: grid;
@@ -2067,7 +2063,6 @@ td { font-size: 14px; }
   .detail-section-nav { margin-inline: -12px; padding-inline: 12px; }
   .detail-market-panel { min-width: 0; justify-items: start; }
   .detail-quote { justify-items: start; text-align: left; }
-  .snapshot-note { min-width: 0; text-align: left; }
   .position-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 16px; }
   .position-summary strong { font-size: 17px; }
   .instrument-section,

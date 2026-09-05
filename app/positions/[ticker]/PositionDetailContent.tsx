@@ -15,7 +15,6 @@ export function PositionDetailContent({
   ticker,
   companyName,
   position,
-  snapshotTime,
   plan,
   planStatus = "ready",
   quote,
@@ -25,7 +24,6 @@ export function PositionDetailContent({
   ticker: string;
   companyName: string;
   position?: PositionGroupView;
-  snapshotTime: string;
   plan: HoldingPlanRecord | null;
   planStatus?: PositionPlanStatus;
   quote?: MarketQuote;
@@ -52,7 +50,7 @@ export function PositionDetailContent({
         </div>
         <div className="detail-market-panel">
           <div className="detail-quote" aria-live="polite">
-            <span>Yahoo Finance · 股价</span>
+            <span>股价</span>
             {activeQuote ? (
               <>
                 <strong>{money(activeQuote.price)}</strong>
@@ -68,7 +66,6 @@ export function PositionDetailContent({
               <strong className="quote-unavailable">{activeQuoteStatus === "loading" ? "行情读取中" : "行情暂不可用"}</strong>
             )}
           </div>
-          <div className="snapshot-note"><span>IBKR 快照</span><strong>{snapshotTime}</strong></div>
         </div>
       </header>
 

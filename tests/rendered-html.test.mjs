@@ -477,7 +477,7 @@ test("uses independent position routes and removes the workspace dialog", async 
   await assert.rejects(access(new URL("app/PositionDetailDialog.tsx", projectRoot)));
 });
 
-test("renders Yahoo price and daily change surfaces without changing ledger calculations", async () => {
+test("renders price and daily change surfaces without source or snapshot labels", async () => {
   const [response, detail] = await Promise.all([
     render(),
     readFile(new URL("../app/positions/[ticker]/PositionDetailContent.tsx", import.meta.url), "utf8"),
@@ -488,7 +488,8 @@ test("renders Yahoo price and daily change surfaces without changing ledger calc
   assert.match(detail, /activeQuote\.changePercent/);
   assert.match(detail, /RSI 14/);
   assert.match(detail, /activeQuote\.rsi14/);
-  assert.match(detail, /Yahoo Finance/);
+  assert.match(detail, /<span>股价<\/span>/);
+  assert.doesNotMatch(detail, /Yahoo Finance|IBKR 快照|snapshotTime/);
   assert.match(detail, /行情暂不可用/);
   assert.doesNotMatch(detail, /position\.value\s*=\s*quote|position\.unrealized\s*=\s*quote/);
 });
