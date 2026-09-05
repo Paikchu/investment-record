@@ -33,37 +33,32 @@ test("server-renders the investment record", async () => {
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/i);
 });
 
-test("uses same-page navigation without retired sections", async () => {
+test("starts directly with the portfolio without a header or retired sections", async () => {
   const html = await (await render()).text();
-  assert.match(html, /<header class="site-header"/);
-  assert.match(html, /href="\/#portfolio-title"[^>]*>投资组合</);
-  assert.match(html, /href="\/#ledger-title"[^>]*>投资账本</);
+  assert.doesNotMatch(html, /class="site-header"|class="site-primary-nav"|class="profile-menu"/);
   assert.doesNotMatch(html, /每日复盘|每日投资复盘|今日宏观经济|昨日收盘总结|id="review-panel"/);
   assert.match(html, /id="portfolio-panel"[^>]*role="region"/);
-  assert.equal((html.match(/<header class="site-header"/g) ?? []).length, 1);
+  assert.match(html, /<h1 id="portfolio-title">投资组合<\/h1>/);
 });
 
-test("opens device-local net deposit settings from the profile menu", async () => {
-  const [response, header, dashboard, dialog, css] = await Promise.all([
+test("opens device-local net deposit settings beside the portfolio title", async () => {
+  const [response, dashboard, dialog, css] = await Promise.all([
     render(),
-    readFile(new URL("../app/site-header.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/investment-settings-dialog.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
   const html = await response.text();
 
-  assert.match(html, /class="profile-menu"/);
-  assert.match(html, /aria-label="打开账户菜单"/);
+  assert.match(html, /class="portfolio-title-row"[^]*?<h1[^]*?投资组合[^]*?class="portfolio-settings"/);
   assert.match(html, />设置</);
   assert.match(html, /class="settings-dialog"/);
   assert.match(html, /当前净入金/);
-  assert.match(header, /onOpenSettings/);
+  assert.match(dashboard, /onOpenSettings=\{\(\) => setSettingsOpen\(true\)\}/);
   assert.match(dashboard, /localStorage\.getItem\(NET_DEPOSITS_STORAGE_KEY\)/);
   assert.match(dashboard, /localStorage\.setItem\(NET_DEPOSITS_STORAGE_KEY, String\(value\)\)/);
   assert.match(dashboard, /const configuredTotalPnl = netLiquidation - configuredNetDeposits/);
   assert.match(dialog, /type="number"/);
-  assert.match(css, /\.profile-menu \{[^}]*margin-left: auto;[^}]*position: relative;/s);
   assert.match(css, /\.settings-dialog \{[^}]*position: fixed;[^}]*width: min\(440px,/s);
 });
 
@@ -93,10 +88,9 @@ test("rejects anonymous access to accession-specific SEC reports", async () => {
 });
 
 test("removes the disposable starter preview", async () => {
-  const [page, dashboard, siteHeader, layout, packageJson, viewModel] = await Promise.all([
+  const [page, dashboard, layout, packageJson, viewModel] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/site-header.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("../lib/portfolio-view-model.ts", import.meta.url), "utf8"),
@@ -123,8 +117,7 @@ test("removes the disposable starter preview", async () => {
   assert.doesNotMatch(page, /const optionContracts = \[/);
   assert.doesNotMatch(page, /const recentTrades = \[/);
   assert.doesNotMatch(page, /holding\.weight \/ 31\.12/);
-  assert.match(dashboard, /<SiteHeader onOpenSettings=/);
-  assert.match(siteHeader, /<header className="site-header"/);
+  assert.doesNotMatch(dashboard, /SiteHeader/);
   assert.match(dashboard, /<section className="portfolio-overview"/);
   assert.doesNotMatch(page, /masthead|SnapshotNotice|className="(?:eyebrow|kicker)"/);
   assert.match(layout, /lang="zh-CN"/);

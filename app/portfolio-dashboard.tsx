@@ -18,7 +18,6 @@ import type { PositionGroupView } from "@/lib/portfolio-view-model";
 import { AddPlanDialog } from "./AddPlanDialog";
 import { InvestmentSettingsDialog } from "./investment-settings-dialog";
 import { PortfolioHeatmap } from "./portfolio-heatmap";
-import { SiteHeader } from "./site-header";
 import { useMarketQuotes, type QuoteLoadStatus } from "./use-market-quotes";
 import type { MarketQuoteMap } from "@/lib/yahoo-quotes";
 
@@ -42,6 +41,7 @@ function PortfolioOverview({
   optionMarketValue,
   nextEarnings,
   nextEarningsReminder,
+  onOpenSettings,
 }: {
   netLiquidation: number;
   totalPnl: number;
@@ -55,12 +55,16 @@ function PortfolioOverview({
   optionMarketValue: number;
   nextEarnings?: EarningsEvent;
   nextEarningsReminder: ReturnType<typeof buildEarningsReminder> | null;
+  onOpenSettings: () => void;
 }) {
   return (
     <section className="portfolio-overview" aria-labelledby="portfolio-title">
       <div className="hero">
         <div className="portfolio-heading">
-          <h1 id="portfolio-title">投资组合</h1>
+          <div className="portfolio-title-row">
+            <h1 id="portfolio-title">投资组合</h1>
+            <button type="button" className="portfolio-settings" onClick={onOpenSettings}>设置</button>
+          </div>
           <span className="summary-nav-label">当前净值</span>
           <strong className="summary-nav-value">{money(netLiquidation)}</strong>
           <span className="summary-pnl-label">累计盈亏</span>
@@ -470,8 +474,6 @@ export function PortfolioDashboard({
 
   return (
     <>
-      <SiteHeader onOpenSettings={() => setSettingsOpen(true)} />
-
       <div id="portfolio-panel" role="region" aria-labelledby="portfolio-title">
         <PortfolioOverview
           netLiquidation={netLiquidation}
@@ -486,6 +488,7 @@ export function PortfolioDashboard({
           optionMarketValue={optionMarketValue}
           nextEarnings={nextEarnings}
           nextEarningsReminder={nextEarningsReminder}
+          onOpenSettings={() => setSettingsOpen(true)}
         />
         <section className="lower-grid portfolio-analysis">
           <aside className="allocation-panel">
