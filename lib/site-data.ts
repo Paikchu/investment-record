@@ -18,7 +18,6 @@ export const symbolSearchEntries = [
 ];
 
 export async function currentPortfolioSnapshot(): Promise<PortfolioSnapshotV1> {
-  if (!("WebSocketPair" in globalThis)) return portfolioSnapshot;
   try {
     return await readPortfolioSnapshot(await getD1());
   } catch {
