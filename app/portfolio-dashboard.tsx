@@ -61,22 +61,30 @@ function PortfolioOverview({
     <section className="portfolio-overview" aria-labelledby="portfolio-title">
       <div className="hero">
         <div className="portfolio-heading">
-          <div className="portfolio-title-row">
-            <h1 id="portfolio-title">投资组合</h1>
-            <button type="button" className="portfolio-settings" onClick={onOpenSettings}>设置</button>
-          </div>
-          <span className="summary-nav-label">当前净值</span>
+          <h1 className="summary-nav-label" id="portfolio-title">当前净值</h1>
           <strong className="summary-nav-value">{money(netLiquidation)}</strong>
-          <span className="summary-pnl-label">累计盈亏</span>
-          <strong className={`summary-pnl ${totalPnl < 0 ? "loss" : totalPnl > 0 ? "gain" : "muted"}`}>
-            {money(totalPnl, true)} <i>{percent(totalPnlRate, true)}</i>
-          </strong>
+          <div className="summary-return">
+            <span className="summary-pnl-label">累计盈亏</span>
+            <strong className={`summary-pnl ${totalPnl < 0 ? "loss" : totalPnl > 0 ? "gain" : "muted"}`}>
+              {money(totalPnl, true)} <i>{percent(totalPnlRate, true)}</i>
+            </strong>
+          </div>
         </div>
         <div className="summary-support" aria-label="组合摘要">
           <article><span>持仓净市值</span><strong>{money(netPositionsValue)}</strong></article>
           <article><span>现金</span><strong>{money(cashBalance)}</strong></article>
           <article><span>杠杆率</span><strong>{number(portfolioLeverage, 2, 2)}x</strong></article>
-          <article><span>净入金</span><strong>{money(netDeposits)}</strong></article>
+          <article>
+            <div className="summary-metric-label">
+              <span>净入金</span>
+              <button type="button" className="deposit-edit" onClick={onOpenSettings} aria-label="调整净入金" title="调整净入金">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="m16 3 5 5-12 12-6 1 1-6L16 3Z" /><path d="m13 6 5 5" />
+                </svg>
+              </button>
+            </div>
+            <strong>{money(netDeposits)}</strong>
+          </article>
         </div>
       </div>
       <section className="header-position-summary" aria-label="持仓摘要">

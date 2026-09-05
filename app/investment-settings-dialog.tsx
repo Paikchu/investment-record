@@ -49,7 +49,7 @@ export function InvestmentSettingsDialog({
     >
       <form className="settings-card" onSubmit={submit}>
         <div className="settings-heading">
-          <div><span>投资口径</span><h2>设置</h2></div>
+          <div><h2>调整净入金</h2></div>
           <button type="button" onClick={onClose} aria-label="关闭设置">×</button>
         </div>
         <p className="settings-copy">净入金用于计算累计盈亏和收益率。该设置仅保存在当前设备，不会修改 IBKR 持仓。</p>
@@ -59,7 +59,7 @@ export function InvestmentSettingsDialog({
         </label>
         <div className="settings-actions">
           <button className="settings-cancel" type="button" onClick={onClose}>取消</button>
-          <button className="settings-save" type="submit">保存设置</button>
+          <button className="settings-save" type="submit">保存</button>
         </div>
       </form>
     </dialog>

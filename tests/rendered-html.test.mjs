@@ -24,7 +24,7 @@ test("server-renders the investment record", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>MAX · 投资记录<\/title>/i);
-  assert.match(html, /投资组合/);
+  assert.match(html, /当前净值/);
   assert.match(html, new RegExp(`\\$${snapshot.account.netLiquidation.toLocaleString("en-US", { minimumFractionDigits: 2 })}`.replace(".", "\\.")));
   assert.doesNotMatch(html, /IBKR 数据更新|数据源：IBKR|实际持仓成本\s*=|AI 生成|AI 分析|由 AI/i);
   assert.doesNotMatch(html, />交易(?:<|\s)/);
@@ -38,10 +38,10 @@ test("starts directly with the portfolio without a header or retired sections", 
   assert.doesNotMatch(html, /class="site-header"|class="site-primary-nav"|class="profile-menu"/);
   assert.doesNotMatch(html, /每日复盘|每日投资复盘|今日宏观经济|昨日收盘总结|id="review-panel"/);
   assert.match(html, /id="portfolio-panel"[^>]*role="region"/);
-  assert.match(html, /<h1 id="portfolio-title">投资组合<\/h1>/);
+  assert.match(html, /<h1 class="summary-nav-label" id="portfolio-title">当前净值<\/h1>/);
 });
 
-test("opens device-local net deposit settings beside the portfolio title", async () => {
+test("opens net deposit editing beside its metric", async () => {
   const [response, dashboard, dialog, css] = await Promise.all([
     render(),
     readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
@@ -50,8 +50,9 @@ test("opens device-local net deposit settings beside the portfolio title", async
   ]);
   const html = await response.text();
 
-  assert.match(html, /class="portfolio-title-row"[^]*?<h1[^]*?投资组合[^]*?class="portfolio-settings"/);
-  assert.match(html, />设置</);
+  assert.match(html, /class="summary-metric-label"[^]*?净入金[^]*?class="deposit-edit"[^]*?aria-label="调整净入金"/);
+  assert.match(html, />调整净入金</);
+  assert.doesNotMatch(html, />投资组合<|portfolio-settings|portfolio-title-row/);
   assert.match(html, /class="settings-dialog"/);
   assert.match(html, /当前净入金/);
   assert.match(dashboard, /onOpenSettings=\{\(\) => setSettingsOpen\(true\)\}/);
@@ -96,7 +97,7 @@ test("removes the disposable starter preview", async () => {
     readFile(new URL("../lib/portfolio-view-model.ts", import.meta.url), "utf8"),
   ]);
 
-  assert.match(dashboard, /投资组合/);
+  assert.match(dashboard, /当前净值/);
   assert.match(dashboard, /<div className="hero">/);
   assert.match(dashboard, /className="portfolio-heading"/);
   assert.match(dashboard, /className="summary-support"/);
@@ -142,7 +143,7 @@ test("uses the approved ledger-dominant hierarchy without horizontal scrolling",
   assert.doesNotMatch(css, /min-width:\s*900px/);
   assert.match(css, /\.position-scroll \{[\s\S]*?overflow-x: visible;/);
   assert.match(css, /\.hero \{[\s\S]*?grid-template-columns: minmax\(300px, \.75fr\) minmax\(0, 1\.25fr\);/);
-  assert.match(css, /\.summary-nav-value \{[\s\S]*?font-size: clamp\(36px, 4vw, 44px\);/);
+  assert.match(css, /\.summary-nav-value \{[\s\S]*?font-size: clamp\(40px, 4vw, 50px\);/);
   assert.match(css, /\.header-position-summary \{[\s\S]*?grid-template-columns: minmax\(110px, \.65fr\) minmax\(110px, \.65fr\) minmax\(190px, 1fr\) minmax\(280px, 1\.8fr\);/);
   assert.match(css, /h2 \{[\s\S]*?font: 600 22px\/1\.1 var\(--serif\);/);
   assert.doesNotMatch(css, /\.portfolio-header \{[^}]*background:/);
@@ -520,7 +521,7 @@ test("keeps the portfolio overview dense across desktop and tablet widths", asyn
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 
   assert.match(css, /\.hero \{[^}]*min-height: 0;[^}]*grid-template-columns: minmax\(300px, \.75fr\) minmax\(0, 1\.25fr\);/s);
-  assert.match(css, /\.summary-nav-value \{[^}]*font-size: clamp\(36px, 4vw, 44px\);/s);
+  assert.match(css, /\.summary-nav-value \{[^}]*font-size: clamp\(40px, 4vw, 50px\);/s);
   assert.match(css, /\.summary-support \{[^}]*grid-template-columns: repeat\(4, minmax\(110px, 1fr\)\);/s);
 
   const tabletCss = css.match(/@media \(max-width: 820px\) \{([\s\S]*?)\n\}/)?.[1] ?? "";
