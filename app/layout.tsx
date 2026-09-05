@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import "./globals.css";
-import { AppShell } from "@/components/app-shell";
+import { ThemeControl } from "./theme-control";
 import { themeScript } from "@/lib/theme-script";
 
 export const viewport: Viewport = {
@@ -47,7 +47,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: themeScript }} /></head>
-      <body><AppShell>{children}</AppShell></body>
+      <body><ThemeControl />{children}</body>
     </html>
   );
 }
