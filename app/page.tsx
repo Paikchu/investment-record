@@ -1,7 +1,5 @@
 import earningsData from "@/data/earnings-calendar.json";
-import dailyReviewData from "@/data/daily-portfolio-review.json";
 import snapshotData from "@/data/portfolio-snapshot.json";
-import type { DailyPortfolioReviewV1 } from "@/lib/daily-portfolio-review";
 import type { EarningsCalendarSnapshot } from "@/lib/earnings-calendar";
 import { buildHeatmapHoldings } from "@/lib/portfolio-heatmap";
 import type { PortfolioSnapshotV1 } from "@/lib/portfolio-snapshot";
@@ -10,7 +8,6 @@ import { PortfolioDashboard } from "./portfolio-dashboard";
 
 const snapshot = snapshotData as PortfolioSnapshotV1;
 const earnings = earningsData as EarningsCalendarSnapshot;
-const dailyReview = dailyReviewData as DailyPortfolioReviewV1;
 const heatmapHoldings = buildHeatmapHoldings(snapshot);
 const portfolio = buildPortfolioViewModel(snapshot);
 const optionUnrealizedPnl = snapshot.positions
@@ -26,7 +23,6 @@ export default function Home() {
       <a className="skip-link" href="#main-content">跳到主要内容</a>
       <main className="page-shell" id="main-content">
         <PortfolioDashboard
-          dailyReview={dailyReview}
           heatmapHoldings={heatmapHoldings}
           positionGroups={portfolio.positionGroups}
           stockMarketValue={portfolio.stockMarketValue}

@@ -12,7 +12,6 @@ import {
   type SortDirection,
 } from "@/lib/portfolio-dashboard";
 import { buildEarningsReminder, isUpcomingEarnings, type EarningsEvent } from "@/lib/earnings-calendar";
-import type { DailyPortfolioReviewV1 } from "@/lib/daily-portfolio-review";
 import { money, number, percent } from "@/lib/portfolio-format";
 import { heatmapThemeColor, type HeatmapHolding } from "@/lib/portfolio-heatmap";
 import type { PositionGroupView } from "@/lib/portfolio-view-model";
@@ -23,7 +22,6 @@ import { SiteHeader } from "./site-header";
 import { useMarketQuotes, type QuoteLoadStatus } from "./use-market-quotes";
 import type { MarketQuoteMap } from "@/lib/yahoo-quotes";
 
-type DashboardView = "portfolio" | "review";
 const NET_DEPOSITS_STORAGE_KEY = "max-investment-record:net-deposits";
 
 function Pnl({ value }: { value: number }) {
@@ -105,52 +103,6 @@ function PositionReminder({ event, asOf }: { event?: EarningsEvent; asOf: string
       <strong>{reminder.releaseDateLabel} · {reminder.sessionLabel}</strong>
       <small>北京{reminder.viewDateLabel}{reminder.viewTimeLabel} · {reminder.countdownLabel}</small>
     </span>
-  );
-}
-
-function DailyPortfolioReview({ review }: { review: DailyPortfolioReviewV1 }) {
-  const reviewTime = new Intl.DateTimeFormat("zh-CN", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "Asia/Shanghai",
-  }).format(new Date(review.generatedAt));
-
-  return (
-    <section className="daily-review" aria-labelledby="daily-review-title">
-      <div className="daily-review-heading">
-        <div>
-          <span>每日投资复盘</span>
-          <h2 id="daily-review-title">{review.headline}</h2>
-        </div>
-        <time dateTime={review.generatedAt}>{reviewTime}</time>
-      </div>
-      <p className="daily-review-summary">{review.summary}</p>
-      <div className="daily-review-grid">
-        <div>
-          <h3>关键驱动</h3>
-          <ol className="review-driver-list">
-            {review.drivers.map((driver) => (
-              <li key={driver.title}>
-                <strong>{driver.title}</strong>
-                <p>{driver.detail}</p>
-                <span>{driver.implication}</span>
-                {driver.tickers.length > 0 && <small>{driver.tickers.join(" · ")}</small>}
-              </li>
-            ))}
-          </ol>
-        </div>
-        <aside>
-          <h3>观察清单</h3>
-          <ul className="review-watch-list">
-            {review.watchItems.map((item) => <li key={item.label}><strong>{item.label}</strong><span>{item.detail}</span></li>)}
-          </ul>
-          <details className="review-sources">
-            <summary>来源 {review.sources.length}</summary>
-            <ul>{review.sources.map((source) => <li key={source.url}><a href={source.url} rel="noreferrer" target="_blank">{source.title}</a></li>)}</ul>
-          </details>
-        </aside>
-      </div>
-    </section>
   );
 }
 
@@ -437,57 +389,7 @@ function PositionLedger({
   );
 }
 
-export function PortfolioLedgerPage({
-  positionGroups,
-  earningsEvents,
-}: {
-  positionGroups: PositionGroupView[];
-  earningsEvents: EarningsEvent[];
-}) {
-  const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
-  const quoteSymbols = useMemo(() => positionGroups.map((group) => group.symbol).join(","), [positionGroups]);
-  const quoteState = useMarketQuotes(quoteSymbols);
-  const [earningsAsOf] = useState(() => new Date().toISOString());
-  const positionSymbols = useMemo(() => new Set(positionGroups.map((group) => group.symbol)), [positionGroups]);
-  const earningsBySymbol = useMemo(() => {
-    const events = new Map<string, EarningsEvent>();
-    for (const event of earningsEvents) {
-      if (
-        positionSymbols.has(event.symbol) &&
-        isUpcomingEarnings(event, earningsAsOf) &&
-        !events.has(event.symbol)
-      ) events.set(event.symbol, event);
-    }
-    return events;
-  }, [earningsAsOf, earningsEvents, positionSymbols]);
-
-  return (
-    <>
-      <SiteHeader active="ledger" />
-      <section className="ledger-panel ledger-page" aria-labelledby="ledger-title">
-        <div className="ledger-heading">
-          <h1 id="ledger-title">投资账本</h1>
-          <AddPlanDialog />
-        </div>
-        <div className="section-divider" aria-hidden="true" />
-        <div className="ledger-content">
-          <PositionLedger
-            groups={positionGroups}
-            activeSymbol={activeSymbol}
-            onActiveSymbolChange={setActiveSymbol}
-            quotes={quoteState.quotes}
-            quoteStatus={quoteState.status}
-            earningsBySymbol={earningsBySymbol}
-            earningsUpdatedAt={earningsAsOf}
-          />
-        </div>
-      </section>
-    </>
-  );
-}
-
 export function PortfolioDashboard({
-  dailyReview,
   heatmapHoldings,
   positionGroups,
   stockMarketValue,
@@ -500,7 +402,6 @@ export function PortfolioDashboard({
   netDeposits,
   cashBalance,
 }: {
-  dailyReview: DailyPortfolioReviewV1;
   heatmapHoldings: HeatmapHolding[];
   positionGroups: PositionGroupView[];
   stockMarketValue: number;
@@ -513,7 +414,6 @@ export function PortfolioDashboard({
   netDeposits: number;
   cashBalance: number;
 }) {
-  const [activeView, setActiveView] = useState<DashboardView>("portfolio");
   const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
   const [configuredNetDeposits, setConfiguredNetDeposits] = useState(netDeposits);
   const [settingsOpen, setSettingsOpen] = useState(() => (
@@ -521,6 +421,20 @@ export function PortfolioDashboard({
   ));
   const [earningsAsOf] = useState(() => new Date().toISOString());
   const positionSymbols = useMemo(() => new Set(positionGroups.map((group) => group.symbol)), [positionGroups]);
+  const quoteSymbols = useMemo(() => positionGroups.map((group) => group.symbol).join(","), [positionGroups]);
+  const quoteState = useMarketQuotes(quoteSymbols);
+  const earningsBySymbol = useMemo(() => {
+    const events = new Map<string, EarningsEvent>();
+    for (const event of earningsEvents) {
+      if (
+        positionSymbols.has(event.symbol) &&
+        isUpcomingEarnings(event, earningsAsOf) &&
+        !events.has(event.symbol)
+      ) events.set(event.symbol, event);
+    }
+    return events;
+  }, [earningsAsOf, earningsEvents, positionSymbols]);
+
   const nextEarnings = earningsEvents.find((event) => (
     positionSymbols.has(event.symbol) && isUpcomingEarnings(event, earningsAsOf)
   ));
@@ -540,24 +454,14 @@ export function PortfolioDashboard({
   }, [netDeposits]);
 
   useEffect(() => {
-    const syncViewFromUrl = () => {
-      setActiveView(new URLSearchParams(window.location.search).get("view") === "review" ? "review" : "portfolio");
-    };
-    syncViewFromUrl();
     const searchParams = new URLSearchParams(window.location.search);
-    if (searchParams.get("settings") === "1") {
+    if (searchParams.has("settings") || searchParams.has("view")) {
+      searchParams.delete("view");
       searchParams.delete("settings");
       const query = searchParams.toString();
-      window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
+      window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
     }
-    window.addEventListener("popstate", syncViewFromUrl);
-    return () => window.removeEventListener("popstate", syncViewFromUrl);
   }, []);
-
-  function switchView(view: DashboardView) {
-    setActiveView(view);
-    window.history.replaceState(null, "", view === "review" ? "/?view=review" : "/");
-  }
 
   function saveNetDeposits(value: number) {
     window.localStorage.setItem(NET_DEPOSITS_STORAGE_KEY, String(value));
@@ -566,9 +470,9 @@ export function PortfolioDashboard({
 
   return (
     <>
-      <SiteHeader active={activeView} onViewChange={switchView} onOpenSettings={() => setSettingsOpen(true)} />
+      <SiteHeader onOpenSettings={() => setSettingsOpen(true)} />
 
-      <div hidden={activeView !== "portfolio"} id="portfolio-panel" role="region">
+      <div id="portfolio-panel" role="region" aria-labelledby="portfolio-title">
         <PortfolioOverview
           netLiquidation={netLiquidation}
           totalPnl={configuredTotalPnl}
@@ -593,9 +497,24 @@ export function PortfolioDashboard({
         </section>
       </div>
 
-      <div hidden={activeView !== "review"} id="review-panel" role="region">
-        <DailyPortfolioReview review={dailyReview} />
-      </div>
+      <section className="ledger-panel ledger-page" aria-labelledby="ledger-title">
+        <div className="ledger-heading">
+          <h2 id="ledger-title">投资账本</h2>
+          <AddPlanDialog />
+        </div>
+        <div className="section-divider" aria-hidden="true" />
+        <div className="ledger-content">
+          <PositionLedger
+            groups={positionGroups}
+            activeSymbol={activeSymbol}
+            onActiveSymbolChange={setActiveSymbol}
+            quotes={quoteState.quotes}
+            quoteStatus={quoteState.status}
+            earningsBySymbol={earningsBySymbol}
+            earningsUpdatedAt={earningsAsOf}
+          />
+        </div>
+      </section>
       <InvestmentSettingsDialog open={settingsOpen} value={configuredNetDeposits} onClose={() => setSettingsOpen(false)} onSave={saveNetDeposits} />
     </>
   );

@@ -911,8 +911,9 @@ h2 {
   gap: 20px;
 }
 
-.ledger-page { padding: 24px 0 56px; }
-.ledger-page .ledger-heading h1 { font: 600 22px/1.1 var(--serif); letter-spacing: -.02em; }
+.ledger-page { padding: 24px 0 56px; border-top: 1px solid var(--ink); }
+#portfolio-title, #ledger-title { scroll-margin-top: 24px; }
+.ledger-page .ledger-heading h2 { font: 600 22px/1.1 var(--serif); letter-spacing: -.02em; }
 
 .add-plan-button,
 .secondary-button,

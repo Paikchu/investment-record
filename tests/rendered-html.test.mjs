@@ -33,21 +33,14 @@ test("server-renders the investment record", async () => {
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/i);
 });
 
-test("uses one compact header row for the brand and all primary views", async () => {
-  const response = await render();
-  const html = await response.text();
-
+test("uses same-page navigation without retired sections", async () => {
+  const html = await (await render()).text();
   assert.match(html, /<header class="site-header"/);
-  assert.match(html, /<header class="site-header"[\s\S]*?MAX[\s\S]*?投资记录[\s\S]*?Portfolio[\s\S]*?投资账本[\s\S]*?每日复盘[\s\S]*?今日宏观经济[\s\S]*?昨日收盘总结[\s\S]*?<\/header>/);
-  assert.match(html, /href="\/"[^>]*aria-current="page"[^>]*>Portfolio</);
-  assert.match(html, /href="\/ledger"[^>]*>投资账本</);
-  assert.match(html, /href="\/\?view=review"[^>]*>每日复盘</);
-  assert.match(html, /href="\/macro"[^>]*>今日宏观经济</);
-  assert.match(html, /href="\/market-close"[^>]*>昨日收盘总结</);
-  assert.doesNotMatch(html, /class="dashboard-tabs"/);
+  assert.match(html, /href="\/#portfolio-title"[^>]*>投资组合</);
+  assert.match(html, /href="\/#ledger-title"[^>]*>投资账本</);
+  assert.doesNotMatch(html, /每日复盘|每日投资复盘|今日宏观经济|昨日收盘总结|id="review-panel"/);
   assert.match(html, /id="portfolio-panel"[^>]*role="region"/);
-  assert.match(html, /id="review-panel"[^>]*role="region"/);
-  assert.doesNotMatch(html, /<header class="site-header"[\s\S]*?当前净值[\s\S]*?<\/header>/);
+  assert.equal((html.match(/<header class="site-header"/g) ?? []).length, 1);
 });
 
 test("opens device-local net deposit settings from the profile menu", async () => {
@@ -74,61 +67,22 @@ test("opens device-local net deposit settings from the profile menu", async () =
   assert.match(css, /\.settings-dialog \{[^}]*position: fixed;[^}]*width: min\(440px,/s);
 });
 
-test("renders the investment ledger as an independent primary page", async () => {
-  const [homeResponse, ledgerResponse] = await Promise.all([render(), render("/ledger")]);
-  const [homeHtml, ledgerHtml] = await Promise.all([homeResponse.text(), ledgerResponse.text()]);
-
-  assert.equal(ledgerResponse.status, 200);
-  assert.doesNotMatch(homeHtml, /id="ledger-title"/);
-  assert.match(ledgerHtml, /href="\/ledger"[^>]*aria-current="page"[^>]*>投资账本</);
-  assert.match(ledgerHtml, /<h1 id="ledger-title">投资账本<\/h1>/);
-  assert.match(ledgerHtml, /aria-label="账本排序"/);
-  assert.match(ledgerHtml, /class="position-list"/);
-  assert.doesNotMatch(ledgerHtml, /class="portfolio-overview"|class="heatmap-plot"/);
+test("renders the portfolio and investment ledger together", async () => {
+  const html = await (await render()).text();
+  assert.match(html, /class="portfolio-overview"/);
+  assert.match(html, /class="heatmap-plot"/);
+  assert.match(html, /<h2 id="ledger-title">投资账本<\/h2>/);
+  assert.match(html, /aria-label="账本排序"/);
+  assert.match(html, /class="position-list"/);
+  assert.ok(html.indexOf('id="portfolio-title"') < html.indexOf('id="ledger-title"'));
 });
 
-test("uses compact editorial density for macro and daily review pages", async () => {
-  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
-
-  assert.match(css, /\.macro-hero \{[\s\S]*?grid-template-areas:\s*"label label" "title summary" "title asof";/);
-  assert.match(css, /\.macro-hero h1 \{[\s\S]*?font-size: clamp\(34px, 4vw, 52px\);[\s\S]*?line-height: 1\.04;/);
-  assert.match(css, /\.macro-hero > p \{[\s\S]*?font: 500 clamp\(15px, 1\.25vw, 17px\)\/1\.55 var\(--serif\);/);
-  assert.match(css, /\.daily-review-heading h2 \{[\s\S]*?font-size: clamp\(22px, 1\.8vw, 28px\);/);
-  assert.match(css, /\.daily-review-summary \{[\s\S]*?font: 500 14px\/1\.55 var\(--serif\);/);
-  assert.match(css, /\.review-driver-list li \{[\s\S]*?padding: 11px 0 11px 32px;/);
-});
-
-test("renders the independent macro dashboard without adding market charts to the homepage", async () => {
-  const [homeResponse, macroResponse] = await Promise.all([render(), render("/macro")]);
-  const [homeHtml, macroHtml] = await Promise.all([homeResponse.text(), macroResponse.text()]);
-
-  assert.equal(macroResponse.status, 200);
-  assert.doesNotMatch(homeHtml, /今日宏观影响|美债期限 ETF|TVC:US10Y/);
-  assert.match(macroHtml, /今日宏观影响/);
-  assert.match(macroHtml, /美国大盘/);
-  assert.match(macroHtml, /美债期限 ETF/);
-  assert.match(macroHtml, /未来七天经济事件/);
-  assert.match(macroHtml, /href="\/"[^>]*>Portfolio</);
-  assert.match(macroHtml, /href="\/\?view=review"[^>]*>每日复盘</);
-  assert.match(macroHtml, /href="\/macro"[^>]*aria-current="page"[^>]*>今日宏观经济</);
-  for (const symbol of ["AMEX:SPY", "NASDAQ:QQQ", "AMEX:IWM", "NASDAQ:SHY", "NASDAQ:IEF", "NASDAQ:TLT"]) {
-    assert.match(macroHtml, new RegExp(symbol.replace(":", "(?:<!-- -->)?:")));
+test("redirects old ledger and retired report URLs to the combined page", async () => {
+  for (const [path, target] of [["/ledger", "/#ledger-title"], ["/macro", "/"], ["/market-close", "/"], ["/market-close?date=2026-09-01", "/"]]) {
+    const response = await render(path);
+    assert.equal(response.status, 307, path);
+    assert.equal(new URL(response.headers.get("location"), "http://localhost").href, new URL(target, "http://localhost").href, path);
   }
-  assert.doesNotMatch(macroHtml, /TVC:US(?:02|10|30)Y/);
-});
-
-test("renders the latest close brief as an independent archived document", async () => {
-  const [homeResponse, marketCloseResponse] = await Promise.all([render(), render("/market-close")]);
-  const [homeHtml, marketCloseHtml] = await Promise.all([homeResponse.text(), marketCloseResponse.text()]);
-
-  assert.equal(marketCloseResponse.status, 200);
-  assert.doesNotMatch(homeHtml, /板块全景|长债压力没有退场/);
-  assert.match(marketCloseHtml, /href="\/market-close"[^>]*aria-current="page"[^>]*>昨日收盘总结</);
-  assert.match(marketCloseHtml, /道指领涨，但长债压力没有退场/);
-  assert.match(marketCloseHtml, /主要指数/);
-  assert.match(marketCloseHtml, /11 SECTORS/);
-  assert.match(marketCloseHtml, /下个交易日关注/);
-  assert.match(marketCloseHtml, /本文为公开信息的整理与分析，不构成任何投资建议/);
 });
 
 test("rejects anonymous access to accession-specific SEC reports", async () => {
@@ -169,7 +123,7 @@ test("removes the disposable starter preview", async () => {
   assert.doesNotMatch(page, /const optionContracts = \[/);
   assert.doesNotMatch(page, /const recentTrades = \[/);
   assert.doesNotMatch(page, /holding\.weight \/ 31\.12/);
-  assert.match(dashboard, /<SiteHeader active=\{activeView\} onViewChange=\{switchView\} onOpenSettings=/);
+  assert.match(dashboard, /<SiteHeader onOpenSettings=/);
   assert.match(siteHeader, /<header className="site-header"/);
   assert.match(dashboard, /<section className="portfolio-overview"/);
   assert.doesNotMatch(page, /masthead|SnapshotNotice|className="(?:eyebrow|kicker)"/);
@@ -359,7 +313,7 @@ test("keeps the heatmap responsive and keyboard reachable", async () => {
 
 test("groups stock and option positions by ticker", async () => {
   const snapshot = JSON.parse(await readFile(new URL("../data/portfolio-snapshot.json", import.meta.url), "utf8"));
-  const response = await render("/ledger");
+  const response = await render();
   const html = await response.text();
   const symbols = [...new Set(snapshot.positions.map((position) => position.symbol))];
   const expectedTickerCount = symbols.length;
@@ -477,7 +431,7 @@ test("renders option-only submenus below every ticker with options", async () =>
     readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
-  const response = await render("/ledger");
+  const response = await render();
   const html = await response.text();
   const optionSymbols = new Set(
     snapshot.positions.filter((position) => position.assetClass === "OPT").map((position) => position.symbol),
@@ -531,7 +485,7 @@ test("uses independent position routes and removes the workspace dialog", async 
 
 test("renders Yahoo price and daily change surfaces without changing ledger calculations", async () => {
   const [response, detail] = await Promise.all([
-    render("/ledger"),
+    render(),
     readFile(new URL("../app/positions/[ticker]/PositionDetailContent.tsx", import.meta.url), "utf8"),
   ]);
   const html = await response.text();
@@ -545,18 +499,11 @@ test("renders Yahoo price and daily change surfaces without changing ledger calc
   assert.doesNotMatch(detail, /position\.value\s*=\s*quote|position\.unrealized\s*=\s*quote/);
 });
 
-test("renders the source-backed daily portfolio review on the homepage", async () => {
-  const [response, review] = await Promise.all([
-    render(),
-    readFile(new URL("../data/daily-portfolio-review.json", import.meta.url), "utf8").then(JSON.parse),
-  ]);
-  const html = await response.text();
-
-  assert.match(html, /每日投资复盘/);
-  assert.match(html, new RegExp(review.headline));
-  assert.match(html, /关键驱动/);
-  assert.match(html, /观察清单/);
-  for (const source of review.sources) assert.match(html, new RegExp(source.url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+test("retired review bookmarks render the combined portfolio without review content", async () => {
+  const html = await (await render("/?view=review")).text();
+  assert.match(html, /id="portfolio-title"/);
+  assert.match(html, /id="ledger-title"/);
+  assert.doesNotMatch(html, /每日投资复盘|关键驱动|观察清单|review-panel|daily-review/);
 });
 
 test("renders the holding summary in the portfolio overview without the market pulse", async () => {
