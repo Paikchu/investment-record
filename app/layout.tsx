@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import "./globals.css";
+import { ThemeControl } from "./theme-control";
+import { themeScript } from "@/lib/theme-script";
 
 export const viewport: Viewport = {
   themeColor: "#fafafa",
-  colorScheme: "light",
+  colorScheme: "light dark",
 };
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -43,8 +45,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN">
-      <body>{children}</body>
+    <html lang="zh-CN" suppressHydrationWarning>
+      <head><script dangerouslySetInnerHTML={{ __html: themeScript }} /></head>
+      <body><ThemeControl />{children}</body>
     </html>
   );
 }

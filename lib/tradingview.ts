@@ -18,7 +18,7 @@ export const BOND_CHARTS: TradingViewChart[] = [
 
 const symbols = new Set([...EQUITY_CHARTS, ...BOND_CHARTS].map((item) => item.symbol));
 
-export function buildTradingViewConfig(symbol: string) {
+export function buildTradingViewConfig(symbol: string, theme: "light" | "dark" = "light") {
   if (!symbols.has(symbol)) throw new Error(`不支持的 TradingView symbol：${symbol}`);
   return {
     autosize: true,
@@ -26,9 +26,9 @@ export function buildTradingViewConfig(symbol: string) {
     interval: "D",
     range: "12M",
     timezone: "exchange",
-    theme: "light",
-    backgroundColor: "rgba(243, 236, 223, 1)",
-    gridColor: "rgba(23, 40, 59, 0.08)",
+    theme,
+    backgroundColor: theme === "dark" ? "#18181b" : "#fafafa",
+    gridColor: theme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(23,40,59,0.08)",
     style: "1",
     withdateranges: false,
     hide_side_toolbar: true,

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
+import { useResolvedTheme } from "../theme-control";
 import type { MacroDashboardV1 } from "@/lib/macro-dashboard";
 import { BOND_CHARTS, EQUITY_CHARTS, buildTradingViewConfig, tradingViewSymbolUrl, type TradingViewChart } from "@/lib/tradingview";
 
@@ -22,6 +23,7 @@ function formatShanghaiTime(value: string) {
 }
 
 function TradingViewWidget({ symbol, label }: { symbol: string; label: string }) {
+  const theme = useResolvedTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
   const sourceUrl = tradingViewSymbolUrl(symbol);
@@ -37,11 +39,11 @@ function TradingViewWidget({ symbol, label }: { symbol: string; label: string })
     script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
     script.type = "text/javascript";
     script.async = true;
-    script.textContent = JSON.stringify(buildTradingViewConfig(symbol));
+    script.textContent = JSON.stringify(buildTradingViewConfig(symbol, theme));
     script.onerror = () => setFailed(true);
     container.append(widget, script);
     return () => container.replaceChildren();
-  }, [symbol]);
+  }, [symbol, theme]);
 
   return (
     <div className="macro-widget-frame" aria-label={`${label} TradingView 走势图`}>
