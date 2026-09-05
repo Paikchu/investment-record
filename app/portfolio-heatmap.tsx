@@ -115,7 +115,7 @@ export function PortfolioHeatmap({
   if (holdings.length === 0) return null;
 
   return (
-    <section className="heatmap-section" aria-labelledby="heatmap-title">
+    <section className="heatmap-section" id="heatmap-section" aria-labelledby="heatmap-title">
       <Separator className="my-5" />
       <div className="heatmap-heading">
         <h3 id="heatmap-title">持仓主题热力图</h3>

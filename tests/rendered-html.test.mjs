@@ -546,6 +546,26 @@ test("keeps both allocation charts visible in a responsive grid", async () => {
   assert.match(css, /\.allocation-mode-panel > \.allocation-wrap \{[^}]*height: 100%;[^}]*align-items: flex-start;/s);
 });
 
+test("collapses portfolio analysis before the ledger on narrow screens", async () => {
+  const [dashboard, heatmap, css] = await Promise.all([
+    readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/portfolio-heatmap.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(dashboard, /const \[analysisExpanded, setAnalysisExpanded\] = useState\(false\);/);
+  assert.match(dashboard, /className="portfolio-analysis-toggle"/);
+  assert.match(dashboard, /aria-expanded=\{analysisExpanded\}/);
+  assert.match(dashboard, /aria-controls="allocation-panel heatmap-section"/);
+  assert.match(dashboard, /onClick=\{\(\) => setAnalysisExpanded\(\(current\) => !current\)\}/);
+  assert.match(dashboard, /id="allocation-panel"/);
+  assert.match(heatmap, /id="heatmap-section"/);
+  assert.match(css, /\.portfolio-analysis-toggle \{ display: none; \}/);
+  const narrowCss = css.match(/@media \(max-width: 1024px\) \{([\s\S]*?)\n\}/)?.[1] ?? "";
+  assert.match(narrowCss, /\.portfolio-analysis-toggle \{[\s\S]*?min-height: 52px;[\s\S]*?display: flex;/);
+  assert.match(narrowCss, /\.portfolio-analysis-stack\[data-expanded="false"\] > \.allocation-panel,[\s\S]*?\.portfolio-analysis-stack\[data-expanded="false"\] > \.heatmap-section \{ display: none; \}/);
+});
+
 test("fetches homepage and independent detail quotes without modal state", async () => {
   const [dashboard, detail] = await Promise.all([
     readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),

@@ -432,6 +432,7 @@ export function PortfolioDashboard({
   cashBalance: number;
 }) {
   const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
+  const [analysisExpanded, setAnalysisExpanded] = useState(false);
   const [configuredNetDeposits, setConfiguredNetDeposits] = useState(netDeposits);
   const [settingsOpen, setSettingsOpen] = useState(() => (
     typeof window !== "undefined" && new URLSearchParams(window.location.search).get("settings") === "1"
@@ -506,8 +507,19 @@ export function PortfolioDashboard({
       </div>
 
       <div className="lower-grid portfolio-workspace">
-        <aside className="portfolio-analysis-stack" aria-label="仓位分析">
-          <section className="allocation-panel" aria-labelledby="allocation-title">
+        <aside className="portfolio-analysis-stack" aria-label="仓位分析" data-expanded={analysisExpanded}>
+          <Button
+            aria-controls="allocation-panel heatmap-section"
+            aria-expanded={analysisExpanded}
+            className="portfolio-analysis-toggle"
+            onClick={() => setAnalysisExpanded((current) => !current)}
+            type="button"
+            variant="ghost"
+          >
+            <span><strong>仓位分析</strong><small>仓位构成与热力图</small></span>
+            <span>{analysisExpanded ? "收起" : "展开"}<svg aria-hidden="true" viewBox="0 0 20 20"><path d="m5 7.5 5 5 5-5" /></svg></span>
+          </Button>
+          <section className="allocation-panel" id="allocation-panel" aria-labelledby="allocation-title">
             <h2 id="allocation-title">仓位构成</h2>
             <div className="section-divider" aria-hidden="true" />
             <AllocationPanel groups={positionGroups} activeSymbol={activeSymbol} onActiveSymbolChange={setActiveSymbol} />
