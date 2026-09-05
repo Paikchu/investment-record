@@ -490,34 +490,36 @@ export function PortfolioDashboard({
           nextEarningsReminder={nextEarningsReminder}
           onOpenSettings={() => setSettingsOpen(true)}
         />
-        <section className="lower-grid portfolio-analysis">
-          <aside className="allocation-panel">
-            <h2>仓位构成</h2>
-            <div className="section-divider" aria-hidden="true" />
-            <AllocationPanel groups={positionGroups} activeSymbol={activeSymbol} onActiveSymbolChange={setActiveSymbol} />
-          </aside>
-          <PortfolioHeatmap holdings={heatmapHoldings} activeSymbol={activeSymbol} onActiveSymbolChange={setActiveSymbol} />
-        </section>
       </div>
 
-      <section className="ledger-panel ledger-page" aria-labelledby="ledger-title">
-        <div className="ledger-heading">
-          <h2 id="ledger-title">投资账本</h2>
-          <AddPlanDialog />
-        </div>
-        <div className="section-divider" aria-hidden="true" />
-        <div className="ledger-content">
-          <PositionLedger
-            groups={positionGroups}
-            activeSymbol={activeSymbol}
-            onActiveSymbolChange={setActiveSymbol}
-            quotes={quoteState.quotes}
-            quoteStatus={quoteState.status}
-            earningsBySymbol={earningsBySymbol}
-            earningsUpdatedAt={earningsAsOf}
-          />
-        </div>
-      </section>
+      <div className="lower-grid portfolio-workspace">
+        <aside className="portfolio-analysis-stack" aria-label="仓位分析">
+          <section className="allocation-panel" aria-labelledby="allocation-title">
+            <h2 id="allocation-title">仓位构成</h2>
+            <div className="section-divider" aria-hidden="true" />
+            <AllocationPanel groups={positionGroups} activeSymbol={activeSymbol} onActiveSymbolChange={setActiveSymbol} />
+          </section>
+          <PortfolioHeatmap holdings={heatmapHoldings} activeSymbol={activeSymbol} onActiveSymbolChange={setActiveSymbol} />
+        </aside>
+        <section className="ledger-panel ledger-page" aria-labelledby="ledger-title">
+          <div className="ledger-heading">
+            <h2 id="ledger-title">投资账本</h2>
+            <AddPlanDialog />
+          </div>
+          <div className="section-divider" aria-hidden="true" />
+          <div className="ledger-content">
+            <PositionLedger
+              groups={positionGroups}
+              activeSymbol={activeSymbol}
+              onActiveSymbolChange={setActiveSymbol}
+              quotes={quoteState.quotes}
+              quoteStatus={quoteState.status}
+              earningsBySymbol={earningsBySymbol}
+              earningsUpdatedAt={earningsAsOf}
+            />
+          </div>
+        </section>
+      </div>
       <InvestmentSettingsDialog open={settingsOpen} value={configuredNetDeposits} onClose={() => setSettingsOpen(false)} onSave={saveNetDeposits} />
     </>
   );
