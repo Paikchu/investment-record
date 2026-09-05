@@ -79,6 +79,7 @@ export interface IbkrPosition {
   market_price?: number;
   market_value?: number;
   position?: number;
+  symbol?: string;
   unrealized_pnl?: number;
 }
 
@@ -121,7 +122,7 @@ export function canonicalUnderlying(symbol: string): string {
 export function normalizeIbkrPosition(position: IbkrPosition): PortfolioPosition {
   const assetClass = position.asset_class === "OPT" ? "OPT" : "STK";
   const description = position.contract_description?.trim() || "Unknown";
-  const symbol = canonicalUnderlying(description.split(/\s+/)[0]);
+  const symbol = canonicalUnderlying(position.symbol || description.split(/\s+/)[0]);
   const quantity = position.position ?? 0;
   const averagePrice = position.average_price ?? 0;
   const multiplier = assetClass === "OPT" ? 100 : 1;

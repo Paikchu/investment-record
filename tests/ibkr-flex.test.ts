@@ -35,6 +35,7 @@ test("normalizes only summary positions and execution trades", () => {
   assert.equal(input.balances.balances[0].cash_balance, 12_000.25);
   assert.equal(input.positions.positions.length, 1);
   assert.equal(input.positions.positions[0].average_price, 15);
+  assert.equal(input.positions.positions[0].symbol, "ACME");
   assert.equal(input.trades.trades.length, 1);
   assert.equal(input.trades.trades[0].trade_id, "trade-1");
   assert.equal(input.trades.trades[0].trade_date, "2026-12-31");
@@ -105,10 +106,47 @@ test("publishes a validated Flex snapshot and history in one D1 batch", async ()
 
   assert.equal(result.status, "published");
   assert.equal(result.snapshot.source?.method, "FLEX");
+  assert.equal(result.snapshot.positions[0].symbol, "ACME");
   assert.equal(result.snapshot.trades.some((trade) => trade.tradeId === "trade-1"), true);
   assert.equal(batches.length, 1);
   assert.equal(batches[0].length, 2);
   assert.equal((await readPortfolioSnapshot(database)).schemaVersion, 1);
+});
+
+test("repairs symbols in the already-published legacy Flex snapshot", async () => {
+  const stored = {
+    ...(await readPortfolioSnapshot({
+      prepare() {
+        return { bind() { return this; }, async first<T>() { return null as T | null; } };
+      },
+    })),
+    source: { provider: "IBKR", method: "FLEX", reportDate: "2026-09-04", queryId: "1628251" },
+    positions: [{
+      positionKey: "STK:272093",
+      symbol: "MICROSOFT",
+      contractDescription: "MICROSOFT CORP",
+      assetClass: "STK",
+      quantity: 1,
+      averagePrice: 400,
+      marketPrice: 500,
+      marketValue: 500,
+      costBasis: 400,
+      unrealizedPnl: 100,
+    }],
+  };
+  const database = {
+    prepare() {
+      return {
+        bind() { return this; },
+        async first<T>() { return { payload: JSON.stringify(stored) } as T; },
+      };
+    },
+  };
+
+  const repaired = await readPortfolioSnapshot(database);
+
+  assert.equal(repaired.positions[0].symbol, "MSFT");
+  assert.equal(repaired.positions[0].contractDescription, "MICROSOFT CORP");
 });
 
 test("runs one Flex request and publishes it through the authenticated site bridge", async () => {

@@ -107,13 +107,14 @@ test("normalizes IBKR stock and short option positions", () => {
   const stock = normalizeIbkrPosition({
     asset_class: "STK",
     contract_id: 661513,
-    contract_description: "NOK",
+    contract_description: "NOKIA OYJ",
     currency: "USD",
     position: 200,
     average_price: 14.7011045,
     market_price: 10.17,
     market_value: 2034,
     unrealized_pnl: -906.22,
+    symbol: "NOK",
   });
   const option = normalizeIbkrPosition({
     asset_class: "OPT",
@@ -128,6 +129,7 @@ test("normalizes IBKR stock and short option positions", () => {
   });
 
   assert.equal(stock.positionKey, "STK:661513");
+  assert.equal(stock.symbol, "NOK");
   assert.equal(stock.costBasis, 2940.2209);
   assert.equal(option.symbol, "INTC");
   assert.equal(option.positionKey, "OPT:845712739");

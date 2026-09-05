@@ -3,6 +3,7 @@ import fallbackSnapshotData from "../data/portfolio-snapshot.json" with { type: 
 import type { FlexRawSyncInput } from "./ibkr-flex.ts";
 import {
   buildPortfolioSnapshot,
+  canonicalUnderlying,
   normalizeIbkrPosition,
   normalizeIbkrTrade,
   type PortfolioSnapshotV1,
@@ -19,6 +20,23 @@ export type PortfolioDatabase = {
 };
 
 const FALLBACK_SNAPSHOT = fallbackSnapshotData as PortfolioSnapshotV1;
+const FALLBACK_SYMBOL_BY_POSITION_KEY = new Map(
+  FALLBACK_SNAPSHOT.positions.map((position) => [position.positionKey, position.symbol]),
+);
+
+function repairLegacyFlexSymbols(snapshot: PortfolioSnapshotV1): PortfolioSnapshotV1 {
+  if (snapshot.source?.method !== "FLEX") return snapshot;
+
+  let changed = false;
+  const positions = snapshot.positions.map((position) => {
+    const knownSymbol = FALLBACK_SYMBOL_BY_POSITION_KEY.get(position.positionKey);
+    const legacyDerivedSymbol = canonicalUnderlying(position.contractDescription.split(/\s+/)[0] ?? "");
+    if (!knownSymbol || knownSymbol === position.symbol || position.symbol !== legacyDerivedSymbol) return position;
+    changed = true;
+    return { ...position, symbol: knownSymbol };
+  });
+  return changed ? { ...snapshot, positions } : snapshot;
+}
 
 export async function readPortfolioSnapshot(database: Pick<PortfolioDatabase, "prepare">): Promise<PortfolioSnapshotV1> {
   const row = await database.prepare("SELECT payload FROM portfolio_state WHERE id = 'current'").first<{ payload: string }>();
@@ -27,7 +45,7 @@ export async function readPortfolioSnapshot(database: Pick<PortfolioDatabase, "p
   if (snapshot.schemaVersion !== 1 || !Array.isArray(snapshot.positions) || !Array.isArray(snapshot.trades)) {
     throw new Error("Stored portfolio snapshot is invalid");
   }
-  return snapshot;
+  return repairLegacyFlexSymbols(snapshot);
 }
 
 export async function publishFlexSnapshot(

@@ -174,6 +174,7 @@ export function normalizeFlexStatement(
         market_price: numberField(record, "MarkPrice"),
         market_value: numberField(record, "PositionValue"),
         position: quantity,
+        symbol: underlying,
         unrealized_pnl: numberField(record, "FifoPnlUnrealized"),
       };
     });
