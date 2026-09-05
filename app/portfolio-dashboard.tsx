@@ -1,5 +1,9 @@
 "use client";
 
+import { Empty, EmptyHeader, EmptyDescription } from "@/components/ui/empty";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 
@@ -77,11 +81,11 @@ function PortfolioOverview({
           <article>
             <div className="summary-metric-label">
               <span>净入金</span>
-              <button type="button" className="deposit-edit" onClick={onOpenSettings} aria-label="调整净入金" title="调整净入金">
+              <TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon-sm" onClick={onOpenSettings} aria-label="调整净入金">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="m16 3 5 5-12 12-6 1 1-6L16 3Z" /><path d="m13 6 5 5" />
                 </svg>
-              </button>
+              </Button></TooltipTrigger><TooltipContent>调整净入金</TooltipContent></Tooltip></TooltipProvider>
             </div>
             <strong>{money(netDeposits)}</strong>
           </article>
@@ -328,16 +332,17 @@ function PositionLedger({
 
   return (
     <div className="position-scroll" aria-label="按 Ticker 分类的持仓">
-      <div className="ledger-sort" aria-label="账本排序">
-        <label>
-          <span>排序</span>
-          <select value={sortKey} onChange={(event) => setSortKey(event.target.value as PositionSortKey)}>
-            {sortOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
-          </select>
-        </label>
-        <button onClick={() => setSortDirection((current) => current === "desc" ? "asc" : "desc")} type="button">
+      <div className="flex items-center justify-end gap-2 py-3" aria-label="账本排序">
+        <span id="sort-label" className="text-sm text-muted-foreground">排序</span>
+        <Select value={sortKey} onValueChange={(value) => setSortKey(value as PositionSortKey)}>
+          <SelectTrigger aria-labelledby="sort-label"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectGroup>
+            {sortOptions.map((option) => <SelectItem key={option.key} value={option.key}>{option.label}</SelectItem>)}
+          </SelectGroup></SelectContent>
+        </Select>
+        <Button variant="outline" onClick={() => setSortDirection((current) => current === "desc" ? "asc" : "desc")} type="button">
           {sortDirection === "desc" ? "降序 ↓" : "升序 ↑"}
-        </button>
+        </Button>
       </div>
       <div className="position-columns">
         {columns.map((column) => <span key={column}>{column}</span>)}
@@ -395,7 +400,7 @@ function PositionLedger({
             )}
           </div>
         ))}
-        {sortedGroups.length === 0 && <p className="empty-state">当前快照没有持仓。</p>}
+        {sortedGroups.length === 0 && <Empty><EmptyHeader><EmptyDescription>当前快照没有持仓。</EmptyDescription></EmptyHeader></Empty>}
       </div>
     </div>
   );

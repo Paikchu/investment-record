@@ -1,5 +1,9 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import { InfoIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
 import {
@@ -112,18 +116,15 @@ export function PortfolioHeatmap({
 
   return (
     <section className="heatmap-section" aria-labelledby="heatmap-title">
-      <div className="section-divider heatmap-divider" aria-hidden="true" />
+      <Separator className="my-5" />
       <div className="heatmap-heading">
         <h3 id="heatmap-title">持仓主题热力图</h3>
         <span className="exposure-label">
           总敞口 <strong>{totalWeight.toFixed(2)}%</strong>
-          <button
-            aria-label="总敞口计算口径：热力图内正股市值除以当前净值，期权负债不进入热力图"
-            data-tip="热力图内正股市值 ÷ 当前净值；期权负债不进入热力图。"
-            type="button"
-          >
-            ⓘ
-          </button>
+          <Popover><PopoverTrigger asChild>
+            <Button variant="ghost" size="icon-sm" type="button" aria-label="总敞口计算口径"><InfoIcon /></Button>
+          </PopoverTrigger><PopoverContent>热力图内正股市值 ÷ 当前净值；期权负债不进入热力图。</PopoverContent></Popover>
+
         </span>
       </div>
       <div className="heatmap-key" aria-label="未实现盈亏率图例">

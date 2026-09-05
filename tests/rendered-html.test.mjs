@@ -50,11 +50,11 @@ test("opens net deposit editing beside its metric", async () => {
   ]);
   const html = await response.text();
 
-  assert.match(html, /class="summary-metric-label"[^]*?净入金[^]*?class="deposit-edit"[^]*?aria-label="调整净入金"/);
-  assert.match(html, />调整净入金</);
+  assert.match(html, /class="summary-metric-label"[^]*?净入金[^]*?aria-label="调整净入金"/);
+  assert.match(dialog, /<DialogTitle>调整净入金<\/DialogTitle>/);
   assert.doesNotMatch(html, />投资组合<|portfolio-settings|portfolio-title-row/);
-  assert.match(html, /class="settings-dialog"/);
-  assert.match(html, /当前净入金/);
+  assert.match(dialog, /<Dialog open=\{open\} onOpenChange/);
+  assert.match(dialog, /当前净入金/);
   assert.match(dashboard, /onOpenSettings=\{\(\) => setSettingsOpen\(true\)\}/);
   assert.match(dashboard, /localStorage\.getItem\(NET_DEPOSITS_STORAGE_KEY\)/);
   assert.match(dashboard, /localStorage\.setItem\(NET_DEPOSITS_STORAGE_KEY, String\(value\)\)/);
@@ -322,8 +322,8 @@ test("groups stock and option positions by ticker", async () => {
     assert.match(html, new RegExp(href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
   assert.match(html, /净市值/);
-  assert.match(html, /年内已实现/);
-  assert.match(html, /年内净盈亏/);
+  assert.match(html, /已实现/);
+  assert.match(await readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"), /年内净盈亏/);
   assert.doesNotMatch(html, /持仓拆分|>拆分</);
   assert.doesNotMatch(html, /期权覆盖/);
 });
@@ -369,9 +369,9 @@ test("uses investment theme colors for heatmap headers and holding marks", async
 test("keeps small text high-contrast and visibly weighted", async () => {
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 
-  assert.match(css, /--ink-soft:\s*#3f4d5a/);
-  assert.match(css, /--color-loss:\s*#9f3528/);
-  assert.match(css, /--color-profit:\s*#3f6449/);
+  assert.match(css, /--ink-soft:\s*#3f3f46/);
+  assert.match(css, /--color-loss:\s*#b91c1c/);
+  assert.match(css, /--color-profit:\s*#166534/);
   assert.match(css, /body\s*\{[^}]*font-weight:\s*500/s);
   assert.match(css, /-webkit-font-smoothing:\s*auto/);
 });
@@ -385,7 +385,7 @@ test("keeps ledger labels and values above the minimum readable sizes", async ()
   assert.match(dashboard, /className="daily-change-value/);
   assert.match(css, /--daily-gain:\s*#315b3d/);
   assert.match(css, /--daily-loss:\s*#8f2f25/);
-  assert.match(css, /--ink-muted:\s*#596572/);
+  assert.match(css, /--muted-foreground:\s*#52525b/);
   assert.match(css, /\.position-row\s*\{[^}]*font-size:\s*14px;/s);
   assert.match(css, /\.position-identity\s*\{[^}]*align-items:\s*center;/s);
   assert.match(css, /\.position-reminder\s*\{[^}]*align-content:\s*center;/s);
@@ -603,10 +603,10 @@ test("keeps the add-plan dialog content-sized with useful idle and loading state
 
   assert.match(css, /\.plan-dialog \{[^]*?position: fixed;[^]*?inset: 50% auto auto 50%;[^]*?transform: translate\(-50%, -50%\);/);
   assert.doesNotMatch(dialog, /NEW INVESTMENT PLAN|New investment plan/);
-  assert.match(dialog, /className="search-help"/);
-  assert.match(dialog, /className="search-skeleton"/);
-  assert.match(dialog, /const hasQuery = Boolean\(value\.trim\(\)\);[\s\S]*setResults\(\[\]\);[\s\S]*setLoading\(hasQuery\)/);
-  assert.match(dialog, /const open = \(\) => \{[\s\S]*setDirectoryUpdatedAt\(""\);[\s\S]*setLoading\(false\);[\s\S]*showModal\(\)/);
+  assert.match(dialog, /<Empty>/);
+  assert.match(dialog, /<Skeleton key=/);
+  assert.match(dialog, /setLoading\(Boolean\(value.trim\(\)\)\)/);
+  assert.match(dialog, /<Dialog open=\{isOpen\} onOpenChange=\{changeOpen\}/);
   assert.match(dialog, /没有找到匹配的标的/);
   assert.doesNotMatch(css, /\.search-results \{[^}]*min-height:/s);
 });

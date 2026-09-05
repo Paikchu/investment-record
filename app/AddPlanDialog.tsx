@@ -1,13 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { Command, CommandInput, CommandList, CommandGroup, CommandItem } from "@/components/ui/command";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Empty, EmptyHeader, EmptyDescription } from "@/components/ui/empty";
+import { PlusIcon } from "lucide-react";
 
 type SearchResult = { symbol: string; name: string; exchange: string; type: "stock" | "etf"; isHeld: boolean };
 
 export function AddPlanDialog() {
   const router = useRouter();
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -16,7 +23,7 @@ export function AddPlanDialog() {
 
   useEffect(() => {
     const text = query.trim();
-    if (!text) return;
+    if (!text || !isOpen) return;
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
       setLoading(true);
@@ -36,59 +43,43 @@ export function AddPlanDialog() {
       }
     }, 250);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [query]);
+  }, [query, isOpen]);
 
-  const open = () => {
-    setQuery("");
-    setResults([]);
-    setMessage("");
-    setDirectoryUpdatedAt("");
-    setLoading(false);
-    dialogRef.current?.showModal();
+  const changeOpen = (nextOpen: boolean) => {
+    setIsOpen(nextOpen);
+    if (!nextOpen) return;
+    setQuery(""); setResults([]); setMessage(""); setDirectoryUpdatedAt(""); setLoading(false);
   };
-
   const updateQuery = (value: string) => {
-    const hasQuery = Boolean(value.trim());
-    setQuery(value);
-    setResults([]);
-    setMessage("");
-    setDirectoryUpdatedAt("");
-    setLoading(hasQuery);
+    setQuery(value); setResults([]); setMessage(""); setDirectoryUpdatedAt(""); setLoading(Boolean(value.trim()));
   };
 
   return (
-    <>
-      <button className="add-plan-button" type="button" onClick={open}>＋ 添加持仓计划</button>
-      <dialog className="plan-dialog" ref={dialogRef} onClick={(event) => { if (event.target === dialogRef.current) dialogRef.current?.close(); }}>
-        <div className="dialog-card">
-          <div className="dialog-heading"><h2>添加持仓计划</h2><button type="button" onClick={() => dialogRef.current?.close()} aria-label="关闭">×</button></div>
-          <label className="search-field"><span>搜索 ticker 或公司</span><input value={query} onChange={(event) => updateQuery(event.target.value)} placeholder="AAPL / Apple" autoFocus /></label>
-          <div className="search-results" aria-live="polite">
-            {!query.trim() && <p className="search-help">输入美股 ticker 或公司名称，选择后进入独立详情页。</p>}
-            {loading && (
-              <div className="search-skeleton" aria-label="正在搜索" role="status">
-                {[0, 1, 2].map((row) => <span key={row}><i /><b /></span>)}
-              </div>
-            )}
-            {!loading && message && <p className="search-message">{message}</p>}
-            {!loading && results.map((result) => (
-              <button
-                className="search-result"
-                key={result.symbol}
-                onClick={() => {
-                  dialogRef.current?.close();
-                  router.push(`/positions/${encodeURIComponent(result.symbol)}`);
-                }}
-                type="button"
-              >
-                <span><strong>{result.symbol}</strong><small>{result.name}</small></span>
-                <span><i>{result.isHeld ? "当前持仓" : result.type === "etf" ? "ETF" : "股票"}</i><small>{result.exchange}</small></span>
-              </button>
-            ))}
-            {!loading && directoryUpdatedAt && <p className="directory-timestamp">证券目录更新于 {new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium" }).format(new Date(directoryUpdatedAt))}</p>}
-          </div>
-        </div>
-      </dialog>
-    </>
+    <Dialog open={isOpen} onOpenChange={changeOpen}>
+      <DialogTrigger asChild><Button type="button"><PlusIcon data-icon="inline-start" />添加持仓计划</Button></DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>添加持仓计划</DialogTitle>
+          <DialogDescription>输入美股 ticker 或公司名称，选择后进入独立详情页。</DialogDescription>
+        </DialogHeader>
+        <Command shouldFilter={false}>
+          <CommandInput aria-label="搜索 ticker 或公司" value={query} onValueChange={updateQuery} placeholder="AAPL / Apple" autoFocus />
+          <CommandList aria-busy={loading}>
+            {loading && <div role="status" aria-label="正在搜索" className="flex flex-col gap-3 p-3">{[0,1,2].map((row) => <Skeleton key={row} className="h-12 w-full" />)}</div>}
+            {!loading && (!query.trim() || message) && <Empty><EmptyHeader><EmptyDescription>{message || "搜索 ticker 或公司名称"}</EmptyDescription></EmptyHeader></Empty>}
+            {!loading && results.length > 0 && <CommandGroup heading="搜索结果">
+              {results.map((result) => <CommandItem key={result.symbol} value={result.symbol} onSelect={() => {
+                setIsOpen(false);
+                router.push(`/positions/${encodeURIComponent(result.symbol)}`);
+              }}>
+                <span className="flex min-w-0 flex-1 flex-col"><strong>{result.symbol}</strong><span className="truncate text-muted-foreground">{result.name}</span></span>
+                <span className="text-muted-foreground">{result.isHeld ? "当前持仓" : result.type === "etf" ? "ETF" : "股票"} · {result.exchange}</span>
+              </CommandItem>)}
+            </CommandGroup>}
+          </CommandList>
+        </Command>
+        {!loading && directoryUpdatedAt && <p className="text-xs text-muted-foreground">证券目录更新于 {new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium" }).format(new Date(directoryUpdatedAt))}</p>}
+      </DialogContent>
+    </Dialog>
   );
 }
