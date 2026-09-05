@@ -1,5 +1,6 @@
 "use client";
 
+import { ThemeControl } from "./theme-control";
 import { Empty, EmptyHeader, EmptyDescription } from "@/components/ui/empty";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -65,7 +66,7 @@ function PortfolioOverview({
     <section className="portfolio-overview" aria-labelledby="portfolio-title">
       <div className="hero">
         <div className="portfolio-heading">
-          <h1 className="summary-nav-label" id="portfolio-title">当前净值</h1>
+          <div className="flex items-center gap-2"><h1 className="summary-nav-label" id="portfolio-title">当前净值</h1><ThemeControl /></div>
           <strong className="summary-nav-value">{money(netLiquidation)}</strong>
           <div className="summary-return">
             <span className="summary-pnl-label">累计盈亏</span>
