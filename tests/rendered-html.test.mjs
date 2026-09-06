@@ -68,8 +68,10 @@ test("renders the portfolio and investment ledger together", async () => {
   assert.match(html, /class="portfolio-overview"/);
   assert.match(html, /class="heatmap-plot"/);
   assert.match(html, /<h2 id="ledger-title">投资账本<\/h2>/);
-  assert.match(html, /aria-label="账本排序"/);
-  assert.match(html, /class="position-list"/);
+  assert.match(html, /aria-label="投资账本"/);
+  assert.match(html, /aria-sort="descending"/);
+  assert.doesNotMatch(html, /aria-label="账本排序"/);
+  assert.match(html, /data-slot="table"/);
   assert.ok(html.indexOf('id="portfolio-title"') < html.indexOf('id="ledger-title"'));
 });
 
@@ -166,7 +168,7 @@ test("uses an uncolored generic reminder slot beside the ticker", async () => {
   assert.doesNotMatch(dashboard, /className="company"/);
   assert.match(dashboard, /function PositionReminder/);
   assert.match(dashboard, /if \(!event\) return null;/);
-  assert.match(dashboard, /className="position-identity"[\s\S]*?<PositionReminder/);
+  assert.match(dashboard, /className="ledger-identity"[\s\S]*?<PositionReminder/);
   assert.match(dashboard, /className="position-reminder"/);
   assert.doesNotMatch(dashboard, /<i>财报<\/i>|等待日程|data-empty/);
   assert.doesNotMatch(dashboard, /className="position-earnings"/);
@@ -311,7 +313,7 @@ test("groups stock and option positions by ticker", async () => {
   const html = await response.text();
   const symbols = [...new Set(snapshot.positions.map((position) => position.symbol))];
   const expectedTickerCount = symbols.length;
-  const renderedTickerCount = html.match(/class="position-row"/g)?.length ?? 0;
+  const renderedTickerCount = html.match(/class="[^"]*ledger-data-row[^"]*"/g)?.length ?? 0;
 
   assert.equal(renderedTickerCount, expectedTickerCount);
   assert.doesNotMatch(html, /aria-label="查看 [^"]+ 持仓详情"/);
@@ -395,16 +397,17 @@ test("keeps ledger labels and values above the minimum readable sizes", async ()
   assert.match(css, /\.daily-change-value\s*\{[^}]*font-size:\s*14px;/s);
 });
 
-test("compresses the desktop ledger into six paired data groups", async () => {
-  const dashboard = await readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8");
-
-  assert.match(dashboard, /const columns = \["标的", "行情", "仓位", "摊薄成本", "未实现", "年内"\]/);
-  assert.match(dashboard, /className="position-market-cell"/);
-  assert.match(dashboard, /className="position-value-cell"/);
-  assert.match(dashboard, /className="position-cost-cell"/);
-  assert.match(dashboard, /className="position-cost-cell" data-label="摊薄成本"/);
-  assert.match(dashboard, /className="position-year-cell"/);
-  assert.match(dashboard, /group\.stock \? money\(group\.stock\.actualCost\)/);
+test("renders a single-line shadcn ledger with sorting in every header", async () => {
+  const html = await (await render()).text();
+  const table = html.match(/<table[^]*?<\/table>/)?.[0] ?? "";
+  assert.equal((table.match(/scope="col"/g) ?? []).length, 10);
+  assert.equal((table.match(/aria-sort=/g) ?? []).length, 10);
+  for (const label of ["现价", "日涨跌", "净市值", "净权重", "摊薄成本", "持仓成本", "未实现盈亏", "年内已实现", "年内净盈亏"]) {
+    assert.ok(table.includes(label));
+  }
+  assert.doesNotMatch(table, /position-market-cell|position-value-cell|position-cost-cell|position-year-cell/);
+  assert.match(table, /未实现盈亏，点击降序/);
+  assert.match(table, /净权重，点击升序/);
 });
 
 test("keeps full ticker symbols visible before heatmap metrics", async () => {
@@ -484,7 +487,8 @@ test("renders price and daily change surfaces without source or snapshot labels"
   ]);
   const html = await response.text();
 
-  assert.match(html, /行情/);
+  assert.match(html, /现价/);
+  assert.match(html, /日涨跌/);
   assert.match(detail, /activeQuote\.changePercent/);
   assert.match(detail, /RSI 14/);
   assert.match(detail, /activeQuote\.rsi14/);

@@ -4,8 +4,9 @@ import { ThemeControl } from "./theme-control";
 import { Empty, EmptyHeader, EmptyDescription } from "@/components/ui/empty";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ChevronUp, ChevronDown, CalendarDays } from "lucide-react";
+import { Fragment, useEffect, useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 
 import {
@@ -298,12 +299,14 @@ function AllocationPanel({
   );
 }
 
-const columns = ["标的", "行情", "仓位", "摊薄成本", "未实现", "年内"];
-
-const sortOptions: Array<{ key: PositionSortKey; label: string }> = [
+type LedgerSortKey = PositionSortKey | "price" | "changePercent" | "actualCost";
+const ledgerColumns: Array<{ key: LedgerSortKey; label: string }> = [
   { key: "symbol", label: "标的" },
+  { key: "price", label: "现价" },
+  { key: "changePercent", label: "日涨跌" },
   { key: "value", label: "净市值" },
   { key: "weight", label: "净权重" },
+  { key: "actualCost", label: "摊薄成本" },
   { key: "cost", label: "持仓成本" },
   { key: "unrealized", label: "未实现盈亏" },
   { key: "realized", label: "年内已实现" },
@@ -327,82 +330,94 @@ function PositionLedger({
   earningsBySymbol: Map<string, EarningsEvent>;
   earningsUpdatedAt: string;
 }) {
-  const [sortKey, setSortKey] = useState<PositionSortKey>("weight");
+  const [sortKey, setSortKey] = useState<LedgerSortKey>("weight");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-  const sortedGroups = useMemo(() => sortPositionGroups(groups, sortKey, sortDirection), [groups, sortDirection, sortKey]);
+  const sortedGroups = useMemo(() => {
+    if (sortKey !== "price" && sortKey !== "changePercent" && sortKey !== "actualCost") {
+      return sortPositionGroups(groups, sortKey, sortDirection);
+    }
+    const value = (group: PositionGroupView) => sortKey === "actualCost"
+      ? group.stock?.actualCost : quotes[group.symbol]?.[sortKey];
+    return [...groups].sort((left, right) => {
+      const a = value(left), b = value(right);
+      if (a == null) return b == null ? 0 : 1;
+      if (b == null) return -1;
+      return (a - b) * (sortDirection === "asc" ? 1 : -1);
+    });
+  }, [groups, quotes, sortDirection, sortKey]);
 
   return (
     <div className="position-scroll" aria-label="按 Ticker 分类的持仓">
-      <div className="flex items-center justify-end gap-2 py-3" aria-label="账本排序">
-        <span id="sort-label" className="text-sm text-muted-foreground">排序</span>
-        <Select value={sortKey} onValueChange={(value) => setSortKey(value as PositionSortKey)}>
-          <SelectTrigger aria-labelledby="sort-label"><SelectValue /></SelectTrigger>
-          <SelectContent><SelectGroup>
-            {sortOptions.map((option) => <SelectItem key={option.key} value={option.key}>{option.label}</SelectItem>)}
-          </SelectGroup></SelectContent>
-        </Select>
-        <Button variant="outline" onClick={() => setSortDirection((current) => current === "desc" ? "asc" : "desc")} type="button">
-          {sortDirection === "desc" ? "降序 ↓" : "升序 ↑"}
-        </Button>
-      </div>
-      <div className="position-columns">
-        {columns.map((column) => <span key={column}>{column}</span>)}
-      </div>
-      <div className="position-list">
-        {sortedGroups.map((group) => (
-          <div
-            className="position-group"
-            key={group.symbol}
-            style={{ "--holding-color": heatmapThemeColor(group.symbol) } as CSSProperties}
-          >
-            <Link
-              className="position-row"
-              data-active={activeSymbol === group.symbol}
-              href={`/positions/${encodeURIComponent(group.symbol)}`}
-              onFocus={() => onActiveSymbolChange(group.symbol)}
-              onMouseEnter={() => onActiveSymbolChange(group.symbol)}
-              onMouseLeave={() => onActiveSymbolChange(null)}
-            >
-              <span className="position-identity">
-                <i className="holding-mark" aria-hidden="true" />
-                <strong className="symbol">{group.symbol}</strong>
-                <PositionReminder event={earningsBySymbol.get(group.symbol)} asOf={earningsUpdatedAt} />
-              </span>
-              <span className="position-market-cell" data-label="行情">
-                <strong>{quotes[group.symbol] ? money(quotes[group.symbol].price) : <i className="quote-muted">{quoteStatus === "loading" ? "读取中" : "—"}</i>}</strong>
-                {quotes[group.symbol]
-                  ? (
-                    <small
-                      className="daily-change-value"
-                      data-direction={quotes[group.symbol].changePercent < 0 ? "loss" : quotes[group.symbol].changePercent > 0 ? "gain" : "neutral"}
-                    >
-                      {percent(quotes[group.symbol].changePercent, true)}
-                    </small>
-                  )
-                  : <small className="quote-muted">当日 —</small>}
-              </span>
-              <span className="position-value-cell" data-label="仓位"><strong>{money(group.value)}</strong><small>{percent(group.weight)}</small></span>
-              <span className="position-cost-cell" data-label="摊薄成本"><strong>{group.stock ? money(group.stock.actualCost) : <i className="quote-muted">—</i>}</strong><small>持仓 {money(group.cost)}</small></span>
-              <span className="position-unrealized-cell" data-label="未实现"><Pnl value={group.unrealized} /></span>
-              <span className="position-year-cell" data-label="年内"><strong><Pnl value={group.netPnl} /></strong><small>已实现 <Pnl value={group.realized} /></small></span>
-              <span className="sr-only">，查看持仓详情</span>
-            </Link>
-            {group.options.length > 0 && (
-              <div className="position-submenu" aria-label={`${group.symbol} 期权持仓`}>
-                {group.options.map((option) => (
-                  <div className="position-submenu-row" key={option.contract}>
-                    <span className="submenu-type">期权</span>
-                    <strong>{option.contract}</strong>
-                    <span className="submenu-quantity">{number(option.quantity, 0, 4)} 张</span>
-                    <i className="submenu-value">{money(option.marketValue)}</i>
+      <Table className="ledger-table" aria-label="投资账本">
+        <TableHeader>
+          <TableRow>
+            {ledgerColumns.map((column) => (
+              <TableHead key={column.key} scope="col" aria-sort={sortKey === column.key ? (sortDirection === "desc" ? "descending" : "ascending") : "none"}>
+                <Button variant="ghost" size="sm" type="button"
+                  aria-label={`${column.label}，点击${sortKey === column.key && sortDirection === "desc" ? "升序" : "降序"}`}
+                  onClick={() => {
+                    setSortDirection(sortKey === column.key && sortDirection === "desc" ? "asc" : "desc");
+                    setSortKey(column.key);
+                  }}>
+                  {column.label}
+                  <span className="ledger-sort-arrows" aria-hidden="true">
+                    <ChevronUp data-active={sortKey === column.key && sortDirection === "asc"} />
+                    <ChevronDown data-active={sortKey === column.key && sortDirection === "desc"} />
+                  </span>
+                </Button>
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sortedGroups.map((group) => (
+            <Fragment key={group.symbol}>
+              <TableRow className="ledger-data-row" data-state={activeSymbol === group.symbol ? "selected" : undefined}
+                style={{ "--holding-color": heatmapThemeColor(group.symbol) } as CSSProperties}
+                onFocus={() => onActiveSymbolChange(group.symbol)}
+                onBlur={() => onActiveSymbolChange(null)}
+                onMouseEnter={() => onActiveSymbolChange(group.symbol)}
+                onMouseLeave={() => onActiveSymbolChange(null)}>
+                <TableCell>
+                  <div className="ledger-identity">
+                    <Link href={`/positions/${encodeURIComponent(group.symbol)}`} className="ledger-symbol">
+                      <i className="holding-mark" aria-hidden="true" />
+                      <strong>{group.symbol}</strong><span className="sr-only">，查看持仓详情</span>
+                    </Link>
+                    {earningsBySymbol.has(group.symbol) && <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon-sm" aria-label={`${group.symbol} 财报提醒`}><CalendarDays /></Button>
+                    </TooltipTrigger><TooltipContent><PositionReminder event={earningsBySymbol.get(group.symbol)} asOf={earningsUpdatedAt} /></TooltipContent></Tooltip></TooltipProvider>}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-        {sortedGroups.length === 0 && <Empty><EmptyHeader><EmptyDescription>当前快照没有持仓。</EmptyDescription></EmptyHeader></Empty>}
-      </div>
+                </TableCell>
+                <TableCell>{quotes[group.symbol] ? money(quotes[group.symbol].price) : <span className="quote-muted">{quoteStatus === "loading" ? "读取中" : "—"}</span>}</TableCell>
+                <TableCell><span className="daily-change-value" data-direction={quotes[group.symbol]?.changePercent < 0 ? "loss" : quotes[group.symbol]?.changePercent > 0 ? "gain" : "neutral"}>{quotes[group.symbol] ? percent(quotes[group.symbol].changePercent, true) : "—"}</span></TableCell>
+                <TableCell>{money(group.value)}</TableCell>
+                <TableCell>{percent(group.weight)}</TableCell>
+                <TableCell>{group.stock ? money(group.stock.actualCost) : <span className="quote-muted">—</span>}</TableCell>
+                <TableCell>{money(group.cost)}</TableCell>
+                <TableCell><Pnl value={group.unrealized} /></TableCell>
+                <TableCell><Pnl value={group.realized} /></TableCell>
+                <TableCell><Pnl value={group.netPnl} /></TableCell>
+              </TableRow>
+              {group.options.length > 0 && (
+                <TableRow className="ledger-options-row"><TableCell colSpan={ledgerColumns.length}>
+                  <div className="position-submenu" aria-label={`${group.symbol} 期权持仓`}>
+                    {group.options.map((option) => (
+                      <div className="position-submenu-row" key={option.contract}>
+                        <span className="submenu-type">期权</span>
+                        <strong>{option.contract}</strong>
+                        <span className="submenu-quantity">{number(option.quantity, 0, 4)} 张</span>
+                        <i className="submenu-value">{money(option.marketValue)}</i>
+                      </div>
+                    ))}
+                  </div>
+                </TableCell></TableRow>
+              )}
+            </Fragment>
+          ))}
+          {sortedGroups.length === 0 && <TableRow><TableCell colSpan={ledgerColumns.length}><Empty><EmptyHeader><EmptyDescription>当前快照没有持仓。</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
+        </TableBody>
+      </Table>
     </div>
   );
 }

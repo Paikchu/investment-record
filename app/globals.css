@@ -1052,6 +1052,21 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .ledger-sort select { padding: 0 28px 0 8px; }
 .ledger-sort button { min-width: 72px; padding: 0 10px; cursor: pointer; }
 
+/* Single-line holdings ledger; narrow screens scroll within the table. */
+.ledger-table { font-variant-numeric: tabular-nums lining-nums; }
+.ledger-table th:not(:first-child), .ledger-table td:not(:first-child) { text-align: right; }
+.ledger-table th { padding: 4px 0; }
+.ledger-table td { height: 48px; padding: 8px; }
+.ledger-table th:first-child, .ledger-table td:first-child { position: sticky; left: 0; background: var(--background); }
+.ledger-table tr[data-state="selected"] td:first-child { background: var(--muted); }
+.ledger-identity, .ledger-symbol { display: flex; align-items: center; gap: 8px; }
+.ledger-symbol { text-decoration: none; }
+.ledger-symbol:hover { text-decoration: underline; }
+.ledger-sort-arrows { display: flex; flex-direction: column; }
+.ledger-sort-arrows svg { margin-block: -3px; color: var(--muted-foreground); opacity: .35; }
+.ledger-sort-arrows svg[data-active="true"] { color: var(--foreground); opacity: 1; }
+.ledger-table .ledger-options-row td { height: auto; padding: 0 8px; position: static; }
+
 .position-columns,
 .position-list { min-width: 0; }
 
