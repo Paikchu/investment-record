@@ -360,8 +360,8 @@ h2:not([data-slot]) {
 .ledger-heading h2 { font-size: 22px; }
 
 .portfolio-analysis-stack > .heatmap-section {
-  margin-top: 26px;
-  padding-top: 24px;
+  margin-top: 16px;
+  padding-top: 0;
   display: flex;
   flex-direction: column;
 }
@@ -393,7 +393,7 @@ h2:not([data-slot]) {
 
 .allocation-mode-panel > .allocation-wrap {
   height: 100%;
-  align-items: flex-start;
+  align-items: center;
 }
 
 .allocation-mode-panel h3 {
