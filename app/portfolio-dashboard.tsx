@@ -590,7 +590,7 @@ export function PortfolioDashboard({
           <PortfolioHeatmap quotes={quoteState.quotes} holdings={heatmapHoldings} activeSymbol={activeSymbol} onActiveSymbolChange={setActiveSymbol} />
         </aside>
         <section className="ledger-panel ledger-page" aria-labelledby="ledger-title">
-          <Tabs defaultValue="current" className="gap-0">
+          <Tabs defaultValue="current" className="ledger-tabs gap-0">
             <div className="ledger-heading">
               <h2 id="ledger-title">投资账本</h2>
               <div className="ledger-heading-actions">
@@ -616,7 +616,7 @@ export function PortfolioDashboard({
             <TabsContent value="historical" className="ledger-content">
               <HistoricalPositionLedger groups={historicalPositionGroups} />
             </TabsContent>
-            <TabsContent value="plans" className="ledger-content">
+            <TabsContent value="plans" forceMount className="ledger-content">
               <HoldingPlansPanel />
             </TabsContent>
           </Tabs>

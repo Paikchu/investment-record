@@ -2346,3 +2346,32 @@ td { font-size: 14px; }
 }
 .heatmap-plot[data-mode="logo"] .heatmap-tile-compact::after,
 .heatmap-plot[data-mode="logo"] .heatmap-tile-symbol-only::after { background: rgb(255 255 255 / 65%); }
+
+/* Keep prefetched plans mounted without exposing an inactive panel to focus. */
+.ledger-tabs > [data-slot="tabs-content"][data-state="inactive"] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ledger-tabs [data-slot="tabs-trigger"] {
+    transition: background-color 180ms cubic-bezier(.25, 1, .5, 1),
+      color 180ms cubic-bezier(.25, 1, .5, 1),
+      box-shadow 180ms cubic-bezier(.25, 1, .5, 1);
+  }
+  .ledger-tabs > [data-slot="tabs-content"][data-state="active"] {
+    animation: ledger-tab-enter 180ms cubic-bezier(.25, 1, .5, 1);
+  }
+}
+
+@keyframes ledger-tab-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ledger-tabs [data-slot="tabs-trigger"],
+  .ledger-tabs > [data-slot="tabs-content"] {
+    animation: none;
+    transition: none;
+  }
+}

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { AddPlanDialog } from "./AddPlanDialog";
 import { Button } from "@/components/ui/button";
 import { Empty } from "@/components/ui/empty";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { HoldingPlanSummary } from "@/lib/holding-plan-store";
 
@@ -32,8 +31,7 @@ export function HoldingPlansPanel() {
   }, [attempt]);
 
   if (error) return <Empty className="min-h-64"><p role="alert">{error}</p><Button variant="outline" onClick={() => setAttempt((value) => value + 1)}>重试</Button></Empty>;
-  if (plans === null) return <div className="flex min-h-64 items-center justify-center" role="status" aria-label="正在读取持仓计划"><Skeleton className="h-9 w-36" /></div>;
-  if (plans.length === 0) return <Empty className="min-h-64"><AddPlanDialog /></Empty>;
+  if (plans === null || plans.length === 0) return <Empty className="min-h-64" aria-busy={plans === null}><AddPlanDialog /></Empty>;
 
   return (
     <div className="flex flex-col gap-4 py-4">
