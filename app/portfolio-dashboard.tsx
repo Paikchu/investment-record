@@ -588,7 +588,7 @@ export function PortfolioDashboard({
             <div className="section-divider" aria-hidden="true" />
             <AllocationPanel groups={positionGroups} activeSymbol={activeSymbol} onActiveSymbolChange={setActiveSymbol} />
           </section>
-          <PortfolioHeatmap holdings={heatmapHoldings} activeSymbol={activeSymbol} onActiveSymbolChange={setActiveSymbol} />
+          <PortfolioHeatmap quotes={quoteState.quotes} holdings={heatmapHoldings} activeSymbol={activeSymbol} onActiveSymbolChange={setActiveSymbol} />
         </aside>
         <section className="ledger-panel ledger-page" aria-labelledby="ledger-title">
           <div className="ledger-heading">

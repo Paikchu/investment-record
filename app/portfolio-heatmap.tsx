@@ -23,7 +23,13 @@ import {
 } from "@/lib/portfolio-heatmap";
 import { money, percent } from "@/lib/portfolio-format";
 
-const signedPercent = (value: number) => percent(value, true);
+import type { MarketQuoteMap } from "@/lib/yahoo-quotes";
+
+const signedPercent = (value: number | null) => value === null ? "—" : percent(value, true);
+const dailyRate = (quotes: MarketQuoteMap, symbol: string): number | null => {
+  const value = quotes[symbol]?.changePercent;
+  return Number.isFinite(value) ? value : null;
+};
 
 type HeatStyle = CSSProperties & { "--heat-strength": string; "--holding-color": string };
 type DomainStyle = CSSProperties & { "--theme-color": string };
@@ -44,10 +50,12 @@ function heatStyle(symbol: string, rate: number): HeatStyle {
 
 export function PortfolioHeatmap({
   holdings,
+  quotes,
   activeSymbol,
   onActiveSymbolChange,
 }: {
   holdings: HeatmapHolding[];
+  quotes: MarketQuoteMap;
   activeSymbol: string | null;
   onActiveSymbolChange: (symbol: string | null) => void;
 }) {
@@ -65,6 +73,7 @@ export function PortfolioHeatmap({
   )), [groups, plotSize]);
   const [popover, setPopover] = useState<PopoverState | null>(null);
   const selected = holdings.find((holding) => holding.symbol === popover?.symbol);
+  const selectedRate = selected ? dailyRate(quotes, selected.symbol) : null;
   const totalWeight = holdings.reduce((sum, holding) => sum + holding.portfolioWeight, 0);
 
   const positionPopover = useCallback((symbol: string, tile: HTMLButtonElement) => {
@@ -132,14 +141,14 @@ export function PortfolioHeatmap({
       </div>
       <div className="heatmap-toolbar">
         <div className="ledger-view-switch" role="group" aria-label="热力图显示方式">
-          <span data-active={!showLogos}>涨跌幅</span>
-          <Switch aria-label="切换涨跌幅与公司 Logo" checked={showLogos} onCheckedChange={setShowLogos} aria-controls="holdings-heatmap-plot" />
+          <span data-active={!showLogos}>日涨跌幅</span>
+          <Switch aria-label="切换日涨跌幅与公司 Logo" checked={showLogos} onCheckedChange={setShowLogos} aria-controls="holdings-heatmap-plot" />
           <span data-active={showLogos}>公司 Logo</span>
         </div>
-      <div className="heatmap-key" aria-label="未实现盈亏率图例" hidden={showLogos}>
-        <span><i className="key-loss" aria-hidden="true" />亏损</span>
+      <div className="heatmap-key" aria-label="日涨跌幅图例" hidden={showLogos}>
+        <span><i className="key-loss" aria-hidden="true" />下跌</span>
         <span><i className="key-neutral" aria-hidden="true" />持平</span>
-        <span><i className="key-gain" aria-hidden="true" />盈利</span>
+        <span><i className="key-gain" aria-hidden="true" />上涨</span>
       </div>
       </div>
       <div id="holdings-heatmap-plot" data-mode={showLogos ? "logo" : "performance"} className="heatmap-plot" aria-label="持仓主题热力图" ref={plotRef}>
@@ -173,7 +182,8 @@ export function PortfolioHeatmap({
                 {holdingRectangles.map((holdingRect) => {
                   const holding = group.holdings.find((item) => item.symbol === holdingRect.id);
                   if (!holding) return null;
-                  const direction = holding.unrealizedRate < -0.01 ? "loss" : holding.unrealizedRate > 0.01 ? "gain" : "neutral";
+                  const rate = dailyRate(quotes, holding.symbol);
+                  const direction = rate !== null && rate < 0 ? "loss" : rate !== null && rate > 0 ? "gain" : "neutral";
                   const density = heatmapTileDensity(holdingRect.width, holdingRect.height);
 
                   return (
@@ -184,7 +194,7 @@ export function PortfolioHeatmap({
                       data-direction={direction}
                       aria-pressed={holding.symbol === selected?.symbol}
                       aria-describedby={holding.symbol === selected?.symbol ? "heatmap-popover" : undefined}
-                      aria-label={`${holding.symbol}，${holding.domain}，组合权重 ${holding.portfolioWeight.toFixed(2)}%，未实现盈亏率 ${signedPercent(holding.unrealizedRate)}`}
+                      aria-label={`${holding.symbol}，${holding.domain}，组合权重 ${holding.portfolioWeight.toFixed(2)}%，日涨跌幅 ${signedPercent(rate)}`}
                       key={holding.symbol}
                       onBlur={schedulePopoverClose}
                       onClick={(event) => showPopover(holding, event.currentTarget)}
@@ -198,7 +208,7 @@ export function PortfolioHeatmap({
                       onMouseEnter={(event) => showPopover(holding, event.currentTarget)}
                       onMouseLeave={schedulePopoverClose}
                       style={{
-                        ...heatStyle(holding.symbol, holding.unrealizedRate),
+                        ...heatStyle(holding.symbol, rate ?? 0),
                         left: `${holdingRect.x / groupRect.width * 100}%`,
                         top: `${holdingRect.y / groupRect.height * 100}%`,
                         width: `${holdingRect.width / groupRect.width * 100}%`,
@@ -209,7 +219,7 @@ export function PortfolioHeatmap({
                       <strong>{holding.symbol}</strong>
                       <span className="heatmap-tile-metrics">
                         <i>{holding.portfolioWeight.toFixed(2)}%</i>
-                        <b>{signedPercent(holding.unrealizedRate)}</b>
+                        <b>{signedPercent(rate)}</b>
                       </span>
                     </button>
                   );
@@ -236,7 +246,7 @@ export function PortfolioHeatmap({
               <div><dt>市值</dt><dd>{money(selected.marketValue)}</dd></div>
               <div><dt>组合权重</dt><dd>{selected.portfolioWeight.toFixed(2)}%</dd></div>
               <div><dt>持仓成本</dt><dd>{money(selected.costBasis)}</dd></div>
-              <div><dt>未实现盈亏率</dt><dd className={selected.unrealizedRate < 0 ? "loss" : selected.unrealizedRate > 0 ? "gain" : "muted"}>{signedPercent(selected.unrealizedRate)}</dd></div>
+              <div><dt>日涨跌幅</dt><dd className={selectedRate !== null && selectedRate < 0 ? "loss" : selectedRate !== null && selectedRate > 0 ? "gain" : "muted"}>{signedPercent(selectedRate)}</dd></div>
             </dl>
           </div>
         )}
