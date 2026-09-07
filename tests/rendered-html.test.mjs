@@ -354,8 +354,6 @@ test("uses investment theme colors for heatmap headers and holding marks", async
   assert.match(heatmap, /"--theme-color": heatmapDomainColor\(group\.domain\)/);
   assert.match(heatmap, /"--holding-color": heatmapThemeColor\(symbol\)/);
   assert.match(css, /\.heatmap-domain-heading\s*\{[^}]*background:\s*color-mix\(in oklch, var\(--theme-color\) 34%, var\(--paper\)\);[^}]*box-shadow:\s*inset 0 4px 0 var\(--theme-color\);/s);
-  assert.match(css, /\.heatmap-tile\[data-direction="loss"\]\s*\{[^}]*color-mix\(in oklch,/s);
-  assert.match(css, /\.heatmap-tile\[data-direction="gain"\]\s*\{[^}]*color-mix\(in oklch,/s);
   assert.match(css, /\.holding-mark\s*\{[^}]*background:\s*var\(--holding-color\);/s);
 });
 

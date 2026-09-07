@@ -698,15 +698,29 @@ h2:not([data-slot]) {
   text-align: left;
 }
 
-.heatmap-tile[data-direction="loss"] {
-  background: color-mix(in oklch, var(--paper-deep), var(--vermilion) var(--heat-strength));
-}
+.heatmap-tile[data-change-band="-5"] { background: #f87171; }
+.heatmap-tile[data-change-band="-4"] { background: #fca5a5; }
+.heatmap-tile[data-change-band="-3"] { background: #fecaca; }
+.heatmap-tile[data-change-band="-2"] { background: #fee2e2; }
+.heatmap-tile[data-change-band="-1"] { background: #fff1f2; }
+.heatmap-tile[data-change-band="0"] { background: #e4e4e7; }
+.heatmap-tile[data-change-band="1"] { background: #f0fdf4; }
+.heatmap-tile[data-change-band="2"] { background: #dcfce7; }
+.heatmap-tile[data-change-band="3"] { background: #bbf7d0; }
+.heatmap-tile[data-change-band="4"] { background: #86efac; }
+.heatmap-tile[data-change-band="5"] { background: #4ade80; }
 
-.heatmap-tile[data-direction="gain"] {
-  background: color-mix(in oklch, var(--paper-deep), var(--sage) var(--heat-strength));
-}
-
-.heatmap-tile[data-direction="neutral"] { background: var(--paper-deep); }
+.dark .heatmap-tile[data-change-band="-5"] { background: #7f1d1d; }
+.dark .heatmap-tile[data-change-band="-4"] { background: #711f24; }
+.dark .heatmap-tile[data-change-band="-3"] { background: #602329; }
+.dark .heatmap-tile[data-change-band="-2"] { background: #482329; }
+.dark .heatmap-tile[data-change-band="-1"] { background: #322326; }
+.dark .heatmap-tile[data-change-band="0"] { background: #3f3f46; }
+.dark .heatmap-tile[data-change-band="1"] { background: #203129; }
+.dark .heatmap-tile[data-change-band="2"] { background: #203e2d; }
+.dark .heatmap-tile[data-change-band="3"] { background: #205235; }
+.dark .heatmap-tile[data-change-band="4"] { background: #166534; }
+.dark .heatmap-tile[data-change-band="5"] { background: #14733b; }
 
 .heatmap-tile:hover { filter: saturate(1.08) brightness(.98); }
 .heatmap-tile[data-active="true"] {

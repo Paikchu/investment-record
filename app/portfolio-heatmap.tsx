@@ -11,7 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import {
   calculatePopoverPosition,
   groupHeatmapHoldings,
-  heatmapColorStrength,
+  heatmapChangeBand,
   heatmapDomainDensity,
   heatmapDomainColor,
   heatmapThemeColor,
@@ -31,7 +31,7 @@ const dailyRate = (quotes: MarketQuoteMap, symbol: string): number | null => {
   return Number.isFinite(value) ? value : null;
 };
 
-type HeatStyle = CSSProperties & { "--heat-strength": string; "--holding-color": string };
+type HeatStyle = CSSProperties & { "--holding-color": string };
 type DomainStyle = CSSProperties & { "--theme-color": string };
 type PopoverState = { symbol: string; left: number; top: number };
 
@@ -41,9 +41,8 @@ const densityClassNames: Record<HeatmapTileDensity, string> = {
   "symbol-only": "heatmap-tile-symbol-only",
 };
 
-function heatStyle(symbol: string, rate: number): HeatStyle {
+function heatStyle(symbol: string): HeatStyle {
   return {
-    "--heat-strength": `${heatmapColorStrength(rate)}%`,
     "--holding-color": heatmapThemeColor(symbol),
   };
 }
@@ -192,6 +191,7 @@ export function PortfolioHeatmap({
                       className={`heatmap-tile ${densityClassNames[density]}`}
                       data-active={activeSymbol === holding.symbol}
                       data-direction={direction}
+                      data-change-band={heatmapChangeBand(rate)}
                       aria-pressed={holding.symbol === selected?.symbol}
                       aria-describedby={holding.symbol === selected?.symbol ? "heatmap-popover" : undefined}
                       aria-label={`${holding.symbol}，${holding.domain}，组合权重 ${holding.portfolioWeight.toFixed(2)}%，日涨跌幅 ${signedPercent(rate)}`}
@@ -208,7 +208,7 @@ export function PortfolioHeatmap({
                       onMouseEnter={(event) => showPopover(holding, event.currentTarget)}
                       onMouseLeave={schedulePopoverClose}
                       style={{
-                        ...heatStyle(holding.symbol, rate ?? 0),
+                        ...heatStyle(holding.symbol),
                         left: `${holdingRect.x / groupRect.width * 100}%`,
                         top: `${holdingRect.y / groupRect.height * 100}%`,
                         width: `${holdingRect.width / groupRect.width * 100}%`,

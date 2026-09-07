@@ -234,3 +234,10 @@ export function layoutTreemap<T extends TreemapInput>(items: T[], width = 100, h
 
   return solve(scaled, { x: 0, y: 0, width, height }).rectangles;
 }
+
+export function heatmapChangeBand(rate: number | null): number {
+  if (rate === null || !Number.isFinite(rate) || rate === 0) return 0;
+  const magnitude = Math.abs(rate);
+  const band = magnitude < 1 ? 1 : magnitude < 3 ? 2 : magnitude < 5 ? 3 : magnitude < 10 ? 4 : 5;
+  return rate < 0 ? -band : band;
+}

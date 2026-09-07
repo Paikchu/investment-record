@@ -322,3 +322,13 @@ test("keeps the floating detail window inside the plot after resize", async () =
   );
   assert.equal(adjacent.left, 110);
 });
+
+test("maps daily change boundaries to fixed symmetric color bands", async () => {
+  const { heatmapChangeBand } = await import("../lib/portfolio-heatmap.ts");
+  for (const [rate, band] of [[0, 0], [0.01, 1], [0.99, 1], [1, 2], [2.99, 2], [3, 3], [5, 4], [10, 5], [100, 5]]) {
+    assert.equal(heatmapChangeBand(rate), band);
+    assert.equal(heatmapChangeBand(-rate), band === 0 ? 0 : -band);
+  }
+  assert.equal(heatmapChangeBand(null), 0);
+  assert.equal(heatmapChangeBand(NaN), 0);
+});
