@@ -2342,3 +2342,21 @@ td { font-size: 14px; }
     @apply font-sans;
   }
 }
+
+/* Keep the treemap geometry and metrics identical across display modes. */
+.heatmap-toolbar { order: 2; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-bottom: 10px; }
+.heatmap-toolbar .heatmap-key { margin: 0; }
+.heatmap-key[hidden] { display: none; }
+.heatmap-plot[data-mode="logo"] .heatmap-tile { background: #fff; color: #18181b; isolation: isolate; }
+.heatmap-plot[data-mode="logo"] .heatmap-tile > .company-logo {
+  position: absolute; inset: 0; width: 100%; height: 100%; border: 0; border-radius: 0;
+  background: #fff; z-index: -2; pointer-events: none;
+}
+.heatmap-plot[data-mode="logo"] .company-logo img { inset: 12%; width: 76%; height: 76%; object-fit: contain; }
+.heatmap-plot[data-mode="logo"] .company-logo-fallback { font-size: clamp(18px, 25cqi, 64px); color: #a1a1aa; }
+.heatmap-plot[data-mode="logo"] .heatmap-tile::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(to bottom, rgb(255 255 255 / 8%) 25%, rgb(255 255 255 / 85%) 72%, #fff 100%);
+}
+.heatmap-plot[data-mode="logo"] .heatmap-tile-compact::after,
+.heatmap-plot[data-mode="logo"] .heatmap-tile-symbol-only::after { background: rgb(255 255 255 / 65%); }

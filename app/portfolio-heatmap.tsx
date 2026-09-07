@@ -1,5 +1,7 @@
 "use client";
 
+import { CompanyLogo } from "./company-logo";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
@@ -49,6 +51,7 @@ export function PortfolioHeatmap({
   activeSymbol: string | null;
   onActiveSymbolChange: (symbol: string | null) => void;
 }) {
+  const [showLogos, setShowLogos] = useState(false);
   const plotRef = useRef<HTMLDivElement>(null);
   const activeTileRef = useRef<HTMLButtonElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -127,12 +130,19 @@ export function PortfolioHeatmap({
 
         </span>
       </div>
-      <div className="heatmap-key" aria-label="未实现盈亏率图例">
+      <div className="heatmap-toolbar">
+        <div className="ledger-view-switch" role="group" aria-label="热力图显示方式">
+          <span data-active={!showLogos}>涨跌幅</span>
+          <Switch aria-label="切换涨跌幅与公司 Logo" checked={showLogos} onCheckedChange={setShowLogos} aria-controls="holdings-heatmap-plot" />
+          <span data-active={showLogos}>公司 Logo</span>
+        </div>
+      <div className="heatmap-key" aria-label="未实现盈亏率图例" hidden={showLogos}>
         <span><i className="key-loss" aria-hidden="true" />亏损</span>
         <span><i className="key-neutral" aria-hidden="true" />持平</span>
         <span><i className="key-gain" aria-hidden="true" />盈利</span>
       </div>
-      <div className="heatmap-plot" aria-label="持仓主题热力图" ref={plotRef}>
+      </div>
+      <div id="holdings-heatmap-plot" data-mode={showLogos ? "logo" : "performance"} className="heatmap-plot" aria-label="持仓主题热力图" ref={plotRef}>
         {groupRectangles.map((groupRect) => {
           const group = groups.find((item) => item.domain === groupRect.id);
           if (!group) return null;
@@ -195,6 +205,7 @@ export function PortfolioHeatmap({
                         height: `${holdingRect.height / groupRect.height * 100}%`,
                       }}
                     >
+                      {showLogos && <CompanyLogo symbol={holding.symbol} />}
                       <strong>{holding.symbol}</strong>
                       <span className="heatmap-tile-metrics">
                         <i>{holding.portfolioWeight.toFixed(2)}%</i>
