@@ -64,7 +64,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 export function ThemeControl() {
   const context = useContext(ThemeContext);
   if (!context) throw new Error("ThemeControl requires ThemeProvider");
-  return <DropdownMenu>
+  // Theme selection should not lock body scrolling or override its safe-area padding.
+  return <DropdownMenu modal={false}>
     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon-sm" className="relative" aria-label="切换日间或夜间模式">
       <Sun className="rotate-0 scale-100 transition-transform motion-reduce:transition-none dark:-rotate-90 dark:scale-0" />
       <Moon className="absolute rotate-90 scale-0 transition-transform motion-reduce:transition-none dark:rotate-0 dark:scale-100" />
