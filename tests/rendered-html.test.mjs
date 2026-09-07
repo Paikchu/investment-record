@@ -244,6 +244,9 @@ test("renders holding and sector allocation charts together", async () => {
   assert.match(dashboard, /SectorAllocationRing/);
   assert.match(dashboard, /allocationColor\(index\)/);
   assert.match(css, /\.allocation-comparison/);
+  assert.match(css, /\.legend \{[^}]*gap: 2px;/s);
+  assert.match(css, /\.legend-row \{[^}]*min-height: 32px;/s);
+  assert.match(css, /@media \(max-width: 1024px\) \{[^]*?\.legend-row \{ min-height: 40px; \}/);
   assert.doesNotMatch(css, /\.allocation-tabs|\.allocation-tabpanels|\.allocation-tabpanel/);
 });
 
