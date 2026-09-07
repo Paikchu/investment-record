@@ -597,8 +597,8 @@ export function PortfolioDashboard({
                 <TabsList aria-label="账本持仓范围">
                   <TabsTrigger value="current">当前持仓 <small>{positionGroups.length}</small></TabsTrigger>
                   <TabsTrigger value="historical">历史持仓 <small>{historicalPositionGroups.length}</small></TabsTrigger>
+                  <TabsTrigger value="plans">持仓计划</TabsTrigger>
                 </TabsList>
-                <AddPlanDialog />
               </div>
             </div>
             <div className="section-divider" aria-hidden="true" />
@@ -615,6 +615,11 @@ export function PortfolioDashboard({
             </TabsContent>
             <TabsContent value="historical" className="ledger-content">
               <HistoricalPositionLedger groups={historicalPositionGroups} />
+            </TabsContent>
+            <TabsContent value="plans" className="ledger-content">
+              <div className="flex justify-end py-4">
+                <AddPlanDialog />
+              </div>
             </TabsContent>
           </Tabs>
         </section>

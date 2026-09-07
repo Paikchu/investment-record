@@ -439,7 +439,7 @@ test("switches between current and Flex-derived historical ticker groups", async
 
   assert.match(dashboard, /<Tabs defaultValue="current"/);
   assert.match(dashboard, /<TabsList aria-label="账本持仓范围">/);
-  for (const value of ["current", "historical"]) {
+  for (const value of ["current", "historical", "plans"]) {
     assert.ok(dashboard.includes(`<TabsTrigger value="${value}">`));
     assert.ok(dashboard.includes(`<TabsContent value="${value}"`));
   }
