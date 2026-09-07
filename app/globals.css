@@ -845,25 +845,10 @@ h2:not([data-slot]) {
   gap: 20px;
 }
 
-.ledger-heading-actions,
-.ledger-view-switch {
+.ledger-heading-actions {
   display: flex;
   align-items: center;
-}
-
-.ledger-heading-actions { gap: 18px; }
-.ledger-view-switch { gap: 9px; }
-.ledger-view-switch > span {
-  color: var(--ink-muted);
-  font-size: 12px;
-  font-weight: 650;
-  white-space: nowrap;
-}
-.ledger-view-switch > span[data-active="true"] { color: var(--ink); }
-.ledger-view-switch small {
-  color: inherit;
-  font-size: 10px;
-  font-weight: 650;
+  gap: 18px;
 }
 .historical-ledger-symbol { cursor: default; }
 

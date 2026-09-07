@@ -5,7 +5,7 @@ import { Empty, EmptyHeader, EmptyDescription } from "@/components/ui/empty";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronUp, ChevronDown, CalendarDays } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
@@ -517,7 +517,6 @@ export function PortfolioDashboard({
 }) {
   const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
   const [analysisExpanded, setAnalysisExpanded] = useState(false);
-  const [showHistoricalPositions, setShowHistoricalPositions] = useState(false);
   const [earningsAsOf] = useState(() => new Date().toISOString());
   const positionSymbols = useMemo(() => new Set(positionGroups.map((group) => group.symbol)), [positionGroups]);
   const quoteSymbols = useMemo(() => positionGroups.map((group) => group.symbol).join(","), [positionGroups]);
@@ -591,26 +590,19 @@ export function PortfolioDashboard({
           <PortfolioHeatmap quotes={quoteState.quotes} holdings={heatmapHoldings} activeSymbol={activeSymbol} onActiveSymbolChange={setActiveSymbol} />
         </aside>
         <section className="ledger-panel ledger-page" aria-labelledby="ledger-title">
-          <div className="ledger-heading">
-            <h2 id="ledger-title">投资账本</h2>
-            <div className="ledger-heading-actions">
-              <div className="ledger-view-switch" role="group" aria-label="账本持仓范围">
-                <span data-active={!showHistoricalPositions}>当前持仓 <small>{positionGroups.length}</small></span>
-                <Switch
-                  aria-label="切换当前持仓与历史持仓"
-                  checked={showHistoricalPositions}
-                  onCheckedChange={setShowHistoricalPositions}
-                />
-                <span data-active={showHistoricalPositions}>历史持仓 <small>{historicalPositionGroups.length}</small></span>
+          <Tabs defaultValue="current" className="gap-0">
+            <div className="ledger-heading">
+              <h2 id="ledger-title">投资账本</h2>
+              <div className="ledger-heading-actions">
+                <TabsList aria-label="账本持仓范围">
+                  <TabsTrigger value="current">当前持仓 <small>{positionGroups.length}</small></TabsTrigger>
+                  <TabsTrigger value="historical">历史持仓 <small>{historicalPositionGroups.length}</small></TabsTrigger>
+                </TabsList>
+                <AddPlanDialog />
               </div>
-              <AddPlanDialog />
             </div>
-          </div>
-          <div className="section-divider" aria-hidden="true" />
-          <div className="ledger-content">
-            {showHistoricalPositions ? (
-              <HistoricalPositionLedger groups={historicalPositionGroups} />
-            ) : (
+            <div className="section-divider" aria-hidden="true" />
+            <TabsContent value="current" className="ledger-content">
               <PositionLedger
                 groups={positionGroups}
                 activeSymbol={activeSymbol}
@@ -620,8 +612,11 @@ export function PortfolioDashboard({
                 earningsBySymbol={earningsBySymbol}
                 earningsUpdatedAt={earningsAsOf}
               />
-            )}
-          </div>
+            </TabsContent>
+            <TabsContent value="historical" className="ledger-content">
+              <HistoricalPositionLedger groups={historicalPositionGroups} />
+            </TabsContent>
+          </Tabs>
         </section>
       </div>
     </>
