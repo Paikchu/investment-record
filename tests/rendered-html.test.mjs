@@ -524,6 +524,20 @@ test("keeps the portfolio overview dense across desktop and tablet widths", asyn
   assert.match(mobileCss, /\.hero \{[^}]*grid-template-columns: 1fr;/s);
 });
 
+test("keeps every page inside a responsive device-safe edge", async () => {
+  const [css, layout] = await Promise.all([
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(css, /--page-edge: clamp\(16px, 2vw, 32px\);/);
+  assert.match(css, /body \{[^}]*padding-block-start: max\(var\(--page-edge\), env\(safe-area-inset-top, 0px\)\);/s);
+  assert.match(css, /body \{[^}]*padding-inline-end: max\(var\(--page-edge\), env\(safe-area-inset-right, 0px\)\);/s);
+  assert.match(css, /body \{[^}]*padding-block-end: max\(var\(--page-edge\), env\(safe-area-inset-bottom, 0px\)\);/s);
+  assert.match(css, /body \{[^}]*padding-inline-start: max\(var\(--page-edge\), env\(safe-area-inset-left, 0px\)\);/s);
+  assert.match(layout, /viewportFit: "cover"/);
+});
+
 test("keeps both allocation charts visible in a responsive grid", async () => {
   const [dashboard, css] = await Promise.all([
     readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),

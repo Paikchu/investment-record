@@ -7,6 +7,7 @@ import { themeScript } from "@/lib/theme-script";
 export const viewport: Viewport = {
   themeColor: "#fafafa",
   colorScheme: "light dark",
+  viewportFit: "cover",
 };
 
 export async function generateMetadata(): Promise<Metadata> {

@@ -43,6 +43,7 @@
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
+  --page-edge: clamp(16px, 2vw, 32px);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -74,6 +75,10 @@ html {
 
 body {
   margin: 0;
+  padding-block-start: max(var(--page-edge), env(safe-area-inset-top, 0px));
+  padding-inline-end: max(var(--page-edge), env(safe-area-inset-right, 0px));
+  padding-block-end: max(var(--page-edge), env(safe-area-inset-bottom, 0px));
+  padding-inline-start: max(var(--page-edge), env(safe-area-inset-left, 0px));
   color: var(--ink);
   background: var(--paper);
   font-family: var(--sans);
