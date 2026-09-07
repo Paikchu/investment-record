@@ -376,7 +376,6 @@ h2:not([data-slot]) {
   order: 1;
 }
 
-.portfolio-analysis-stack > .heatmap-section .heatmap-key { order: 2; }
 .portfolio-analysis-stack > .heatmap-section .heatmap-plot { order: 3; }
 
 .allocation-comparison {
@@ -553,26 +552,9 @@ h2:not([data-slot]) {
   font-size: 12px;
 }
 
-.heatmap-key {
-  margin: 8px 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--ink-soft);
-  font-size: 12px;
-}
 
-.heatmap-key span { display: inline-flex; align-items: center; gap: 5px; }
 
-.heatmap-key i {
-  width: 16px;
-  height: 5px;
-  display: block;
-}
 
-.key-loss { background: color-mix(in srgb, var(--paper-deep), var(--vermilion) 55%); }
-.key-neutral { background: var(--paper-deep); }
-.key-gain { background: color-mix(in srgb, var(--paper-deep), var(--sage) 55%); }
 
 .heatmap-plot {
   --heatmap-border: #a1a1aa;
@@ -2345,8 +2327,6 @@ td { font-size: 14px; }
 
 /* Keep the treemap geometry and metrics identical across display modes. */
 .heatmap-toolbar { order: 2; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-bottom: 10px; }
-.heatmap-toolbar .heatmap-key { margin: 0; }
-.heatmap-key[hidden] { display: none; }
 .heatmap-plot[data-mode="logo"] .heatmap-tile { background: #fff; color: #18181b; isolation: isolate; }
 .heatmap-plot[data-mode="logo"] .heatmap-tile > .company-logo {
   position: absolute; inset: 0; width: 100%; height: 100%; border: 0; border-radius: 0;

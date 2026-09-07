@@ -144,11 +144,6 @@ export function PortfolioHeatmap({
           <Switch aria-label="切换日涨跌幅与公司 Logo" checked={showLogos} onCheckedChange={setShowLogos} aria-controls="holdings-heatmap-plot" />
           <span data-active={showLogos}>公司 Logo</span>
         </div>
-      <div className="heatmap-key" aria-label="日涨跌幅图例" hidden={showLogos}>
-        <span><i className="key-loss" aria-hidden="true" />下跌</span>
-        <span><i className="key-neutral" aria-hidden="true" />持平</span>
-        <span><i className="key-gain" aria-hidden="true" />上涨</span>
-      </div>
       </div>
       <div id="holdings-heatmap-plot" data-mode={showLogos ? "logo" : "performance"} className="heatmap-plot" aria-label="持仓主题热力图" ref={plotRef}>
         {groupRectangles.map((groupRect) => {
