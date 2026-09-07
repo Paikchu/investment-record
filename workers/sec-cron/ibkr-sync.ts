@@ -1,4 +1,4 @@
-import { fetchFlexStatement, normalizeFlexStatement, queryPeriodDays } from "../../lib/ibkr-flex.ts";
+import { extractCapitalFlows, fetchFlexStatement, normalizeFlexStatement } from "../../lib/ibkr-flex.ts";
 import { selectTradeQueryPeriod } from "../../lib/portfolio-snapshot.ts";
 import type { SecCronEnv } from "./core.ts";
 
@@ -32,7 +32,7 @@ export async function runIbkrFlexSync(env: IbkrSyncEnv, fetcher: typeof fetch = 
   const csv = await fetchFlexStatement({
     token: env.IBKR_FLEX_TOKEN,
     queryId: env.IBKR_FLEX_QUERY_ID,
-    periodDays: queryPeriodDays(queryPeriod, now),
+    periodDays: 365,
     fetcher,
   });
   const input = normalizeFlexStatement(csv, {
@@ -40,6 +40,7 @@ export async function runIbkrFlexSync(env: IbkrSyncEnv, fetcher: typeof fetch = 
     queryPeriod,
     queryId: env.IBKR_FLEX_QUERY_ID,
   });
+  input.capitalFlows = extractCapitalFlows(csv);
   const publishResponse = await fetcher(`${origin}/api/internal/portfolio/sync`, {
     method: "POST",
     headers,

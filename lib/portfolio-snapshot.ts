@@ -1,3 +1,4 @@
+import { mergeCapitalFlows, totalNetDeposits, type CapitalFlowReport, type CapitalFlowHistory } from "./net-deposits.ts";
 export type TradeQueryPeriod = "DAYS_7" | "DAYS_30" | "DAYS_60" | "DAYS_90" | "YEAR_TO_DATE";
 export type TradeSyncStatus = "current" | "delayed";
 export type AssetClass = "STK" | "OPT";
@@ -8,6 +9,7 @@ export interface PortfolioAccount {
   netLiquidation: number;
   cashBalance: number;
   netDeposits: number;
+  netDepositsSource?: "FLEX";
 }
 
 export interface PortfolioPosition {
@@ -41,6 +43,7 @@ export interface PortfolioTrade {
 }
 
 export interface PortfolioSnapshotV1 {
+  capitalFlows?: CapitalFlowHistory;
   schemaVersion: 1;
   generatedAt: string;
   account: PortfolioAccount;
@@ -61,6 +64,7 @@ export interface PortfolioSnapshotV1 {
 }
 
 export interface SnapshotSyncInput {
+  capitalFlows?: CapitalFlowReport;
   generatedAt: string;
   account: Pick<PortfolioAccount, "netLiquidation" | "cashBalance">;
   positions: PortfolioPosition[];
@@ -210,6 +214,9 @@ export function buildPortfolioSnapshot(previous: PortfolioSnapshotV1, input: Sna
     throw new Error("Position values must be finite and quantities must be non-zero");
   }
 
+  if (previous.capitalFlows && !input.capitalFlows) throw new Error("Automatic net deposits require capital flow data");
+  if (input.capitalFlows && input.capitalFlows.toDate !== input.source?.reportDate) throw new Error("Capital flow date differs from snapshot");
+  const capitalFlows = input.capitalFlows ? mergeCapitalFlows(previous.capitalFlows, input.capitalFlows) : undefined;
   const snapshotYear = Number(input.source?.reportDate?.slice(0, 4) ?? new Date(input.generatedAt).getUTCFullYear());
   const trades = input.tradeSync.status === "current"
     ? mergeTrades(previous.trades, input.tradeSync.trades, snapshotYear)
@@ -219,13 +226,15 @@ export function buildPortfolioSnapshot(previous: PortfolioSnapshotV1, input: Sna
     : previous.tradeSync.lastSuccessfulTradeAt;
 
   return {
+    ...(capitalFlows ? { capitalFlows } : {}),
     schemaVersion: 1,
     generatedAt: input.generatedAt,
     account: {
       currency: "USD",
       netLiquidation: input.account.netLiquidation,
       cashBalance: input.account.cashBalance,
-      netDeposits: 70_000,
+      netDeposits: capitalFlows ? totalNetDeposits(capitalFlows) : previous.account.netDeposits,
+      ...(capitalFlows ? { netDepositsSource: "FLEX" as const } : {}),
     },
     positions: input.positions,
     trades,

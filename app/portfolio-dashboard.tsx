@@ -22,12 +22,10 @@ import { money, number, percent } from "@/lib/portfolio-format";
 import { heatmapThemeColor, type HeatmapHolding } from "@/lib/portfolio-heatmap";
 import type { PositionGroupView } from "@/lib/portfolio-view-model";
 import { AddPlanDialog } from "./AddPlanDialog";
-import { InvestmentSettingsDialog } from "./investment-settings-dialog";
 import { PortfolioHeatmap } from "./portfolio-heatmap";
 import { useMarketQuotes, type QuoteLoadStatus } from "./use-market-quotes";
 import type { MarketQuoteMap } from "@/lib/yahoo-quotes";
 
-const NET_DEPOSITS_STORAGE_KEY = "max-investment-record:net-deposits";
 
 function Pnl({ value }: { value: number }) {
   const className = value < 0 ? "loss" : value > 0 ? "gain" : "muted";
@@ -47,7 +45,6 @@ function PortfolioOverview({
   optionMarketValue,
   nextEarnings,
   nextEarningsReminder,
-  onOpenSettings,
 }: {
   netLiquidation: number;
   totalPnl: number;
@@ -61,7 +58,6 @@ function PortfolioOverview({
   optionMarketValue: number;
   nextEarnings?: EarningsEvent;
   nextEarningsReminder: ReturnType<typeof buildEarningsReminder> | null;
-  onOpenSettings: () => void;
 }) {
   return (
     <section className="portfolio-overview" aria-labelledby="portfolio-title">
@@ -83,11 +79,7 @@ function PortfolioOverview({
           <article>
             <div className="summary-metric-label">
               <span>净入金</span>
-              <TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon-sm" onClick={onOpenSettings} aria-label="调整净入金">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="m16 3 5 5-12 12-6 1 1-6L16 3Z" /><path d="m13 6 5 5" />
-                </svg>
-              </Button></TooltipTrigger><TooltipContent>调整净入金</TooltipContent></Tooltip></TooltipProvider>
+
             </div>
             <strong>{money(netDeposits)}</strong>
           </article>
@@ -449,10 +441,6 @@ export function PortfolioDashboard({
 }) {
   const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
   const [analysisExpanded, setAnalysisExpanded] = useState(false);
-  const [configuredNetDeposits, setConfiguredNetDeposits] = useState(netDeposits);
-  const [settingsOpen, setSettingsOpen] = useState(() => (
-    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("settings") === "1"
-  ));
   const [earningsAsOf] = useState(() => new Date().toISOString());
   const positionSymbols = useMemo(() => new Set(positionGroups.map((group) => group.symbol)), [positionGroups]);
   const quoteSymbols = useMemo(() => positionGroups.map((group) => group.symbol).join(","), [positionGroups]);
@@ -473,19 +461,8 @@ export function PortfolioDashboard({
     positionSymbols.has(event.symbol) && isUpcomingEarnings(event, earningsAsOf)
   ));
   const nextEarningsReminder = nextEarnings ? buildEarningsReminder(nextEarnings, earningsAsOf) : null;
-  const configuredTotalPnl = netLiquidation - configuredNetDeposits;
-  const configuredTotalPnlRate = configuredNetDeposits === 0 ? 0 : configuredTotalPnl / configuredNetDeposits * 100;
-
-  useEffect(() => {
-    const syncStoredNetDeposits = () => {
-      const storedValue = window.localStorage.getItem(NET_DEPOSITS_STORAGE_KEY);
-      const parsedValue = storedValue === null ? Number.NaN : Number(storedValue);
-      setConfiguredNetDeposits(Number.isFinite(parsedValue) && parsedValue >= 0 ? parsedValue : netDeposits);
-    };
-    syncStoredNetDeposits();
-    window.addEventListener("storage", syncStoredNetDeposits);
-    return () => window.removeEventListener("storage", syncStoredNetDeposits);
-  }, [netDeposits]);
+  const configuredTotalPnl = netLiquidation - netDeposits;
+  const configuredTotalPnlRate = netDeposits === 0 ? 0 : configuredTotalPnl / netDeposits * 100;
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -497,11 +474,6 @@ export function PortfolioDashboard({
     }
   }, []);
 
-  function saveNetDeposits(value: number) {
-    window.localStorage.setItem(NET_DEPOSITS_STORAGE_KEY, String(value));
-    setConfiguredNetDeposits(value);
-  }
-
   return (
     <>
       <div id="portfolio-panel" role="region" aria-labelledby="portfolio-title">
@@ -511,14 +483,13 @@ export function PortfolioDashboard({
           totalPnlRate={configuredTotalPnlRate}
           netLiquidationWithoutOptionPnl={netLiquidationWithoutOptionPnl}
           portfolioLeverage={portfolioLeverage}
-          netDeposits={configuredNetDeposits}
+          netDeposits={netDeposits}
           cashBalance={cashBalance}
           netPositionsValue={netPositionsValue}
           stockMarketValue={stockMarketValue}
           optionMarketValue={optionMarketValue}
           nextEarnings={nextEarnings}
           nextEarningsReminder={nextEarningsReminder}
-          onOpenSettings={() => setSettingsOpen(true)}
         />
       </div>
 
@@ -561,7 +532,6 @@ export function PortfolioDashboard({
           </div>
         </section>
       </div>
-      <InvestmentSettingsDialog open={settingsOpen} value={configuredNetDeposits} onClose={() => setSettingsOpen(false)} onSave={saveNetDeposits} />
     </>
   );
 }

@@ -57,7 +57,8 @@ export async function publishFlexSnapshot(
   if (
     previous.source?.method === "FLEX"
     && previous.source.reportDate
-    && raw.source.reportDate <= previous.source.reportDate
+    && (raw.source.reportDate < previous.source.reportDate
+      || (raw.source.reportDate === previous.source.reportDate && (previous.capitalFlows || !raw.capitalFlows)))
   ) {
     return { status: "unchanged", snapshot: previous };
   }
@@ -67,6 +68,7 @@ export async function publishFlexSnapshot(
     .filter((position) => position.asset_class === "STK" || position.asset_class === "OPT")
     .map(normalizeIbkrPosition);
   const snapshot = buildPortfolioSnapshot(previous, {
+    capitalFlows: raw.capitalFlows,
     generatedAt: raw.generatedAt,
     account: {
       netLiquidation: raw.summary.net_liquidation,

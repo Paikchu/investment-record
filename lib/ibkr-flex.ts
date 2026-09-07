@@ -1,3 +1,4 @@
+import type { CapitalFlowReport } from "./net-deposits.ts";
 import type { IbkrPosition, IbkrTrade, TradeQueryPeriod } from "./portfolio-snapshot.ts";
 
 const FLEX_BASE_URL = "https://ndcdyn.interactivebrokers.com/AccountManagement/FlexWebService";
@@ -23,6 +24,7 @@ export interface FlexSyncSource {
 }
 
 export interface FlexRawSyncInput {
+  capitalFlows?: CapitalFlowReport;
   generatedAt: string;
   summary: { net_liquidation: number };
   balances: { balances: Array<{ currency: string; cash_balance: number }> };
@@ -132,6 +134,45 @@ export function parseFlexDateTime(value: string): { iso: string; tradeDate: stri
 
 function latestBy(records: FlexRecord[], field: string): FlexRecord | undefined {
   return [...records].filter((record) => record[field]).sort((left, right) => right[field].localeCompare(left[field]))[0];
+}
+
+export function extractCapitalFlows(csv: string): CapitalFlowReport {
+  const sections = parseFlexSections(csv);
+  const accounts = sections.get("ACCT") ?? [];
+  if (accounts.length !== 1 || accounts[0].CurrencyPrimary !== "USD") throw new Error("Capital flows require one USD-base account");
+  const account = accounts[0];
+  const cashRows = (sections.get("CRTT") ?? []).filter(row => row.LevelOfDetail === "BaseCurrency");
+  if (cashRows.length !== 1) throw new Error("Capital flows require one base-currency cash summary");
+  const cash = cashRows[0];
+  const headers = new Set(parseCsv(csv).filter(row => row[0] === "HEADER").map(row => row[1]));
+  if (!headers.has("CTRN") || !headers.has("TRFR")) throw new Error("Capital flow report requires Cash Transactions and Transfers sections");
+  const deposits = (sections.get("CTRN") ?? []).filter(row => row.Type === "Deposits/Withdrawals" && row.LevelOfDetail === "DETAIL");
+  const transfers = (sections.get("TRFR") ?? []).filter(row => row.LevelOfDetail === "TRANSFER");
+  for (const row of [cash, ...deposits, ...transfers]) {
+    if (row.ClientAccountID !== account.ClientAccountID) throw new Error("Capital flow account mismatch");
+  }
+  const converted = (row: FlexRecord, field: string) => {
+    const rate = numberField(row, "FXRateToBase");
+    if (rate <= 0) throw new Error("Invalid capital flow FX rate");
+    return numberField(row, field) * rate;
+  };
+  const depositTotal = deposits.reduce((sum, row) => sum + converted(row, "Amount"), 0);
+  if (Math.abs(depositTotal - numberField(cash, "Deposit/Withdrawals")) > 0.02) throw new Error("Cash deposit details do not reconcile to cash report");
+  const cashTransfers = transfers.reduce((sum, row) => sum + converted(row, "CashTransfer"), 0);
+  if (Math.abs(cashTransfers - numberField(cash, "AccountTransfers")) > 0.02 || numberField(cash, "InternalTransfers") !== 0 || numberField(cash, "PaxosTransfers") !== 0) throw new Error("Cash transfers do not reconcile to cash report");
+  return {
+    accountId: account.ClientAccountID,
+    fundedDate: isoDate(account.DateFunded),
+    fromDate: isoDate(cash.FromDate),
+    toDate: isoDate(cash.ToDate),
+    flows: [
+      ...deposits.map(row => ({ id: `cash:${row.TransactionID}`, date: isoDate(row.ReportDate), amount: converted(row, "Amount") })),
+      ...transfers.map(row => ({ id: `transfer:${row.TransactionID}`, date: isoDate(row.ReportDate), amount: converted(row, "CashTransfer") + numberField(row, "PositionAmountInBase") })),
+    ].map(flow => {
+      if (flow.id.endsWith(":")) throw new Error("Capital flow transaction ID missing");
+      return flow;
+    }),
+  };
 }
 
 export function normalizeFlexStatement(

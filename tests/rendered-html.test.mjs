@@ -41,26 +41,14 @@ test("starts directly with the portfolio without a header or retired sections", 
   assert.match(html, /<h1 class="summary-nav-label" id="portfolio-title">当前净值<\/h1>/);
 });
 
-test("opens net deposit editing beside its metric", async () => {
-  const [response, dashboard, dialog, css] = await Promise.all([
-    render(),
-    readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/investment-settings-dialog.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
-  ]);
+test("shows backend net deposits without manual settings", async () => {
+  const response = await render();
   const html = await response.text();
-
-  assert.match(html, /class="summary-metric-label"[^]*?净入金[^]*?aria-label="调整净入金"/);
-  assert.match(dialog, /<DialogTitle>调整净入金<\/DialogTitle>/);
-  assert.doesNotMatch(html, />投资组合<|portfolio-settings|portfolio-title-row/);
-  assert.match(dialog, /<Dialog open=\{open\} onOpenChange/);
-  assert.match(dialog, /当前净入金/);
-  assert.match(dashboard, /onOpenSettings=\{\(\) => setSettingsOpen\(true\)\}/);
-  assert.match(dashboard, /localStorage\.getItem\(NET_DEPOSITS_STORAGE_KEY\)/);
-  assert.match(dashboard, /localStorage\.setItem\(NET_DEPOSITS_STORAGE_KEY, String\(value\)\)/);
-  assert.match(dashboard, /const configuredTotalPnl = netLiquidation - configuredNetDeposits/);
-  assert.match(dialog, /type="number"/);
-  assert.match(css, /\.settings-dialog \{[^}]*position: fixed;[^}]*width: min\(440px,/s);
+  const dashboard = await readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8");
+  assert.match(html, /净入金/);
+  assert.doesNotMatch(html, /调整净入金/);
+  assert.doesNotMatch(dashboard, /localStorage|InvestmentSettingsDialog|onOpenSettings/);
+  assert.match(dashboard, /const configuredTotalPnl = netLiquidation - netDeposits/);
 });
 
 test("renders the portfolio and investment ledger together", async () => {

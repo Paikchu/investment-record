@@ -75,3 +75,7 @@ npm run sec-cron:deploy
 - `POST /api/internal/sec/refresh/[ticker]`：定时刷新单个 ticker，要求 `x-sec-refresh-key`。
 - `GET /api/symbols?q=`：认证后的证券搜索，最多 10 条。
 - `PUT /api/plans/[ticker]`：认证、同源校验后的计划保存接口。
+
+净入金由 Flex Cash Transactions 的 Deposits/Withdrawals，加 Transfers 的现金及证券转移市值自动计算（按账户 USD 本位币折算，排除交易、股息、利息和税费）。采集器查询最近 365 天；首次必须覆盖 DateFunded，后续在 portfolio_state payload 中保留早期流水并替换重叠窗口。现金明细必须与 Cash Report 对账；缺失字段、断档或账户变化会中止更新。首次允许同一报告日期补算本金；自动模式不接受浏览器本地手动覆盖。
+
+上线需同时更新 Sites 与 sec-cron Worker，并完成首次历史初始化。如果首次查询窗口已晚于 DateFunded，必须先取得覆盖首次入金的历史报告完成初始化，不能把最近一年净入金当作累计本金。

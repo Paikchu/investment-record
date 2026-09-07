@@ -16,6 +16,7 @@ import {
 } from "../lib/portfolio-snapshot.ts";
 
 export interface RawSyncInput {
+  capitalFlows?: import("../lib/net-deposits.ts").CapitalFlowReport;
   generatedAt?: string;
   summary: { net_liquidation?: number };
   balances: { balances?: Array<{ currency?: string; cash_balance?: number }> };
@@ -54,7 +55,8 @@ if (
   && previous.source?.method === "FLEX"
   && raw.source.reportDate
   && previous.source.reportDate
-  && raw.source.reportDate <= previous.source.reportDate
+  && (raw.source.reportDate < previous.source.reportDate
+      || (raw.source.reportDate === previous.source.reportDate && (previous.capitalFlows || !raw.capitalFlows)))
 ) {
   console.log(`No new IBKR Flex report after ${previous.source.reportDate}`);
   process.exit(0);
@@ -70,6 +72,7 @@ const tradeSync = raw.tradeStatus === "current"
   ? { status: "current" as const, queryPeriod: raw.queryPeriod, trades: (raw.trades?.trades ?? []).map(normalizeIbkrTrade) }
   : { status: "delayed" as const, queryPeriod: raw.queryPeriod, message: raw.tradeMessage ?? "IBKR trades unavailable" };
 const snapshot = buildPortfolioSnapshot(previous, {
+  capitalFlows: raw.capitalFlows,
   generatedAt: raw.generatedAt ?? new Date().toISOString(),
   account: {
     netLiquidation: raw.summary.net_liquidation ?? Number.NaN,

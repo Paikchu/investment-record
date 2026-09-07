@@ -1,15 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { fetchFlexStatement, normalizeFlexStatement, parseCsv, parseFlexDateTime } from "../lib/ibkr-flex.ts";
+import { extractCapitalFlows, fetchFlexStatement, normalizeFlexStatement, parseCsv, parseFlexDateTime } from "../lib/ibkr-flex.ts";
 import { publishFlexSnapshot, readPortfolioSnapshot, type PortfolioDatabase } from "../lib/portfolio-store.ts";
 import { runIbkrFlexSync, type IbkrSyncEnv } from "../workers/sec-cron/ibkr-sync.ts";
 
 const fixture = [
+  '"HEADER","ACCT","ClientAccountID","CurrencyPrimary","DateFunded"',
+  '"DATA","ACCT","ACCOUNT","USD","20260101"',
+  '"HEADER","CTRN","ClientAccountID","CurrencyPrimary","FXRateToBase","Type","Amount","TransactionID","ReportDate","LevelOfDetail"',
+  '"DATA","CTRN","ACCOUNT","USD","1","Deposits/Withdrawals","1000","deposit1","20261201","DETAIL"',
+  '"HEADER","TRFR","ClientAccountID","ReportDate","LevelOfDetail","TransactionID","FXRateToBase","CashTransfer","PositionAmountInBase"',
   '"HEADER","EQUT","ClientAccountID","ReportDate","Total"',
   '"DATA","EQUT","ACCOUNT","20261231","70000.50"',
-  '"HEADER","CRTT","ClientAccountID","CurrencyPrimary","LevelOfDetail","ToDate","EndingCash"',
-  '"DATA","CRTT","ACCOUNT","USD","BaseCurrency","20261231","12000.25"',
+  '"HEADER","CRTT","ClientAccountID","CurrencyPrimary","LevelOfDetail","ToDate","EndingCash","FromDate","Deposit/Withdrawals","AccountTransfers","InternalTransfers","PaxosTransfers"',
+  '"DATA","CRTT","ACCOUNT","USD","BaseCurrency","20261231","12000.25","20260101","1000","0","0","0"',
   '"HEADER","POST","ClientAccountID","CurrencyPrimary","AssetClass","Symbol","Description","Conid","UnderlyingSymbol","Multiplier","ReportDate","Quantity","MarkPrice","PositionValue","CostBasisPrice","CostBasisMoney","FifoPnlUnrealized","LevelOfDetail"',
   '"DATA","POST","ACCOUNT","USD","STK","ACME","ACME, INC","123","","1","20261231","10","20","200","15","150","50","SUMMARY"',
   '"DATA","POST","ACCOUNT","USD","STK","ACME","ACME, INC","123","","1","20261231","6","20","120","14","84","36","LOT"',
@@ -176,4 +181,31 @@ test("runs one Flex request and publishes it through the authenticated site brid
   assert.equal(calls.at(-1)?.method, "POST");
   assert.equal(calls.at(-1)?.headers.get("x-portfolio-sync-key"), "portfolio-key");
   assert.equal(calls.at(-1)?.headers.get("oai-sites-authorization"), "Bearer site-token");
+});
+
+
+test("extracts and reconciles capital flows, rejecting incomplete cash data", () => {
+  const report = extractCapitalFlows(fixture);
+  assert.equal(report.flows[0].amount, 1000);
+  assert.equal(report.fromDate, "2026-01-01");
+  assert.throws(() => extractCapitalFlows(fixture.replace('"1000","deposit1"', '"900","deposit1"')), /reconcile/);
+});
+
+test("backfills same-date net deposits atomically, then skips an identical report", async () => {
+  const raw = normalizeFlexStatement(fixture, { generatedAt: "2027-01-01T14:00:00.000Z", queryPeriod: "DAYS_7", queryId: "1628251" });
+  const initialDb: PortfolioDatabase = { prepare() { return { bind() { return this; }, async first<T>() { return null as T | null; } }; }, async batch() { return []; } };
+  let stored = (await publishFlexSnapshot(initialDb, raw)).snapshot;
+  let writes = 0;
+  const database: PortfolioDatabase = {
+    prepare() { return { bind() { return this; }, async first<T>() { return { payload: JSON.stringify(stored) } as T; } }; },
+    async batch(statements) { assert.equal(statements.length, 2); writes++; return []; },
+  };
+  raw.capitalFlows = extractCapitalFlows(fixture);
+  const result = await publishFlexSnapshot(database, raw);
+  assert.equal(result.status, "published");
+  assert.equal(result.snapshot.account.netDeposits, 1000);
+  assert.equal(result.snapshot.account.netDepositsSource, "FLEX");
+  stored = result.snapshot;
+  assert.equal((await publishFlexSnapshot(database, raw)).status, "unchanged");
+  assert.equal(writes, 1);
 });

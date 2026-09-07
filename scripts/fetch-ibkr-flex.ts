@@ -3,7 +3,7 @@ import { readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
 
-import { fetchFlexStatement, normalizeFlexStatement, queryPeriodDays } from "../lib/ibkr-flex.ts";
+import { extractCapitalFlows, fetchFlexStatement, normalizeFlexStatement } from "../lib/ibkr-flex.ts";
 import { selectTradeQueryPeriod, type PortfolioSnapshotV1 } from "../lib/portfolio-snapshot.ts";
 
 const execFileAsync = promisify(execFile);
@@ -38,9 +38,10 @@ const queryPeriod = selectTradeQueryPeriod(previous.tradeSync.lastSuccessfulTrad
 const csv = await fetchFlexStatement({
   token: await readToken(),
   queryId,
-  periodDays: queryPeriodDays(queryPeriod, now),
+  periodDays: 365,
 });
 const input = normalizeFlexStatement(csv, { generatedAt: now.toISOString(), queryPeriod, queryId });
+input.capitalFlows = extractCapitalFlows(csv);
 const temporaryPath = join(dirname(outputPath), `.ibkr-flex-${process.pid}.tmp`);
 await writeFile(temporaryPath, `${JSON.stringify(input, null, 2)}\n`, { mode: 0o600 });
 await rename(temporaryPath, outputPath);
