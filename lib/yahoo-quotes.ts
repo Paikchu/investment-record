@@ -120,11 +120,9 @@ export function calculateRsi(closes: number[], period = 14): number | null {
 
 export async function handleQuoteRequest(
   request: Request,
-  user: { email: string } | null,
+  _user: { email: string } | null,
   fetcher: typeof fetch = fetch,
 ): Promise<Response> {
-  if (!user) return Response.json({ error: "未登录。" }, { status: 401 });
-
   const parsed = parseRequestedSymbols(new URL(request.url).searchParams.get("symbols"));
   if (!parsed.ok) return Response.json({ error: parsed.error }, { status: 400 });
 

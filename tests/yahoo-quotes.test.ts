@@ -152,7 +152,7 @@ test("rejects Yahoo non-success responses", async () => {
   );
 });
 
-test("rejects unauthenticated quote requests before calling Yahoo", async () => {
+test("serves public market quotes without account authentication", async () => {
   let calls = 0;
   const response = await handleQuoteRequest(
     new Request("https://example.com/api/quotes?symbols=MSFT"),
@@ -160,8 +160,8 @@ test("rejects unauthenticated quote requests before calling Yahoo", async () => 
     async () => { calls += 1; return Response.json(yahooPayload); },
   );
 
-  assert.equal(response.status, 401);
-  assert.equal(calls, 0);
+  assert.equal(response.status, 200);
+  assert.equal(calls, 1);
 });
 
 test("rejects invalid quote request parameters", async () => {
