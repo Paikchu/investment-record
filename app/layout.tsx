@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import "./globals.css";
 import { ThemeProvider } from "./theme-control";
 import { themeScript } from "@/lib/theme-script";
+import { NavigationDock } from "@/components/navigation-dock";
 
 export const viewport: Viewport = {
   themeColor: "#fafafa",
@@ -48,7 +49,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: themeScript }} /></head>
-      <body><ThemeProvider>{children}</ThemeProvider></body>
+      <body><ThemeProvider><NavigationDock />{children}</ThemeProvider></body>
     </html>
   );
 }

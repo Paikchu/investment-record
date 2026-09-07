@@ -4,6 +4,102 @@
 
 @custom-variant dark (&:is(.dark *));
 
+.navigation-dock { display: none; }
+.dock-placeholder { min-height: 80svh; }
+
+@media (min-width: 1025px) {
+  html body { padding-inline: clamp(96px, 7vw, 144px); }
+  .navigation-dock {
+    display: block;
+    position: fixed;
+    left: 16px;
+    top: 50%;
+    width: 32px;
+    height: 64px;
+    transform: translateY(-50%);
+    z-index: 40;
+  }
+  .navigation-dock-panel {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    opacity: 0;
+    transform: translateY(-50%) scale(0.55, 0.3);
+    transform-origin: 16px center;
+    pointer-events: none;
+    transition: transform 260ms cubic-bezier(0.25, 1, 0.5, 1), opacity 160ms ease-out;
+  }
+  .navigation-dock[data-expanded="true"] .navigation-dock-panel {
+    transform: translateY(-50%) scale(1);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .navigation-dock-compact {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 32px;
+    height: 64px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card);
+    cursor: pointer;
+    transition: opacity 140ms ease-out, transform 260ms cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  .navigation-dock-compact span { width: 4px; height: 4px; border-radius: 50%; background: var(--muted-foreground); }
+  .navigation-dock-compact span[data-active="true"] { background: var(--foreground); transform: scale(1.4); }
+  .navigation-dock[data-expanded="true"] .navigation-dock-compact {
+    opacity: 0;
+    transform: scale(1.15);
+    pointer-events: none;
+  }
+  .navigation-dock-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 60px;
+    margin: 0;
+    padding: 7px;
+    list-style: none;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--card);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 4%);
+  }
+  .navigation-dock-droplet {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 44px;
+    height: 44px;
+    pointer-events: none;
+    border-radius: 12px;
+    background: var(--accent);
+  }
+  .navigation-dock-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    color: var(--foreground);
+    text-decoration: none;
+    transition: background-color 150ms ease;
+  }
+  .navigation-dock-link:hover { background: color-mix(in srgb, var(--foreground) 4%, transparent); }
+  .navigation-dock-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navigation-dock-panel, .navigation-dock-compact, .navigation-dock-link, .navigation-dock-list { transition: none; }
+}
+
 :root {
   --paper: var(--background);
   --paper-deep: var(--border);

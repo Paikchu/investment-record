@@ -64,10 +64,21 @@ test("renders the portfolio and investment ledger together", async () => {
 });
 
 test("redirects old ledger and retired report URLs to the combined page", async () => {
-  for (const [path, target] of [["/ledger", "/#ledger-title"], ["/macro", "/"], ["/market-close", "/"], ["/market-close?date=2026-09-01", "/"]]) {
+  for (const [path, target] of [["/ledger", "/#ledger-title"], ["/market-close", "/"], ["/market-close?date=2026-09-01", "/"]]) {
     const response = await render(path);
     assert.equal(response.status, 307, path);
     assert.equal(new URL(response.headers.get("location"), "http://localhost").href, new URL(target, "http://localhost").href, path);
+  }
+});
+
+test("renders empty macro and settings destinations with the shared dock", async () => {
+  for (const path of ["/macro", "/settings"]) {
+    const response = await render(path);
+    assert.equal(response.status, 200);
+    const html = await response.text();
+    assert.match(html, /aria-label="主导航"/);
+    assert.match(html, /class="dock-placeholder"/);
+    assert.doesNotMatch(html, /id="portfolio-panel"|Notifications/);
   }
 });
 
