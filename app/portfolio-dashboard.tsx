@@ -23,6 +23,7 @@ import { money, number, percent } from "@/lib/portfolio-format";
 import { heatmapThemeColor, type HeatmapHolding } from "@/lib/portfolio-heatmap";
 import type { HistoricalPositionGroupView, PositionGroupView } from "@/lib/portfolio-view-model";
 import { AddPlanDialog } from "./AddPlanDialog";
+import { CompanyLogo } from "./company-logo";
 import { PortfolioHeatmap } from "./portfolio-heatmap";
 import { useMarketQuotes, type QuoteLoadStatus } from "./use-market-quotes";
 import type { MarketQuoteMap } from "@/lib/yahoo-quotes";
@@ -375,6 +376,7 @@ function PositionLedger({
                   <div className="ledger-identity">
                     <Link href={`/positions/${encodeURIComponent(group.symbol)}`} className="ledger-symbol">
                       <i className="holding-mark" aria-hidden="true" />
+                      <CompanyLogo symbol={group.symbol} />
                       <strong>{group.symbol}</strong><span className="sr-only">，查看持仓详情</span>
                     </Link>
                     {earningsBySymbol.has(group.symbol) && <TooltipProvider><Tooltip><TooltipTrigger asChild>
@@ -468,6 +470,7 @@ function HistoricalPositionLedger({ groups }: { groups: HistoricalPositionGroupV
               <TableCell>
                 <div className="ledger-symbol historical-ledger-symbol">
                   <i className="holding-mark" aria-hidden="true" />
+                  <CompanyLogo symbol={group.symbol} />
                   <strong>{group.symbol}</strong>
                 </div>
               </TableCell>

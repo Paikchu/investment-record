@@ -1089,6 +1089,43 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .ledger-identity, .ledger-symbol { display: flex; align-items: center; gap: 8px; }
 .ledger-symbol { text-decoration: none; }
 .ledger-symbol:hover { text-decoration: underline; }
+.company-logo {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--background) 88%, var(--muted));
+}
+.company-logo img {
+  position: absolute;
+  inset: 3px;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  object-fit: contain;
+}
+.company-logo-fallback {
+  font: 700 8px/1 var(--sans);
+  letter-spacing: -.02em;
+}
+.company-logo:not([data-failed]) .company-logo-fallback { opacity: 0; }
+.company-logo[data-size="lg"] {
+  width: 44px;
+  height: 44px;
+  flex-basis: 44px;
+  border-radius: 11px;
+}
+.company-logo[data-size="lg"] img {
+  inset: 5px;
+  width: calc(100% - 10px);
+  height: calc(100% - 10px);
+}
+.company-logo[data-size="lg"] .company-logo-fallback { font-size: 11px; }
 .ledger-sort-arrows { display: flex; flex-direction: column; }
 .ledger-sort-arrows svg { margin-block: -3px; color: var(--muted-foreground); opacity: .35; }
 .ledger-sort-arrows svg[data-active="true"] { color: var(--foreground); opacity: 1; }
@@ -1354,6 +1391,7 @@ td { font-size: 14px; }
 }
 
 .detail-hero h1 { font-size: clamp(46px, 6vw, 70px); }
+.detail-title-row { margin-top: 8px; display: flex; align-items: center; gap: 12px; }
 .detail-status { margin: 0 0 5px; color: var(--ink-muted); font-size: 12px; font-weight: 650; }
 .detail-company { max-width: 640px; margin: 7px 0 0; color: var(--ink-muted); font-size: 13px; }
 

@@ -9,6 +9,7 @@ import { Command, CommandInput, CommandList, CommandGroup, CommandItem } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Empty, EmptyHeader, EmptyDescription } from "@/components/ui/empty";
 import { PlusIcon } from "lucide-react";
+import { CompanyLogo } from "./company-logo";
 
 type SearchResult = { symbol: string; name: string; exchange: string; type: "stock" | "etf"; isHeld: boolean };
 
@@ -72,6 +73,7 @@ export function AddPlanDialog() {
                 setIsOpen(false);
                 router.push(`/positions/${encodeURIComponent(result.symbol)}`);
               }}>
+                <CompanyLogo symbol={result.symbol} />
                 <span className="flex min-w-0 flex-1 flex-col"><strong>{result.symbol}</strong><span className="truncate text-muted-foreground">{result.name}</span></span>
                 <span className="text-muted-foreground">{result.isHeld ? "当前持仓" : result.type === "etf" ? "ETF" : "股票"} · {result.exchange}</span>
               </CommandItem>)}

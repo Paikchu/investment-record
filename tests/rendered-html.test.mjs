@@ -398,6 +398,34 @@ test("renders a single-line shadcn ledger with sorting in every header", async (
   assert.match(table, /净权重，点击升序/);
 });
 
+test("adds resilient company logos to current and historical ledger rows", async () => {
+  const [dashboard, logo, css] = await Promise.all([
+    readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/company-logo.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.equal((dashboard.match(/<CompanyLogo symbol=\{group\.symbol\} \/>/g) ?? []).length, 2);
+  assert.match(logo, /images\.financialmodelingprep\.com\/symbol\/\$\{encodeURIComponent\(symbol\)\}\.png/);
+  assert.match(logo, /onError=\{\(\) => setFailed\(true\)\}/);
+  assert.match(logo, /referrerPolicy="no-referrer"/);
+  assert.match(css, /\.company-logo\s*\{[^}]*width:\s*26px;[^}]*height:\s*26px;/s);
+  assert.match(css, /\.company-logo img\s*\{[^}]*object-fit:\s*contain;/s);
+});
+
+test("automatically resolves logos for newly planned tickers", async () => {
+  const [dialog, detail, logo, css] = await Promise.all([
+    readFile(new URL("../app/AddPlanDialog.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/positions/[ticker]/PositionDetailContent.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/company-logo.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(dialog, /<CompanyLogo symbol=\{result\.symbol\} \/>/);
+  assert.match(detail, /<CompanyLogo symbol=\{ticker\} size="lg" \/>/);
+  assert.match(logo, /src=\{`https:\/\/images\.financialmodelingprep\.com\/symbol\/\$\{encodeURIComponent\(symbol\)\}\.png`\}/);
+  assert.match(css, /\.company-logo\[data-size="lg"\]\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;/s);
+});
 
 test("switches between current and Flex-derived historical ticker groups", async () => {
   const [dashboard, viewModel, snapshotSource] = await Promise.all([

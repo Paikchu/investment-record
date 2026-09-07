@@ -5,6 +5,7 @@ import { money, number, percent } from "@/lib/portfolio-format";
 import type { PositionGroupView } from "@/lib/portfolio-view-model";
 import type { MarketQuote } from "@/lib/yahoo-quotes";
 import { useMarketQuotes, type QuoteLoadStatus } from "@/app/use-market-quotes";
+import { CompanyLogo } from "@/app/company-logo";
 import { PlanEditor } from "./PlanEditor";
 import { SecFilingsSection } from "./SecFilingsSection";
 import { OwnershipSection } from "./OwnershipSection";
@@ -51,7 +52,10 @@ export function PositionDetailContent({
       <header className="detail-hero">
         <div>
           <Badge variant="secondary">{position ? "当前持仓" : "未持有 · 预先规划"}</Badge>
-          <h1 id="position-detail-title">{ticker}</h1>
+          <div className="detail-title-row">
+            <CompanyLogo symbol={ticker} size="lg" />
+            <h1 id="position-detail-title">{ticker}</h1>
+          </div>
           <p className="detail-company">{companyName}</p>
         </div>
         <div className="detail-market-panel">
