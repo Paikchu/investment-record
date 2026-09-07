@@ -75,3 +75,13 @@ async function stablePlanId(ownerEmail: string, ticker: string): Promise<string>
 function normalizeOwnerEmail(value: string): string {
   return value.trim().toLowerCase();
 }
+
+export type HoldingPlanSummary = Omit<HoldingPlanRecord, "levels">;
+
+export async function listHoldingPlans(database: ReadDatabase, ownerEmail: string): Promise<HoldingPlanSummary[]> {
+  const result = await database.prepare(`
+    SELECT id, ticker, company_name AS companyName, holding_reason AS holdingReason, updated_at AS updatedAt
+    FROM holding_plans WHERE owner_email = ? ORDER BY updated_at DESC, ticker
+  `).bind(normalizeOwnerEmail(ownerEmail)).all<HoldingPlanSummary>();
+  return result.results;
+}

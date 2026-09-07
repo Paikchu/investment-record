@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { saveHoldingPlan } from "../lib/holding-plan-store.ts";
+import { listHoldingPlans, saveHoldingPlan } from "../lib/holding-plan-store.ts";
 
 test("saves a plan and its replacement levels in one D1 batch", async () => {
   const batches: Array<Array<{ sql: string; values: unknown[] }>> = [];
@@ -31,3 +31,19 @@ test("saves a plan and its replacement levels in one D1 batch", async () => {
   assert.equal(plan.levels[0].id, "level-1");
 });
 
+
+test("lists only the authenticated owner's plans, newest first", async () => {
+  let query = "";
+  let bindings: unknown[] = [];
+  const expected = [{ id: "plan-1", ticker: "AAPL", companyName: "Apple", holdingReason: "Growth", updatedAt: "2026-09-07" }];
+  const database = { prepare(sql: string) {
+    query = sql;
+    return { bind(...values: unknown[]) {
+      bindings = values;
+      return { async first<T>() { return null as T | null; }, async all<T>() { return { results: expected as T[] }; } };
+    } };
+  } };
+  assert.deepEqual(await listHoldingPlans(database, " MAX@example.com "), expected);
+  assert.deepEqual(bindings, ["max@example.com"]);
+  assert.match(query, /WHERE owner_email = \? ORDER BY updated_at DESC, ticker/);
+});

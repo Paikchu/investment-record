@@ -22,7 +22,7 @@ import { buildEarningsReminder, isUpcomingEarnings, type EarningsEvent } from "@
 import { money, number, percent } from "@/lib/portfolio-format";
 import { heatmapThemeColor, type HeatmapHolding } from "@/lib/portfolio-heatmap";
 import type { HistoricalPositionGroupView, PositionGroupView } from "@/lib/portfolio-view-model";
-import { AddPlanDialog } from "./AddPlanDialog";
+import { HoldingPlansPanel } from "./HoldingPlansPanel";
 import { CompanyLogo } from "./company-logo";
 import { PortfolioHeatmap } from "./portfolio-heatmap";
 import { useMarketQuotes, type QuoteLoadStatus } from "./use-market-quotes";
@@ -617,9 +617,7 @@ export function PortfolioDashboard({
               <HistoricalPositionLedger groups={historicalPositionGroups} />
             </TabsContent>
             <TabsContent value="plans" className="ledger-content">
-              <div className="flex justify-end py-4">
-                <AddPlanDialog />
-              </div>
+              <HoldingPlansPanel />
             </TabsContent>
           </Tabs>
         </section>
