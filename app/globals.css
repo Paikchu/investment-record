@@ -1063,7 +1063,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 
 /* Single-line holdings ledger; narrow screens scroll within the table. */
 .ledger-table { font-variant-numeric: tabular-nums lining-nums; }
-.ledger-table th:not(:first-child), .ledger-table td:not(:first-child) { text-align: right; }
+.ledger-table th:not(:first-child), .ledger-table td:not(:first-child) { text-align: center; }
 .ledger-table th { padding: 4px 0; }
 .ledger-table td { height: 48px; padding: 8px; }
 .ledger-table th:first-child, .ledger-table td:first-child { position: sticky; left: 0; background: var(--background); }
