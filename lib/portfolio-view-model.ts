@@ -40,10 +40,24 @@ export type PositionGroupView = {
   grossValue: number;
 };
 
+export type HistoricalPositionGroupView = {
+  symbol: string;
+  name: string;
+  firstTradeDate: string;
+  lastTradeDate: string;
+  stockTrades: number;
+  optionTrades: number;
+  realized: number;
+};
+
+function portfolioTradeDate(trade: PortfolioSnapshotV1["trades"][number]): string {
+  return trade.tradeDate ?? trade.tradeTime.slice(0, 10);
+}
+
 export function buildPortfolioViewModel(snapshot: PortfolioSnapshotV1) {
-  const snapshotYear = new Date(snapshot.generatedAt).getUTCFullYear();
+  const snapshotYear = Number(snapshot.source?.reportDate?.slice(0, 4) ?? new Date(snapshot.generatedAt).getUTCFullYear());
   const realizedBySymbolAndType = snapshot.trades.reduce<Record<string, { stock: number; options: number }>>((totals, trade) => {
-    if (new Date(trade.tradeTime).getUTCFullYear() !== snapshotYear) return totals;
+    if (Number(portfolioTradeDate(trade).slice(0, 4)) !== snapshotYear) return totals;
     if (trade.securityType !== "STK" && trade.securityType !== "OPT") return totals;
     const symbol = canonicalUnderlying(trade.symbol);
     totals[symbol] ??= { stock: 0, options: 0 };
@@ -114,6 +128,36 @@ export function buildPortfolioViewModel(snapshot: PortfolioSnapshotV1) {
       };
     })
     .sort((left, right) => right.grossValue - left.grossValue);
+  const currentSymbols = new Set(positionGroups.map((group) => group.symbol));
+  const historicalBySymbol = snapshot.trades.reduce<Record<string, HistoricalPositionGroupView>>((groups, trade) => {
+    if (trade.securityType !== "STK" && trade.securityType !== "OPT") return groups;
+    const symbol = canonicalUnderlying(trade.symbol);
+    if (currentSymbols.has(symbol)) return groups;
+    const tradeDate = portfolioTradeDate(trade);
+    const group = groups[symbol] ?? {
+      symbol,
+      name: trade.contractDescription,
+      firstTradeDate: tradeDate,
+      lastTradeDate: tradeDate,
+      stockTrades: 0,
+      optionTrades: 0,
+      realized: 0,
+    };
+    if (trade.securityType === "STK") {
+      group.stockTrades += 1;
+      group.name = trade.contractDescription || group.name;
+    } else {
+      group.optionTrades += 1;
+    }
+    group.firstTradeDate = tradeDate < group.firstTradeDate ? tradeDate : group.firstTradeDate;
+    group.lastTradeDate = tradeDate > group.lastTradeDate ? tradeDate : group.lastTradeDate;
+    group.realized += trade.realizedPnl;
+    groups[symbol] = group;
+    return groups;
+  }, {});
+  const historicalPositionGroups = Object.values(historicalBySymbol)
+    .map((group) => ({ ...group, realized: Math.round(group.realized * 100) / 100 }))
+    .sort((left, right) => right.lastTradeDate.localeCompare(left.lastTradeDate) || left.symbol.localeCompare(right.symbol));
   const stockMarketValue = holdings.reduce((sum, holding) => sum + holding.value, 0);
   const optionMarketValue = optionContracts.reduce((sum, option) => sum + option.marketValue, 0);
 
@@ -121,9 +165,9 @@ export function buildPortfolioViewModel(snapshot: PortfolioSnapshotV1) {
     holdings,
     optionContracts,
     positionGroups,
+    historicalPositionGroups,
     stockMarketValue,
     optionMarketValue,
     netPositionsValue: stockMarketValue + optionMarketValue,
   };
 }
-

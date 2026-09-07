@@ -75,7 +75,6 @@ test("upserts overlapping trades by tradeId and keeps the corrected value", () =
   const merged = mergeTrades(
     [trade({ realizedPnl: 80 })],
     [trade({ realizedPnl: 83.91 }), trade({ tradeId: "trade-2", tradeTime: "2026-07-14T20:00:00.000Z" })],
-    2026,
   );
 
   assert.equal(merged.length, 2);
@@ -87,9 +86,18 @@ test("keeps a New Year's Eve trade in its Flex statement year", () => {
   const merged = mergeTrades([], [trade({
     tradeDate: "2026-12-31",
     tradeTime: "2027-01-01T04:30:00.000Z",
-  })], 2026);
+  })]);
 
   assert.equal(merged.length, 1);
+});
+
+test("retains earlier years while overlapping Flex windows are merged", () => {
+  const merged = mergeTrades(
+    [trade({ tradeId: "older", tradeDate: "2025-06-01", tradeTime: "2025-06-01T16:00:00.000Z" })],
+    [trade({ tradeId: "newer", tradeDate: "2026-07-13" })],
+  );
+
+  assert.deepEqual(merged.map((item) => item.tradeId), ["newer", "older"]);
 });
 
 test("aggregates stock and option realized PnL by canonical underlying", () => {

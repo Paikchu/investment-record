@@ -168,12 +168,11 @@ export function normalizeIbkrTrade(trade: IbkrTrade): PortfolioTrade {
   };
 }
 
-export function mergeTrades(existing: PortfolioTrade[], incoming: PortfolioTrade[], year: number): PortfolioTrade[] {
+export function mergeTrades(existing: PortfolioTrade[], incoming: PortfolioTrade[]): PortfolioTrade[] {
   const byId = new Map(existing.map((item) => [item.tradeId, item]));
   for (const item of incoming) byId.set(item.tradeId, item);
 
   return [...byId.values()]
-    .filter((item) => Number(item.tradeDate?.slice(0, 4) ?? new Date(item.tradeTime).getUTCFullYear()) === year)
     .sort((left, right) => right.tradeTime.localeCompare(left.tradeTime) || right.tradeId.localeCompare(left.tradeId));
 }
 
@@ -217,9 +216,8 @@ export function buildPortfolioSnapshot(previous: PortfolioSnapshotV1, input: Sna
   if (previous.capitalFlows && !input.capitalFlows) throw new Error("Automatic net deposits require capital flow data");
   if (input.capitalFlows && input.capitalFlows.toDate !== input.source?.reportDate) throw new Error("Capital flow date differs from snapshot");
   const capitalFlows = input.capitalFlows ? mergeCapitalFlows(previous.capitalFlows, input.capitalFlows) : undefined;
-  const snapshotYear = Number(input.source?.reportDate?.slice(0, 4) ?? new Date(input.generatedAt).getUTCFullYear());
   const trades = input.tradeSync.status === "current"
-    ? mergeTrades(previous.trades, input.tradeSync.trades, snapshotYear)
+    ? mergeTrades(previous.trades, input.tradeSync.trades)
     : previous.trades;
   const lastSuccessfulTradeAt = input.tradeSync.status === "current"
     ? trades[0]?.tradeTime ?? previous.tradeSync.lastSuccessfulTradeAt

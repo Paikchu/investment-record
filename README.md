@@ -4,7 +4,7 @@
 
 ## 数据边界
 
-- `data/portfolio-snapshot.json`：IBKR 账户、持仓和成交快照，不是实时行情。
+- `data/portfolio-snapshot.json`：IBKR 账户、持仓和成交快照，不是实时行情；已清仓 ticker 由保留的 Flex 成交自动归档到历史账本。
 - `data/us-securities.json`：由 Nasdaq Trader 官方目录生成的美股与 ETF 搜索索引。
 - `data/earnings-calendar.json`：未来 90 天 Nasdaq 财报日历快照；日期按美股市场日展示，并换算北京查看时段。
 - D1 `DB`：按 `owner_email + ticker` 保存持仓原因和规划点位。

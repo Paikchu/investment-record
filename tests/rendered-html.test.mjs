@@ -398,6 +398,23 @@ test("renders a single-line shadcn ledger with sorting in every header", async (
   assert.match(table, /净权重，点击升序/);
 });
 
+
+test("switches between current and Flex-derived historical ticker groups", async () => {
+  const [dashboard, viewModel, snapshotSource] = await Promise.all([
+    readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/portfolio-view-model.ts", import.meta.url), "utf8"),
+    readFile(new URL("../lib/portfolio-snapshot.ts", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(dashboard, /<Switch[\s\S]*?checked=\{showHistoricalPositions\}[\s\S]*?onCheckedChange=\{setShowHistoricalPositions\}/);
+  assert.match(dashboard, /当前持仓 <small>\{positionGroups\.length\}<\/small>/);
+  assert.match(dashboard, /历史持仓 <small>\{historicalPositionGroups\.length\}<\/small>/);
+  assert.match(dashboard, /<HistoricalPositionLedger groups=\{historicalPositionGroups\} \/>/);
+  assert.match(dashboard, /累计已实现盈亏/);
+  assert.match(viewModel, /if \(currentSymbols\.has\(symbol\)\) return groups;/);
+  assert.doesNotMatch(snapshotSource, /mergeTrades[\s\S]{0,500}\.filter\(\(item\).*getUTCFullYear/);
+});
+
 test("keeps full ticker symbols visible before heatmap metrics", async () => {
   const [component, css] = await Promise.all([
     readFile(new URL("../app/portfolio-heatmap.tsx", import.meta.url), "utf8"),

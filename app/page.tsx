@@ -25,6 +25,7 @@ export default async function Home() {
         <PortfolioDashboard
           heatmapHoldings={heatmapHoldings}
           positionGroups={portfolio.positionGroups}
+          historicalPositionGroups={portfolio.historicalPositionGroups}
           stockMarketValue={portfolio.stockMarketValue}
           optionMarketValue={portfolio.optionMarketValue}
           netPositionsValue={portfolio.netPositionsValue}

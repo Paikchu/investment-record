@@ -5,6 +5,7 @@ import { Empty, EmptyHeader, EmptyDescription } from "@/components/ui/empty";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
 import { ChevronUp, ChevronDown, CalendarDays } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
@@ -20,7 +21,7 @@ import {
 import { buildEarningsReminder, isUpcomingEarnings, type EarningsEvent } from "@/lib/earnings-calendar";
 import { money, number, percent } from "@/lib/portfolio-format";
 import { heatmapThemeColor, type HeatmapHolding } from "@/lib/portfolio-heatmap";
-import type { PositionGroupView } from "@/lib/portfolio-view-model";
+import type { HistoricalPositionGroupView, PositionGroupView } from "@/lib/portfolio-view-model";
 import { AddPlanDialog } from "./AddPlanDialog";
 import { PortfolioHeatmap } from "./portfolio-heatmap";
 import { useMarketQuotes, type QuoteLoadStatus } from "./use-market-quotes";
@@ -414,9 +415,80 @@ function PositionLedger({
   );
 }
 
+type HistoricalSortKey = keyof Pick<HistoricalPositionGroupView,
+  "symbol" | "firstTradeDate" | "lastTradeDate" | "stockTrades" | "optionTrades" | "realized"
+>;
+
+const historicalLedgerColumns: Array<{ key: HistoricalSortKey; label: string }> = [
+  { key: "symbol", label: "标的" },
+  { key: "firstTradeDate", label: "首次交易" },
+  { key: "lastTradeDate", label: "最近交易" },
+  { key: "stockTrades", label: "正股成交" },
+  { key: "optionTrades", label: "期权成交" },
+  { key: "realized", label: "累计已实现盈亏" },
+];
+
+function HistoricalPositionLedger({ groups }: { groups: HistoricalPositionGroupView[] }) {
+  const [sortKey, setSortKey] = useState<HistoricalSortKey>("lastTradeDate");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const sortedGroups = useMemo(() => [...groups].sort((left, right) => {
+    const a = left[sortKey];
+    const b = right[sortKey];
+    const comparison = typeof a === "number" && typeof b === "number" ? a - b : String(a).localeCompare(String(b));
+    return comparison * (sortDirection === "asc" ? 1 : -1);
+  }), [groups, sortDirection, sortKey]);
+
+  return (
+    <div className="position-scroll" aria-label="按 Ticker 分类的历史持仓">
+      <Table className="ledger-table historical-ledger-table" aria-label="历史投资账本">
+        <TableHeader>
+          <TableRow>
+            {historicalLedgerColumns.map((column) => (
+              <TableHead key={column.key} scope="col" aria-sort={sortKey === column.key ? (sortDirection === "desc" ? "descending" : "ascending") : "none"}>
+                <Button variant="ghost" size="sm" type="button"
+                  aria-label={`${column.label}，点击${sortKey === column.key && sortDirection === "desc" ? "升序" : "降序"}`}
+                  onClick={() => {
+                    setSortDirection(sortKey === column.key && sortDirection === "desc" ? "asc" : "desc");
+                    setSortKey(column.key);
+                  }}>
+                  {column.label}
+                  <span className="ledger-sort-arrows" aria-hidden="true">
+                    <ChevronUp data-active={sortKey === column.key && sortDirection === "asc"} />
+                    <ChevronDown data-active={sortKey === column.key && sortDirection === "desc"} />
+                  </span>
+                </Button>
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sortedGroups.map((group) => (
+            <TableRow className="ledger-data-row" key={group.symbol}
+              style={{ "--holding-color": heatmapThemeColor(group.symbol) } as CSSProperties}>
+              <TableCell>
+                <div className="ledger-symbol historical-ledger-symbol">
+                  <i className="holding-mark" aria-hidden="true" />
+                  <strong>{group.symbol}</strong>
+                </div>
+              </TableCell>
+              <TableCell>{group.firstTradeDate}</TableCell>
+              <TableCell>{group.lastTradeDate}</TableCell>
+              <TableCell>{number(group.stockTrades, 0, 0)} 笔</TableCell>
+              <TableCell>{number(group.optionTrades, 0, 0)} 笔</TableCell>
+              <TableCell><Pnl value={group.realized} /></TableCell>
+            </TableRow>
+          ))}
+          {sortedGroups.length === 0 && <TableRow><TableCell colSpan={historicalLedgerColumns.length}><Empty><EmptyHeader><EmptyDescription>Flex 成交记录中还没有已清仓标的。</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 export function PortfolioDashboard({
   heatmapHoldings,
   positionGroups,
+  historicalPositionGroups,
   stockMarketValue,
   optionMarketValue,
   netPositionsValue,
@@ -429,6 +501,7 @@ export function PortfolioDashboard({
 }: {
   heatmapHoldings: HeatmapHolding[];
   positionGroups: PositionGroupView[];
+  historicalPositionGroups: HistoricalPositionGroupView[];
   stockMarketValue: number;
   optionMarketValue: number;
   netPositionsValue: number;
@@ -441,6 +514,7 @@ export function PortfolioDashboard({
 }) {
   const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
   const [analysisExpanded, setAnalysisExpanded] = useState(false);
+  const [showHistoricalPositions, setShowHistoricalPositions] = useState(false);
   const [earningsAsOf] = useState(() => new Date().toISOString());
   const positionSymbols = useMemo(() => new Set(positionGroups.map((group) => group.symbol)), [positionGroups]);
   const quoteSymbols = useMemo(() => positionGroups.map((group) => group.symbol).join(","), [positionGroups]);
@@ -516,19 +590,34 @@ export function PortfolioDashboard({
         <section className="ledger-panel ledger-page" aria-labelledby="ledger-title">
           <div className="ledger-heading">
             <h2 id="ledger-title">投资账本</h2>
-            <AddPlanDialog />
+            <div className="ledger-heading-actions">
+              <div className="ledger-view-switch" role="group" aria-label="账本持仓范围">
+                <span data-active={!showHistoricalPositions}>当前持仓 <small>{positionGroups.length}</small></span>
+                <Switch
+                  aria-label="切换当前持仓与历史持仓"
+                  checked={showHistoricalPositions}
+                  onCheckedChange={setShowHistoricalPositions}
+                />
+                <span data-active={showHistoricalPositions}>历史持仓 <small>{historicalPositionGroups.length}</small></span>
+              </div>
+              <AddPlanDialog />
+            </div>
           </div>
           <div className="section-divider" aria-hidden="true" />
           <div className="ledger-content">
-            <PositionLedger
-              groups={positionGroups}
-              activeSymbol={activeSymbol}
-              onActiveSymbolChange={setActiveSymbol}
-              quotes={quoteState.quotes}
-              quoteStatus={quoteState.status}
-              earningsBySymbol={earningsBySymbol}
-              earningsUpdatedAt={earningsAsOf}
-            />
+            {showHistoricalPositions ? (
+              <HistoricalPositionLedger groups={historicalPositionGroups} />
+            ) : (
+              <PositionLedger
+                groups={positionGroups}
+                activeSymbol={activeSymbol}
+                onActiveSymbolChange={setActiveSymbol}
+                quotes={quoteState.quotes}
+                quoteStatus={quoteState.status}
+                earningsBySymbol={earningsBySymbol}
+                earningsUpdatedAt={earningsAsOf}
+              />
+            )}
           </div>
         </section>
       </div>

@@ -844,6 +844,28 @@ h2:not([data-slot]) {
   gap: 20px;
 }
 
+.ledger-heading-actions,
+.ledger-view-switch {
+  display: flex;
+  align-items: center;
+}
+
+.ledger-heading-actions { gap: 18px; }
+.ledger-view-switch { gap: 9px; }
+.ledger-view-switch > span {
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.ledger-view-switch > span[data-active="true"] { color: var(--ink); }
+.ledger-view-switch small {
+  color: inherit;
+  font-size: 10px;
+  font-weight: 650;
+}
+.historical-ledger-symbol { cursor: default; }
+
 .ledger-page { padding: 24px 0 0; }
 #portfolio-title, #ledger-title { scroll-margin-top: 24px; }
 .ledger-page .ledger-heading h2 { font: 600 22px/1.1 var(--serif); letter-spacing: -.02em; }
@@ -1995,7 +2017,8 @@ td { font-size: 14px; }
   .review-driver-list li { padding-left: 28px; grid-template-columns: 1fr; gap: 7px; }
   .review-driver-list span,
   .review-driver-list small { grid-column: 1; }
-  .ledger-heading { align-items: start; }
+  .ledger-heading { align-items: start; flex-wrap: wrap; gap: 12px; }
+  .ledger-heading-actions { width: 100%; justify-content: space-between; gap: 12px; }
   .add-plan-button { min-height: 44px; padding: 0 10px; font-size: 12px; }
   .allocation-panel h2,
   .ledger-heading h2 { font-size: 18px; }
