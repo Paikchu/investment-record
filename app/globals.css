@@ -8,7 +8,8 @@
 .dock-placeholder { min-height: 80svh; }
 
 @media (min-width: 1025px) {
-  html body { padding-inline: clamp(96px, 7vw, 144px); }
+  html body { padding-inline: 10%; }
+  html body .page-shell { width: 100%; }
   .navigation-dock {
     display: block;
     position: fixed;
