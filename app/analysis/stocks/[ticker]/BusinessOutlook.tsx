@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from "react";
 
-import type { PublicCompanyAnalysisResponse } from "@/lib/earning-report/company-analysis/contracts";
-import { companyAnalysisNotice, shouldPollCompanyAnalysis } from "@/lib/earning-report/company-analysis/display-state";
-import { OutlookParagraph } from "./OutlookParagraph";
+import { COMPANY_ANALYSIS_OVERVIEW_LABEL } from "@/lib/earning-report/shared/analysis-contract/company-analysis.ts";
+import type { PublicCompanyAnalysisResponse } from "@/lib/earning-report/shared/analysis-contract/company-analysis.ts";
+import type { PublicFundamentalsResponse } from "@/lib/earning-report/shared/analysis-contract/fundamentals.ts";
+import { companyAnalysisNotice, shouldPollCompanyAnalysis } from "@/lib/earning-report/web/company-analysis-display-state.ts";
+import { ReportBlockList } from "@/components/earning-report/report-blocks/ReportBlocks.tsx";
+import { OutlookParagraph } from "@/app/analysis/stocks/[ticker]/OutlookParagraph.tsx";
 
 type RequestStatus = "loading" | "ready" | "empty" | "error";
 
@@ -15,6 +18,9 @@ export function BusinessOutlook({ ticker }: { ticker: string }) {
 function BusinessOutlookContent({ ticker }: { ticker: string }) {
   const [status, setStatus] = useState<RequestStatus>("loading");
   const [analysis, setAnalysis] = useState<PublicCompanyAnalysisResponse | null>(null);
+  // Fetched beside the analysis rather than with it: a chart block names series, and the points are
+  // resolved here from verified fundamentals. Its absence costs a chart, never the judgments.
+  const [fundamentals, setFundamentals] = useState<PublicFundamentalsResponse | null>(null);
 
   const [refresh, setRefresh] = useState(0);
 
@@ -39,13 +45,16 @@ function BusinessOutlookContent({ ticker }: { ticker: string }) {
       }
     }
     void loadOverview();
+    void requestFundamentals(ticker, controller.signal)
+      .then((value) => { if (!controller.signal.aborted) setFundamentals(value); })
+      .catch(() => undefined);
     return () => { controller.abort(); clearTimeout(timer); };
   }, [ticker, refresh]);
 
   if (status !== "ready" || !analysis?.overview) {
     return (
       <section className="stock-outlook stock-outlook--state" aria-labelledby="stock-outlook-heading">
-        <span className="stock-outlook__eyebrow" id="stock-outlook-heading">业务前瞻 · AI 综述</span>
+        <span className="stock-outlook__eyebrow" id="stock-outlook-heading">{COMPANY_ANALYSIS_OVERVIEW_LABEL}</span>
         {status === "loading" && <p className="stock-outlook__state" role="status">正在读取最新业务判断…</p>}
         {status === "empty" && (
           <div className="stock-outlook__state-row" role="status">
@@ -70,17 +79,32 @@ function BusinessOutlookContent({ ticker }: { ticker: string }) {
         <span className="stock-outlook__eyebrow" id="stock-outlook-heading">{overview.label}</span>
         <span>{analysis.period?.label}</span>
       </div>
-      <h2 className="stock-outlook__headline">{overview.headline}</h2>
+      <h2 className="stock-outlook__headline" data-length={headlineLength(overview.headline)}>{overview.headline}</h2>
       <OutlookParagraph key={overview.introduction} className="stock-outlook__lede" text={overview.introduction} label="背景说明" />
       {companyAnalysisNotice(analysis.latestRun, true) && <p className="stock-outlook__updating" role="status">{companyAnalysisNotice(analysis.latestRun, true)}</p>}
 
-      <ol className="stock-outlook__clues" aria-label="本次最重要的四项判断">
+      <ol className="stock-outlook__clues" aria-label={`未来走向的 ${overview.highlights.length} 项判断`}>
         {overview.highlights.map((highlight) => (
-          <li className="stock-outlook__clue" key={highlight.ordinal}>
+          // Title and body are direct children so a two-column row can align them through subgrid:
+          // a judgment whose title runs to two lines would otherwise start its body a line below
+          // the one beside it. A judgment carrying a chart takes the full width instead — a chart
+          // in a half-width column is a picture of a chart, not a readable one.
+          <li
+            className="stock-outlook__clue"
+            data-wide={highlight.blocks?.some((block) => block.type === "chart") ? "true" : undefined}
+            key={highlight.ordinal}
+          >
             <span className="stock-outlook__clue-index" aria-hidden="true">{highlight.ordinal}</span>
-            <div>
-              <h3 className="stock-outlook__clue-title">{highlight.title}</h3>
+            <h3 className="stock-outlook__clue-title">{highlight.title}</h3>
+            {/* Prose and blocks share the card's second row. The subgrid spans exactly two parent
+                rows, so a third child here would fall outside the tracks it borrows. */}
+            <div className="stock-outlook__clue-content">
               <OutlookParagraph key={highlight.body} className="stock-outlook__clue-desc" text={highlight.body} label={`第 ${highlight.ordinal} 项判断`} />
+              {highlight.blocks?.length ? (
+                <div className="stock-outlook__clue-blocks">
+                  <ReportBlockList blocks={highlight.blocks} context={{ metrics: [], fundamentals }} />
+                </div>
+              ) : null}
             </div>
           </li>
         ))}
@@ -89,8 +113,25 @@ function BusinessOutlookContent({ ticker }: { ticker: string }) {
   );
 }
 
+/**
+ * Headlines are written by the analysis, so their length is not a layout constant: one filing gets
+ * a six-word verdict and the next gets a clause-by-clause one carrying three figures. Type scale
+ * alone cannot answer that — a container query knows the column width but not how much text has to
+ * fit in it — so the length picks the scale and the container query still adapts within it.
+ */
+function headlineLength(headline: string): "short" | "medium" | "long" {
+  if (headline.length > 56) return "long";
+  return headline.length > 28 ? "medium" : "short";
+}
+
 async function requestOverview(ticker: string, signal?: AbortSignal): Promise<PublicCompanyAnalysisResponse> {
   const response = await fetch(`/api/analysis/v1/companies/${encodeURIComponent(ticker)}/analysis`, { signal });
   if (!response.ok) throw new Error("公司分析读取失败。");
   return response.json() as Promise<PublicCompanyAnalysisResponse>;
+}
+
+async function requestFundamentals(ticker: string, signal?: AbortSignal): Promise<PublicFundamentalsResponse> {
+  const response = await fetch(`/api/analysis/v1/companies/${encodeURIComponent(ticker)}/fundamentals`, { signal });
+  if (!response.ok) throw new Error("基本面数据读取失败。");
+  return response.json() as Promise<PublicFundamentalsResponse>;
 }

@@ -4,9 +4,9 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { SecEventCategory } from "@/lib/earning-report/sec";
-import { formatSecMetricLabel, formatSecMetricValue } from "@/lib/earning-report/sec-metric-format";
-import type { PublicSecFiling } from "@/lib/earning-report/analysis-contract/filings";
+import type { SecEventCategory } from "@/lib/earning-report/shared/analysis-contract/report.ts";
+import { formatSecMetricLabel, formatSecMetricValue } from "@/lib/earning-report/web/sec-metric-format.ts";
+import type { PublicSecFiling } from "@/lib/earning-report/shared/analysis-contract/filings.ts";
 
 const expandEase = [0.22, 1, 0.36, 1] as const;
 

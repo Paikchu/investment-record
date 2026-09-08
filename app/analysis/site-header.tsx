@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import type { SecurityType } from "@/lib/earning-report/symbol-directory";
+import type { SecurityType } from "@/lib/earning-report/web/symbol-directory.ts";
 
 type SearchResult = { symbol: string; name: string; exchange: string; type: SecurityType };
 
@@ -18,12 +18,8 @@ export function SiteHeader({ initialQuery = "" }: { initialQuery?: string }) {
     if (!value || !searchActive) return;
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
-      try {
       const response = await fetch(`/api/analysis/v1/search?q=${encodeURIComponent(value)}`, { signal: controller.signal });
       if (response.ok) setResults((await response.json() as { results?: SearchResult[] }).results ?? []);
-      } catch {
-        if (!controller.signal.aborted) setResults([]);
-      }
     }, 120);
     return () => {
       window.clearTimeout(timer);

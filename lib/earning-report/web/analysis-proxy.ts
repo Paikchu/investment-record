@@ -1,5 +1,5 @@
-import { AnalysisRequestError } from "./analysis-contract/errors.ts";
-import type { AnalysisBackendClient, AnalysisBackendResponse } from "./analysis-contract/client.ts";
+import { AnalysisRequestError } from "./analysis-errors.ts";
+import type { AnalysisBackendClient, AnalysisBackendResponse } from "./analysis-client.ts";
 import type { AnalysisBackendRuntime } from "./analysis-backend-runtime.ts";
 
 /**

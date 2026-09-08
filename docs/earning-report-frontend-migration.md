@@ -1,37 +1,42 @@
-# Earning-report 前端迁移
+# Earning Report 前端集成
 
-第二个 Dock Tab「公司业务分析」现在打开 `/analysis`。搜索、公司概览、财务图表、披露时间线和完整研报都由 investment record 的 React 前端渲染，子页面位于 `/analysis/stocks/:ticker` 和 `/analysis/stocks/:ticker/sec/:accession`。
+## 正确的仓库与版本
 
-## 数据边界
+目标是 GitHub `Paikchu/investment-record`（本地 `/Users/max/Investment/投资记录`），main 推送会自动触发现有 Cloudflare Workers Builds。
+
+前端来源为 GitHub `Paikchu/earning-report-analysis` 的 main，2026-09-08 拉取到 `4f9ec2b`。以该提交实际源码和线上 `/stocks/ORCL` 页面为依据，替换第一次误用的 recovery 旧版前端。源项目的本地分支和未提交修改保持不动。
+
+## 与第一次迁移的区别
+
+| 范围 | 当前行为 |
+| --- | --- |
+| 公司页 | 与源 main 一致，只挂载业务前瞻和披露时间线；移除独立 FundamentalCharts、指标选择器及季度快照 |
+| 业务前瞻 | 同步自适应标题字号、段落展开、两列判断与 subgrid 对齐、按需内容块 |
+| 完整研报 | 同步 ReportBlocks、RichText 和对应最新 API 数据契约 |
+| 图表 | 仅保留源 main 的研报内容块图表渲染能力；不恢复已删除的独立基本面区域 |
+| 样式 | 完整同步 main 样式、Source Serif 4 / Noto Serif SC 字体、纸色背景、布局、披露线条和节点 |
+| 隔离 | 每个 CSS selector 直接添加 `.earning-report` 前缀，保留 `::before` / `::after`；不把伪元素放入 `:is()` |
+
+宿主保留第二个 Dock Tab，首页是 `/analysis`，公司及报告路径是 `/analysis/stocks/:ticker` 和 `/analysis/stocks/:ticker/sec/:accession`。该页取消宿主额外的 10% 两侧留白，使用源前端自身的留白。样式作用域及 `body:has(.earning-report)` 限定只影响第二 Tab。
+
+## 数据边界与配置
 
 浏览器 → investment record `/api/analysis/v1/companies/...` → earning-report pipeline `/api/v1/companies/...`。
 
-只迁移前端、展示用类型/计算函数及服务端只读客户端。没有迁移 pipeline、调度、D1/R2、管理接口，也没有修改投资记录原有 SEC 接口、数据库绑定或源项目。搜索沿用 investment record 已有的公开证券目录，不读取持仓数据。
+只迁移前端、公开数据契约及服务端读取客户端，不迁移 pipeline、数据库、调度或管理写入接口。证券搜索使用宿主公开证券目录，不读取持仓。
 
-组件位于 `components/earning-report`，展示逻辑与 API 合约位于 `lib/earning-report`。迁入样式限制在 `.earning-report` 容器内，避免影响第一个 Tab。原目录 `/Users/max/Developer/earning-report-analysis-recovery` 的 Git worktree 引用失效，本次以该目录实际源码为准，没有修复或删除源文件。
+在 investment record 服务端配置：
 
-## 上线前配置
+- `EARNING_REPORT_PIPELINE_ORIGIN=https://earning-report-analysis-sec-pipeline.max-zhangyuchen.workers.dev`
+- `EARNING_REPORT_READ_TOKEN`：源前端 `ANALYSIS_READ_TOKEN` 对应的已授权只读凭证。
 
-在 **investment record 的服务端运行环境**配置：
-
-| 配置 | 值 |
-| --- | --- |
-| `EARNING_REPORT_PIPELINE_ORIGIN` | `https://earning-report-analysis-sec-pipeline.max-zhangyuchen.workers.dev` |
-| `EARNING_REPORT_READ_TOKEN` | pipeline 已授权的只读凭证，对应源前端的 `ANALYSIS_READ_TOKEN`，需要 filings、analysis、fundamentals 读取权限 |
-
-这两个名字与投资项目既有的 `SEC_PIPELINE_ORIGIN` 分离，不要覆盖原配置。不使用 `NEXT_PUBLIC_`，不把真实凭证写入 Git。
-
-如果部署环境需要 Cloudflare Service Binding，可绑定 `EARNING_REPORT_PIPELINE` 到 `earning-report-analysis-sec-pipeline`；客户端会优先经此 binding 发送读取请求，仍需要上述只读凭证。可选的 `EARNING_REPORT_API_RATE_LIMIT` binding 用于限制公开读取流量。Binding 需要在实际托管环境配置，本次没有部署或修改线上配置。
-
-本地 vinext/Cloudflare 开发可使用忽略提交的 `.dev.vars` 文件提供上述两个变量。没有凭证时，读取 API 返回 503，页面显示暂不可用；不会误报为公司没有报告。
+不要覆盖投资项目原有 `SEC_PIPELINE_ORIGIN`。跨 Worker 可配置 `EARNING_REPORT_PIPELINE` Service Binding，客户端会优先使用它；仍需只读凭证。可选 `EARNING_REPORT_API_RATE_LIMIT` 约束公开读取流量。未配置时返回 503 和不可用状态，不回退到投资数据库。
 
 ## 验证
 
 - `npm run build`
-- `npm run test:earning-report`
-- `npx eslint app/analysis app/api/analysis components/earning-report lib/earning-report components/navigation-dock.tsx tests/earning-report-integration.test.ts`
-- 浏览器：投资首页 → 第二个 Tab → 搜索 MSFT → 财务图表与披露 → 完整研报 → 返回公司页；另检查 390px 窄屏。
+- `npm run test:earning-report`：读取代理与富文本安全/格式回归测试。
+- 迁移文件 ESLint。
+- 使用线上 ORCL 公开 API 响应对照：1496×1000、390×844；确认无独立基本面面板、无横向溢出、时间线伪元素存在、段落展开/收起、研报打开与返回。
 
-本地端到端验证使用源项目真实只读 API handler、SQLite 测试库和合成 fixtures，没有生产数据写入。真实 pipeline 无凭证探测返回 401；用户已确认尚未配置凭证，因此真实数据联通与上线验证留待配置后执行。
-
-本次本地验证：1440×1000 和 390×844，Playwright + 本机 Chrome（当前无 Browser skill）。页面标题、非空内容、无框架错误覆盖层、第二 Tab 高亮、搜索、指标选择开关/Escape、研报打开与返回、回到投资记录均通过。控制台只发现原项目 favicon.ico 404。全仓库 TypeScript 检查仍有既有错误（Cloudflare 类型配置、示例代码等）；补齐验证时的类型环境后，迁移文件未报错。
+本地 QA 使用隔离的临时预览目录和只读代理，未写入真实凭证或修改生产数据。因本机 workerd 比生产兼容日期旧，仅临时预览目录降低运行时兼容日期，目标仓库的 Cloudflare 配置保持不变。视觉对照不等于正式环境 pipeline 凭证已配置。

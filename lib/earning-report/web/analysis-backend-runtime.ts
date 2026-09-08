@@ -1,4 +1,4 @@
-import { AnalysisBackendClient } from "./analysis-contract/client.ts";
+import { AnalysisBackendClient } from "./analysis-client.ts";
 import { asServiceBinding, serviceFetcher } from "./service-binding.ts";
 
 /**

@@ -1,4 +1,4 @@
-import { proxyAnalysisRead } from "@/lib/earning-report/analysis-proxy";
+import { proxyAnalysisRead } from "@/lib/earning-report/web/analysis-proxy.ts";
 
 /**
  * Reading fundamentals no longer schedules anything. The staleness refresh this route used to

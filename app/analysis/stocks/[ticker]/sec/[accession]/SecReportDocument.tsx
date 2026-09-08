@@ -1,8 +1,9 @@
-import type { PublishedSecReport } from "@/lib/earning-report/sec-analysis";
-import type { SecFilingWithSummary, SecNodeResult } from "@/lib/earning-report/sec";
+import type { PublishedSecReport } from "@/lib/earning-report/shared/analysis-contract/report.ts";
+import type { SecFilingWithSummary, SecNodeResult } from "@/lib/earning-report/shared/analysis-contract/report.ts";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { SecReportNavigator, type ReportSectionLink } from "./SecReportNavigator";
+import { RichText } from "@/components/earning-report/rich-text/RichText.tsx";
+import { SecReportNavigator, type ReportSectionLink } from "@/app/analysis/stocks/[ticker]/sec/[accession]/SecReportNavigator.tsx";
 
 type ReportSectionDefinition = ReportSectionLink & {
   className?: string;
@@ -46,7 +47,7 @@ export function SecReportDocument({ companyName, filing }: { companyName: string
       description: "阅读基于 SEC 申报材料形成的连续分析叙述。",
       content: (
         <div className="sec-report-body">
-          {paragraphs(summary?.report ?? "").map((paragraph, index) => <p key={`${index}-${paragraph.slice(0, 24)}`}>{paragraph}</p>)}
+          <RichText text={summary?.report ?? ""} />
         </div>
       ),
     },
@@ -73,7 +74,7 @@ export function SecReportDocument({ companyName, filing }: { companyName: string
               <summary><span>{node.title}</span><small>{nodeStatus(node.status)}</small></summary>
               <div>
                 {node.findings.length > 0 && <ConclusionList bullets={node.findings} />}
-                {node.narrative && <p>{node.narrative}</p>}
+                {node.narrative && <RichText text={node.narrative} />}
                 {node.error && <p className="sec-report-error">{node.error}</p>}
                 {node.evidence.length > 0 && (
                   <details className="sec-report-evidence">
@@ -219,10 +220,6 @@ function DataQuality({ report }: { report: PublishedSecReport | null | undefined
         : <p>未发现需要单独提示的数据质量问题。</p>}
     </div>
   );
-}
-
-function paragraphs(value: string): string[] {
-  return value.split(/\n+/).map((line) => line.trim()).filter(Boolean);
 }
 
 function formatDate(value: string): string {

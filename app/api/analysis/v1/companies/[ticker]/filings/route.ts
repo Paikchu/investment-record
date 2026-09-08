@@ -1,4 +1,4 @@
-import { proxyAnalysisRead } from "@/lib/earning-report/analysis-proxy";
+import { proxyAnalysisRead } from "@/lib/earning-report/web/analysis-proxy.ts";
 
 /**
  * Compatibility proxy. The URL, the pagination semantics and the anonymous access are unchanged;

@@ -1,5 +1,5 @@
-import { searchCompanyDirectory } from "@/lib/earning-report/site-data";
-import { parseSecurityTypes } from "@/lib/earning-report/symbol-directory";
+import { searchCompanyDirectory } from "@/lib/earning-report/web/site-data.ts";
+import { parseSecurityTypes } from "@/lib/earning-report/web/symbol-directory.ts";
 
 export async function GET(request: Request) {
   const parameters = new URL(request.url).searchParams;

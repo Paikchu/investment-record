@@ -1,34 +1,20 @@
 import { notFound } from "next/navigation";
-import { SiteHeader } from "@/app/analysis/site-header";
-import { findSecurity } from "@/lib/earning-report/site-data";
-import { normalizeTrackedTicker } from "@/lib/earning-report/sec-config";
-import { SecFilingsSection } from "@/components/earning-report/SecFilingsSection";
-import { BusinessOutlook } from "./BusinessOutlook";
-import { FundamentalCharts } from "./FundamentalCharts";
-import {
-  hasExplicitFundamentalPageState,
-  parseFundamentalPageState,
-  stockPageSearchParamsToUrlSearchParams,
-  type StockPageSearchParams,
-} from "@/lib/earning-report/fundamental-page-state";
+import { SiteHeader } from "@/app/analysis/site-header.tsx";
+import { findSecurity } from "@/lib/earning-report/web/site-data.ts";
+import { normalizeTrackedTicker } from "@/lib/earning-report/web/ticker.ts";
+import { SecFilingsSection } from "@/app/analysis/stocks/[ticker]/SecFilingsSection.tsx";
+import { BusinessOutlook } from "@/app/analysis/stocks/[ticker]/BusinessOutlook.tsx";
 
 export const dynamic = "force-dynamic";
 
 export default async function StockPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ ticker: string }>;
-  searchParams: Promise<StockPageSearchParams>;
 }) {
   const ticker = normalizeTrackedTicker((await params).ticker);
   if (!ticker) notFound();
   const security = findSecurity(ticker);
-  const normalizedSearchParams = stockPageSearchParamsToUrlSearchParams(await searchParams);
-  const initialState = parseFundamentalPageState(normalizedSearchParams);
-  const initialPreferenceSource = hasExplicitFundamentalPageState(normalizedSearchParams)
-    ? "url"
-    : "preset";
   return (
     <div className="sec-app-shell stock-analysis-shell">
       <SiteHeader initialQuery={security?.symbol ?? ticker} />
@@ -40,12 +26,6 @@ export default async function StockPage({
               <span>{ticker}</span>
             </header>
             <BusinessOutlook ticker={ticker} />
-            <FundamentalCharts
-              ticker={ticker}
-              companyName={security?.name ?? ticker}
-              initialState={initialState}
-              initialPreferenceSource={initialPreferenceSource}
-            />
           </div>
           <div className="stock-analysis-filings">
             <SecFilingsSection ticker={ticker} title="披露时间线" />

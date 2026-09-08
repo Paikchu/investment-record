@@ -1,4 +1,4 @@
-import { SiteHeader } from "./site-header";
+import { SiteHeader } from "@/app/analysis/site-header.tsx";
 
 export default function HomePage() {
   return (

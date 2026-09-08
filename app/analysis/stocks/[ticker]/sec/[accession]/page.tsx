@@ -1,17 +1,17 @@
 import { notFound } from "next/navigation";
-import { getAnalysisBackendRuntime } from "@/lib/earning-report/analysis-backend-runtime";
-import { isAnalysisErrorBody } from "@/lib/earning-report/analysis-contract/client";
-import type { PublicFilingDetail } from "@/lib/earning-report/analysis-contract/filings";
-import { findSecurity } from "@/lib/earning-report/site-data";
-import { normalizeTrackedTicker } from "@/lib/earning-report/sec-config";
-import { SecReportDocument } from "@/components/earning-report/SecReportDocument";
+import { getAnalysisBackendRuntime } from "@/lib/earning-report/web/analysis-backend-runtime.ts";
+import { isAnalysisErrorBody } from "@/lib/earning-report/web/analysis-client.ts";
+import type { PublicFilingDetail } from "@/lib/earning-report/shared/analysis-contract/filings.ts";
+import { findSecurity } from "@/lib/earning-report/web/site-data.ts";
+import { normalizeTrackedTicker } from "@/lib/earning-report/web/ticker.ts";
+import { SecReportDocument } from "@/app/analysis/stocks/[ticker]/sec/[accession]/SecReportDocument.tsx";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Server-rendered report page. It reads through the backend client like every other consumer —
- * the migrated report reads only the earning-report API, never the host portfolio database.
- * A backend outage must remain visible rather than falling back to unrelated local data.
+ * there is no database binding in this Worker to fall back to, and deliberately so: a silent
+ * fallback would have preserved exactly the coupling this refactor removed.
  */
 export default async function StockSecReportPage({ params }: { params: Promise<{ ticker: string; accession: string }> }) {
   const route = await params;

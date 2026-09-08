@@ -1,5 +1,5 @@
-import type { SecFilingWithSummary } from "../sec.ts";
-import { ANALYSIS_API_SCHEMA_VERSION } from "./versions.ts";
+import type { SecFilingWithSummary } from "./report.ts";
+import { ANALYSIS_API_SCHEMA_VERSION } from "./common.ts";
 
 /**
  * Wire types for the filing resources. They live here rather than beside the D1 query code so the

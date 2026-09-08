@@ -1,13 +1,4 @@
-import type {
-  FundamentalChartMark,
-  FundamentalDisplaySign,
-  FundamentalMetricCategory,
-  FundamentalMetricKey,
-  FundamentalTransform,
-  FundamentalUnitFamily,
-  FUNDAMENTAL_METRIC_CATALOG_VERSION,
-} from "../fundamental-metrics.ts";
-import { ANALYSIS_API_SCHEMA_VERSION } from "./versions.ts";
+import { ANALYSIS_API_SCHEMA_VERSION } from "./common.ts";
 
 /**
  * Wire types for the fundamentals resource. Previously these sat in `lib/fundamentals-api.ts`
@@ -20,6 +11,14 @@ export const FUNDAMENTALS_DEFAULT_PERIOD_COUNT = 5;
 export const FUNDAMENTALS_MIN_PERIOD_COUNT = 2;
 export const FUNDAMENTALS_MAX_PERIOD_COUNT = 12;
 export const FUNDAMENTALS_STALE_AFTER_MS = 24 * 60 * 60 * 1_000;
+
+/**
+ * What one chart can hold. Shared because both services enforce them: the Web service refuses to
+ * build a model that breaks them, and the Pipeline has to know that before it publishes a chart
+ * the page would then have to replace with an error.
+ */
+export const FUNDAMENTAL_CHART_MAX_SERIES = 4;
+export const FUNDAMENTAL_CHART_MAX_AXES = 2;
 
 export type PublicFundamentalPeriod = {
   periodType: "3M";
@@ -52,7 +51,7 @@ export type PublicFundamentalSeries = {
 export type PublicFundamentalsResponse = {
   apiSchemaVersion: typeof ANALYSIS_API_SCHEMA_VERSION;
   schemaVersion: typeof FUNDAMENTALS_API_SCHEMA_VERSION;
-  catalogVersion: typeof FUNDAMENTAL_METRIC_CATALOG_VERSION;
+  catalogVersion: "fundamental-metrics.v2";
   /** Real provenance. These numbers are Yahoo Finance's, not SEC filings'. */
   source: "yahoo_finance";
   ticker: string;
@@ -77,3 +76,25 @@ export type PublicFundamentalsResponse = {
     mode: "backend_scheduled";
   };
 };
+
+export type FundamentalMetricCategory =
+  | "income_statement"
+  | "cash_flow"
+  | "balance_sheet"
+  | "per_share"
+  | "valuation"
+  | "ratio";
+
+export type FundamentalUnitFamily = "currency" | "percent" | "per_share" | "shares" | "multiple";
+
+export type FundamentalChartMark = "bar" | "line";
+
+export type FundamentalTransform =
+  | "value"
+  | "qoq_growth"
+  | "yoy_growth"
+  | "qoq_change"
+  | "yoy_change";
+
+export type FundamentalDisplaySign = "as_reported" | "outflow_magnitude";
+export type FundamentalMetricKey = "total_revenue" | "gross_profit" | "operating_income" | "net_income" | "diluted_eps" | "operating_cash_flow" | "capital_expenditure" | "free_cash_flow" | "stock_based_compensation" | "depreciation_and_amortization" | "research_and_development" | "cash_and_cash_equivalents" | "long_term_debt" | "total_assets" | "total_liabilities" | "stockholders_equity" | "inventory" | "accounts_receivable" | "ordinary_shares" | "market_cap" | "enterprise_value" | "pe_ratio" | "forward_pe_ratio" | "peg_ratio" | "price_to_sales" | "price_to_book" | "ev_to_revenue" | "ev_to_ebitda" | "gross_margin" | "operating_margin";

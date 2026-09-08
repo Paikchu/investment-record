@@ -24,7 +24,7 @@
     "sec-cron:deploy": "env -u WRANGLER_CI_OVERRIDE_NAME -u WRANGLER_CI_MATCH_TAG wrangler deploy --config workers/sec-cron/wrangler.jsonc --name max-investment-record-sec-cron --keep-vars",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote --config wrangler.jsonc",
     "deploy:cloudflare": "npm run db:migrate:remote && wrangler deploy --config dist/server/wrangler.json --keep-vars && npm run sec-cron:deploy",
-    "test:earning-report": "node --experimental-strip-types --test tests/earning-report-integration.test.ts"
+    "test:earning-report": "node --experimental-strip-types --test tests/earning-report-integration.test.ts tests/earning-report-rich-text.test.ts"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

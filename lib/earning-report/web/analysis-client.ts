@@ -1,7 +1,7 @@
-import type { PublicCompanyAnalysisResponse } from "../company-analysis/contracts.ts";
-import { AnalysisRequestError, type AnalysisErrorBody, type AnalysisErrorCode } from "./errors.ts";
-import type { PublicFilingDetail, PublicFilingPage } from "./filings.ts";
-import type { PublicFundamentalsResponse } from "./fundamentals.ts";
+import type { PublicCompanyAnalysisResponse } from "../shared/analysis-contract/company-analysis.ts";
+import { AnalysisRequestError, type AnalysisErrorBody, type AnalysisErrorCode } from "./analysis-errors.ts";
+import type { PublicFilingDetail, PublicFilingPage } from "../shared/analysis-contract/filings.ts";
+import type { PublicFundamentalsResponse } from "../shared/analysis-contract/fundamentals.ts";
 
 /**
  * The lightweight client every caller of the analysis backend uses — the Web Worker over its

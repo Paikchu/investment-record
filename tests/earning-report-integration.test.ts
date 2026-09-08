@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AnalysisBackendClient } from "../lib/earning-report/analysis-contract/client.ts";
-import { proxyAnalysisRead } from "../lib/earning-report/analysis-proxy.ts";
+import { AnalysisBackendClient } from "../lib/earning-report/web/analysis-client.ts";
+import { proxyAnalysisRead } from "../lib/earning-report/web/analysis-proxy.ts";
 
 const token = "test-only.read-secret";
 function setup(status = 200, body: unknown = { filings: [], nextCursor: "next-page" }) {
