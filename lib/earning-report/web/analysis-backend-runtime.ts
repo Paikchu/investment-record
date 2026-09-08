@@ -16,9 +16,13 @@ export type AnalysisBackendRuntime =
 
 export async function getAnalysisBackendRuntime(): Promise<AnalysisBackendRuntime> {
   const { env } = await import("cloudflare:workers");
-  const values = env as unknown as Record<string, unknown>;
+  return createAnalysisBackendRuntime(env as unknown as Record<string, unknown>);
+}
+
+export function createAnalysisBackendRuntime(values: Record<string, unknown>): AnalysisBackendRuntime {
+  const binding = asServiceBinding(values.EARNING_REPORT_PIPELINE);
   const token = stringValue(values.EARNING_REPORT_READ_TOKEN);
-  const origin = stringValue(values.EARNING_REPORT_PIPELINE_ORIGIN);
+  const origin = binding ? "https://earning-report-pipeline.internal" : stringValue(values.EARNING_REPORT_PIPELINE_ORIGIN);
   if (!origin) return { configured: false, reason: "missing_origin" };
   if (!token) return { configured: false, reason: "missing_token" };
   return {
@@ -28,7 +32,7 @@ export async function getAnalysisBackendRuntime(): Promise<AnalysisBackendRuntim
       token,
       // Over a Service Binding only the path is honoured, so the origin above is a formality there
       // and a real address when no binding is present.
-      fetcher: serviceFetcher(asServiceBinding(values.EARNING_REPORT_PIPELINE)),
+      fetcher: serviceFetcher(binding),
     }),
   };
 }

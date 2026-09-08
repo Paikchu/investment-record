@@ -27,10 +27,10 @@
 
 在 investment record 服务端配置：
 
-- `EARNING_REPORT_PIPELINE_ORIGIN=https://earning-report-analysis-sec-pipeline.max-zhangyuchen.workers.dev`
+- `EARNING_REPORT_PIPELINE_ORIGIN`：仅无 Service Binding、使用 HTTP 访问时需要，值为 `https://earning-report-analysis-sec-pipeline.max-zhangyuchen.workers.dev`。
 - `EARNING_REPORT_READ_TOKEN`：源前端 `ANALYSIS_READ_TOKEN` 对应的已授权只读凭证。
 
-不要覆盖投资项目原有 `SEC_PIPELINE_ORIGIN`。跨 Worker 可配置 `EARNING_REPORT_PIPELINE` Service Binding，客户端会优先使用它；仍需只读凭证。可选 `EARNING_REPORT_API_RATE_LIMIT` 约束公开读取流量。未配置时返回 503 和不可用状态，不回退到投资数据库。
+不要覆盖投资项目原有 `SEC_PIPELINE_ORIGIN`。仓库已声明 `EARNING_REPORT_PIPELINE` Service Binding 指向 `earning-report-analysis-sec-pipeline`；绑定存在时无需地址变量，但仍需只读凭证。可选 `EARNING_REPORT_API_RATE_LIMIT` 约束公开读取流量。未配置时返回 503 和不可用状态，不回退到投资数据库。
 
 ## 验证
 

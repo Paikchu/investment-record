@@ -73,3 +73,23 @@ test("a public rate limit prevents upstream work", async () => {
   });
   assert.equal(response.status, 429);
 });
+
+// Bindings provide transport, while the same read credential still authenticates the caller.
+test("service binding works without an origin and preserves receiver and credentials", async () => {
+  const { createAnalysisBackendRuntime } = await import("../lib/earning-report/web/analysis-backend-runtime.ts");
+  const binding = {
+    marker: "pipeline",
+    async fetch(input: RequestInfo | URL, init?: RequestInit) {
+      assert.equal(this.marker, "pipeline");
+      const request = new Request(input, init);
+      assert.equal(new URL(request.url).pathname, "/api/v1/companies/ORCL/analysis");
+      assert.equal(request.headers.get("authorization"), `Bearer ${token}`);
+      return Response.json({ ticker: "ORCL" });
+    },
+  };
+  const runtime = createAnalysisBackendRuntime({ EARNING_REPORT_PIPELINE: binding, EARNING_REPORT_READ_TOKEN: token });
+  assert.equal(runtime.configured, true);
+  if (runtime.configured) assert.equal((await runtime.client.getCompanyAnalysis("ORCL")).status, 200);
+  assert.deepEqual(createAnalysisBackendRuntime({ EARNING_REPORT_PIPELINE: binding }), { configured: false, reason: "missing_token" });
+  assert.deepEqual(createAnalysisBackendRuntime({ EARNING_REPORT_READ_TOKEN: token }), { configured: false, reason: "missing_origin" });
+});
