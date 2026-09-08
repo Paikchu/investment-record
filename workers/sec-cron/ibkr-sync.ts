@@ -4,6 +4,7 @@ import type { SecCronEnv } from "./core.ts";
 
 export type IbkrSyncEnv = SecCronEnv & {
   PORTFOLIO_TARGET_PLATFORM?: "cloudflare" | "sites";
+  PORTFOLIO_SITE?: { fetch: typeof fetch };
   IBKR_FLEX_TOKEN: string;
   IBKR_FLEX_QUERY_ID: string;
   PORTFOLIO_SYNC_KEY: string;
@@ -18,6 +19,12 @@ export async function runIbkrFlexSync(env: IbkrSyncEnv, fetcher: typeof fetch = 
     throw new Error("IBKR Flex worker environment is incomplete");
   }
   const origin = env.MAX_SITE_ORIGIN.replace(/\/+$/, "");
+  if (env.PORTFOLIO_TARGET_PLATFORM === "cloudflare" && !env.PORTFOLIO_SITE) {
+    throw new Error("Cloudflare portfolio service binding is missing");
+  }
+  const siteFetch = env.PORTFOLIO_SITE
+    ? env.PORTFOLIO_SITE.fetch.bind(env.PORTFOLIO_SITE)
+    : fetcher;
   const headers = {
     "content-type": "application/json",
     ...(env.PORTFOLIO_TARGET_PLATFORM !== "cloudflare"
@@ -25,8 +32,8 @@ export async function runIbkrFlexSync(env: IbkrSyncEnv, fetcher: typeof fetch = 
       : {}),
     "x-portfolio-sync-key": env.PORTFOLIO_SYNC_KEY,
   };
-  const stateResponse = await fetcher(`${origin}/api/internal/portfolio/sync`, {
-    redirect: "error",
+  const stateResponse = await siteFetch(`${origin}/api/internal/portfolio/sync`, {
+    redirect: "manual",
     headers,
     signal: AbortSignal.timeout(30_000),
   });
@@ -45,8 +52,8 @@ export async function runIbkrFlexSync(env: IbkrSyncEnv, fetcher: typeof fetch = 
     queryId: env.IBKR_FLEX_QUERY_ID,
   });
   input.capitalFlows = extractCapitalFlows(csv);
-  const publishResponse = await fetcher(`${origin}/api/internal/portfolio/sync`, {
-    redirect: "error",
+  const publishResponse = await siteFetch(`${origin}/api/internal/portfolio/sync`, {
+    redirect: "manual",
     method: "POST",
     headers,
     body: JSON.stringify(input),
@@ -74,8 +81,13 @@ export async function handleIbkrSyncRequest(
     const result = await sync();
     console.log(JSON.stringify({ event: "ibkr-flex-sync", trigger: "manual", ...result }));
     return Response.json(result, { headers });
-  } catch {
-    console.error(JSON.stringify({ event: "ibkr-flex-sync-failed", trigger: "manual" }));
+  } catch (error) {
+    let reason = error instanceof Error ? error.message : "Unknown sync error";
+    for (const secret of [env.IBKR_FLEX_TOKEN, env.PORTFOLIO_SYNC_KEY, env.MAX_SITE_BYPASS_TOKEN]) {
+      if (secret) reason = reason.replaceAll(secret, "[redacted]");
+    }
+    reason = reason.replace(/https?:\/\/\S+/g, "[redacted-url]");
+    console.error(JSON.stringify({ event: "ibkr-flex-sync-failed", trigger: "manual", reason: reason.slice(0, 300) }));
     return Response.json({ error: "Portfolio sync failed; previous data retained" }, { status: 502, headers });
   }
 }

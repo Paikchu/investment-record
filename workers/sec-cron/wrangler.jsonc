@@ -11,6 +11,9 @@
     "SEC_USER_AGENT": "max-investment-record/1.0 max.zhangyuchen@gmail.com",
     "SEC_ANALYSIS_MODEL": "deepseek-v4-flash"
   },
+  "services": [
+    { "binding": "PORTFOLIO_SITE", "service": "investment-record" }
+  ],
   "workflows": [
     {
       "name": "max-investment-record-sec-analysis",

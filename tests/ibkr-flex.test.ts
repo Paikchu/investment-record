@@ -203,6 +203,12 @@ test("Cloudflare sync omits Sites credentials and rejects redirects", async () =
     MAX_SITE_ORIGIN: "https://site.example",
     MAX_SITE_BYPASS_TOKEN: "old-sites-secret",
     PORTFOLIO_TARGET_PLATFORM: "cloudflare",
+    PORTFOLIO_SITE: {
+      fetch: (async (input, init) => {
+        calls.push(new Request(input, init));
+        return responses.shift()!;
+      }) as typeof fetch,
+    },
     SEC_REFRESH_KEY: "",
     IBKR_FLEX_TOKEN: "1234567890",
     IBKR_FLEX_QUERY_ID: "1628251",
@@ -210,14 +216,24 @@ test("Cloudflare sync omits Sites credentials and rejects redirects", async () =
     SEC_ANALYSIS_WORKFLOW: { async create() { return { id: "unused" }; } },
   } satisfies IbkrSyncEnv;
   await runIbkrFlexSync(env, (async (input, init) => {
+    assert.ok(!new Request(input, init).url.startsWith("https://site.example"));
     calls.push(new Request(input, init));
     return responses.shift()!;
   }) as typeof fetch, new Date("2027-01-01T14:00:00.000Z"));
   for (const request of [calls[0], calls.at(-1)!]) {
     assert.equal(request.headers.get("oai-sites-authorization"), null);
     assert.equal(request.headers.get("x-portfolio-sync-key"), "portfolio-key");
-    assert.equal(request.redirect, "error");
+    assert.equal(request.redirect, "manual");
   }
+});
+
+test("Cloudflare sync fails closed when the service binding is missing", async () => {
+  const env = {
+    IBKR_FLEX_TOKEN: "1234567890", IBKR_FLEX_QUERY_ID: "1628251",
+    PORTFOLIO_SYNC_KEY: "key", MAX_SITE_ORIGIN: "https://site.example",
+    PORTFOLIO_TARGET_PLATFORM: "cloudflare",
+  } as IbkrSyncEnv;
+  await assert.rejects(runIbkrFlexSync(env), /service binding is missing/);
 });
 
 test("manual portfolio trigger requires POST and a matching secret before fetching IBKR", async () => {

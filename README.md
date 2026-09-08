@@ -33,6 +33,8 @@ npx wrangler d1 migrations apply DB --remote --config wrangler.jsonc
 
 后台通过 `https://investment-record.max-zhangyuchen.workers.dev/api/internal/portfolio/sync` 更新新网站 D1；请求只发送同步密钥，不再发送 Sites bypass token。Cron 保持北京时间周二至周六 14:00（UTC `0 6 * * 2-6`），原 Sites 不再由该 Cron 更新。同步校验失败会保留上一份有效数据。
 
+内部请求使用 `PORTFOLIO_SITE → investment-record` Service binding，避免同账号 Worker 通过公网域名互调失败；IBKR 外部请求仍使用标准 fetch。网站本身明确配置空 Cron 列表，定时任务只属于后台 Worker。
+
 需要立即同步时，对后台 `/internal/portfolio/sync` 发送带 `x-portfolio-sync-key` 的 POST；使用安全脚本从本地密钥文件读取请求头，不要将密钥写进命令行。该入口与 Cron 使用同一条 IBKR 读取、校验和原子写入链路，返回同步状态、报告日期与条目数。未认证请求返回 401，GET 返回 405。
 
 SEC 页面继续使用现有 `earning-report-analysis-sec-web` 财报服务；本次只接通现有 IBKR 数据任务，没有新增 SEC 扫描或 AI 任务。
@@ -153,7 +155,7 @@ npx wrangler secret put PORTFOLIO_SYNC_KEY --config workers/sec-cron/wrangler.js
 
 - `IBKR_FLEX_TOKEN`：只存在 Worker，用于读取 IBKR Flex。
 - `MAX_SITE_BYPASS_TOKEN`：只存在 Worker，用于调用受 Sites 访问控制保护的内部接口。
-- `PORTFOLIO_SYNC_KEY`：Sites 与 Worker 两边必须使用同一个随机值，形成第二道应用级鉴权。
+- `PORTFOLIO_SYNC_KEY`：新 Cloudflare 网站与后台 Worker 使用同一个随机值；原 Sites 保留自己的旧密钥。
 
 源码还支持 `SEC_REFRESH_KEY`，以及 `AI_API_KEY` 或 `SEC_BOOTSTRAP_PRIVATE_KEY`。它们当前不在已部署 Worker 的 Secret 列表中；只有恢复对应 SEC 刷新/分析路径时才配置，并同时核对 Sites 侧的配套变量。
 
