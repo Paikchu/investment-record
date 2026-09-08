@@ -320,7 +320,10 @@ export async function fetchFlexStatement(options: {
     if (!response.ok) throw new Error(`IBKR Flex GetStatement failed with HTTP ${response.status}`);
     const error = body.trimStart().startsWith("<") ? flexError(body) : null;
     if (!error) {
-      if (!body.includes('"HEADER"') || !body.includes('"DATA"')) throw new Error("IBKR Flex statement is not a sectioned CSV report");
+      if (!body.includes('"HEADER"') || !body.includes('"DATA"')) {
+        const root = body.match(/<([A-Za-z][\w:-]*)/)?.[1] ?? "none";
+        throw new Error(`IBKR Flex statement is not a sectioned CSV report (bytes=${body.length}, root=${root})`);
+      }
       return body;
     }
     if (!RETRYABLE_CODES.has(error.code) || attempt === retryDelays.length) {

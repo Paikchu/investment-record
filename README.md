@@ -39,6 +39,8 @@ npx wrangler d1 migrations apply DB --remote --config wrangler.jsonc
 
 SEC 页面继续使用现有 `earning-report-analysis-sec-web` 财报服务；本次只接通现有 IBKR 数据任务，没有新增 SEC 扫描或 AI 任务。
 
+2026-09-08 联调验证：后台实际发布 2026-09-07 IBKR 报告，D1 保存 16 条持仓和合并后的 770 条成交；入金流水覆盖首次入金日期。同一报告再次发布返回 `unchanged`。
+
 普通代码更新可运行 `git push github main` 自动发布。仓库 GitHub remote 为 `github`，Sites remote 为 `origin`。
 
 官方参考：[Workers Builds 配置](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)、[Vite 配置入口](https://developers.cloudflare.com/workers/vite-plugin/reference/api/)。
