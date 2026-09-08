@@ -3340,3 +3340,8 @@
   .earning-report .stock-analysis-header h1 { font-size: 22px; }
   .earning-report .sec-analysis-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Embedded in position details without claiming a full-page canvas. */
+.earning-report.position-disclosure-timeline { min-height: 0; width: 100%; }
+.position-disclosure-timeline .sec-filings-section { margin-top: 32px; padding-top: 0; }
+.position-disclosure-timeline .sec-filing-scroll { overflow: visible; }

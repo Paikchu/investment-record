@@ -20,15 +20,17 @@ test("adds the SEC section to the shared position detail flow", async () => {
 
   assert.match(detail, /<SecFilingsSection ticker=\{ticker\} \/>/);
   assert.match(detail, /instrument-section[\s\S]*PlanEditor[\s\S]*SecFilingsSection/);
-  assert.match(section, /SEC 文件与 AI 解读/);
-  assert.match(section, /\/api\/sec\/\$\{encodeURIComponent\(ticker\)\}\/filings/);
+  assert.match(section, /披露时间线/);
+  assert.match(section, /DisclosureTimeline key=\{ticker\} ticker=\{ticker\}/);
+  const shared = await readFile(new URL("../app/analysis/stocks/[ticker]/SecFilingsSection.tsx", import.meta.url), "utf8");
+  assert.match(shared, /\/api\/analysis\/v1\/companies\/\$\{encodeURIComponent\(ticker\)\}\/filings/);
   assert.match(refreshRoute, /getChatGPTUser/);
-  assert.match(section, /aria-expanded=\{isOpen\}/);
-  assert.match(section, /target="_blank"/);
+  assert.match(shared, /<AccordionTrigger>/);
+  assert.match(shared, /target="_blank"/);
   assert.match(css, /\.sec-filings-section/);
   assert.match(css, /\.sec-filing-card/);
-  assert.match(section, /阅读完整报告/);
-  assert.match(section, /isLatestPeriodic/);
+  assert.match(shared, /阅读完整报告/);
+  assert.match(shared, /isLatestPeriodic/);
   assert.match(css, /\.sec-filings-section,\s*\.plan-editor \{ width: 100%; max-width: none; \}/);
   assert.doesNotMatch(css, /\.position-detail-dialog \.plan-editor \{[^}]*max-width:/);
 });
@@ -79,7 +81,8 @@ test("reads the Cloudflare feed and keeps legacy refresh routes disabled", async
   assert.match(clientRefreshRoute, /status: 410/);
   assert.match(modelKeyRoute, /status: 410/);
   assert.doesNotMatch(modelKeyRoute, /encryptSecModelKey/);
-  assert.match(clientSection, /const feedUrl = `\/api\/sec\/\$\{encodeURIComponent\(ticker\)\}\/filings`/);
+  assert.match(clientSection, /@\/app\/analysis\/stocks\/\[ticker\]\/SecFilingsSection/);
+  assert.doesNotMatch(clientSection, /\/api\/sec\//);
   assert.doesNotMatch(clientSection, /fetch\(`\$\{feedUrl\}\/refresh`/);
 });
 
