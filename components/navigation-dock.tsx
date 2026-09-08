@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 const items = [
   { href: "/", label: "投资记录", icon: ChartNoAxesCombined },
-  { href: "https://earning-report-analysis-sec-web.max-zhangyuchen.workers.dev/", label: "公司业务分析", icon: BookOpen },
+  { href: "/analysis", label: "公司业务分析", icon: BookOpen },
   { href: "/macro", label: "宏观分析", icon: Globe2 },
   { href: "/settings", label: "设置", icon: Settings2 },
 ];
