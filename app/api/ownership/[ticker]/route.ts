@@ -1,11 +1,9 @@
-import { getChatGPTUser } from "@/app/chatgpt-auth";
 import { getD1 } from "@/db";
 import { D1SecRepository } from "@/lib/sec-d1";
 import { findSecurity } from "@/lib/site-data";
 import { refreshOwnership } from "@/lib/ownership-service";
 
 export async function GET(_request: Request, context: { params: Promise<{ ticker: string }> }) {
-  if (!await getChatGPTUser()) return Response.json({ error: "登录状态已失效。" }, { status: 401 });
 
   const { ticker } = await context.params;
   const security = findSecurity(ticker);

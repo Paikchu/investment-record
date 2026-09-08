@@ -1,4 +1,4 @@
-import { requireChatGPTUser } from "@/app/chatgpt-auth";
+import { getChatGPTUser } from "@/app/chatgpt-auth";
 import { getD1 } from "@/db";
 import { getHoldingPlan, type HoldingPlanRecord } from "@/lib/holding-plan-store";
 import { buildPortfolioViewModel } from "@/lib/portfolio-view-model";
@@ -16,12 +16,12 @@ export default async function PositionPage({ params }: { params: Promise<{ ticke
   const portfolioViewModel = buildPortfolioViewModel(await currentPortfolioSnapshot());
   const security = findSecurity(ticker, portfolioViewModel);
   if (!security) notFound();
-  const user = await requireChatGPTUser(`/positions/${encodeURIComponent(ticker)}`);
+  const user = await getChatGPTUser();
   const position = portfolioViewModel.positionGroups.find((group) => group.symbol === ticker);
   let plan: HoldingPlanRecord | null = null;
   let planUnavailable = false;
   try {
-    plan = await getHoldingPlan(await getD1(), user.email, ticker);
+    if (user) plan = await getHoldingPlan(await getD1(), user.email, ticker);
   } catch {
     planUnavailable = true;
   }
@@ -32,7 +32,7 @@ export default async function PositionPage({ params }: { params: Promise<{ ticke
       <PositionDetailContent
         companyName={security.name}
         plan={plan}
-        planStatus={planUnavailable ? "unavailable" : "ready"}
+        planStatus={!user ? "anonymous" : planUnavailable ? "unavailable" : "ready"}
         position={position}
         ticker={ticker}
       />

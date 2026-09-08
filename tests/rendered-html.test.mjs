@@ -82,11 +82,17 @@ test("renders empty macro and settings destinations with the shared dock", async
   }
 });
 
-test("rejects anonymous access to accession-specific SEC reports", async () => {
-  const response = await render("/positions/MSFT/sec/0000789019-26-000001");
-
-  assert.ok([302, 303, 307, 308].includes(response.status));
-  assert.match(response.headers.get("location") ?? "", /signin-with-chatgpt/);
+test("allows anonymous company browsing while protecting plan writes", async () => {
+  for (const ticker of ["NOK", "MSFT", "SATS"]) {
+    const response = await render(`/positions/${ticker}`);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("location"), null);
+    const html = await response.text();
+    assert.match(html, /id="position-detail-title"/);
+    assert.doesNotMatch(html, /<textarea/);
+  }
+  const response = await render("/api/plans/NOK");
+  assert.equal(response.status, 401);
 });
 
 test("removes the disposable starter preview", async () => {

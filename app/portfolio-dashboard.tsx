@@ -468,11 +468,11 @@ function HistoricalPositionLedger({ groups }: { groups: HistoricalPositionGroupV
             <TableRow className="ledger-data-row" key={group.symbol}
               style={{ "--holding-color": heatmapThemeColor(group.symbol) } as CSSProperties}>
               <TableCell>
-                <div className="ledger-symbol historical-ledger-symbol">
+                <Link href={`/positions/${encodeURIComponent(group.symbol)}`} className="ledger-symbol">
                   <i className="holding-mark" aria-hidden="true" />
                   <CompanyLogo symbol={group.symbol} />
                   <strong>{group.symbol}</strong>
-                </div>
+                </Link>
               </TableCell>
               <TableCell>{group.firstTradeDate}</TableCell>
               <TableCell>{group.lastTradeDate}</TableCell>

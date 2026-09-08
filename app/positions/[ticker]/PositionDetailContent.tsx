@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
-export type PositionPlanStatus = "ready" | "loading" | "unavailable";
+export type PositionPlanStatus = "ready" | "loading" | "unavailable" | "anonymous";
 
 export function PositionDetailContent({
   ticker,
@@ -113,7 +113,7 @@ export function PositionDetailContent({
         <section id="position-structure" className="mt-6"><Empty><EmptyHeader><EmptyTitle>暂无持仓数据</EmptyTitle><EmptyDescription>这份计划不会写入 IBKR 账本；建立持仓后，快照数据会自动出现在这里。</EmptyDescription></EmptyHeader></Empty></section>
       )}
 
-      {planStatus === "loading" ? (
+      {planStatus === "anonymous" ? null : planStatus === "loading" ? (
         <section className="plan-editor plan-loading" id="plan-editor" aria-labelledby="plan-loading-title">
           <div className="detail-section-heading">
             <h2 id="plan-loading-title">持仓计划</h2>

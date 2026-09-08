@@ -1,9 +1,7 @@
-import { getChatGPTUser } from "@/app/chatgpt-auth";
 import { getCloudflareSecFeed } from "@/lib/sec-cloudflare-client";
 import { findSecurity } from "@/lib/site-data";
 
 export async function GET(_request: Request, context: { params: Promise<{ ticker: string }> }) {
-  if (!await getChatGPTUser()) return Response.json({ error: "未登录。" }, { status: 401 });
   const { ticker } = await context.params;
   const security = findSecurity(ticker);
   if (!security) return Response.json({ error: "未找到对应的美股或 ETF。" }, { status: 404 });

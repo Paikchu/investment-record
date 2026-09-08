@@ -30,5 +30,7 @@ export function findSecurity(rawTicker: string, currentViewModel = portfolioView
   const held = currentViewModel.positionGroups.find((group) => group.symbol === ticker);
   const listed = symbolDirectory.securities.find((security) => security.symbol === ticker);
   if (held) return listed ? { ...listed, name: held.name } : { symbol: ticker, name: held.name, exchange: "IBKR", type: "stock" };
+  const historical = currentViewModel.historicalPositionGroups.find((group) => group.symbol === ticker);
+  if (historical) return listed ?? { symbol: ticker, name: ticker, exchange: "IBKR", type: "stock" };
   return listed ?? null;
 }
