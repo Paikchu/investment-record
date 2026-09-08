@@ -1,9 +1,6 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { Button } from "@/components/ui/button";
-import { Sun, Moon } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
 
 const key = "max-investment-record:theme";
 type Mode = "system" | "light" | "dark";
@@ -61,19 +58,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   return <ThemeContext.Provider value={{ mode, choose }}>{children}</ThemeContext.Provider>;
 }
 
-export function ThemeControl() {
+export function useTheme() {
   const context = useContext(ThemeContext);
-  if (!context) throw new Error("ThemeControl requires ThemeProvider");
-  // Theme selection should not lock body scrolling or override its safe-area padding.
-  return <DropdownMenu modal={false}>
-    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon-sm" className="relative" aria-label="切换日间或夜间模式">
-      <Sun className="rotate-0 scale-100 transition-transform motion-reduce:transition-none dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute rotate-90 scale-0 transition-transform motion-reduce:transition-none dark:rotate-0 dark:scale-100" />
-    </Button></DropdownMenuTrigger>
-    <DropdownMenuContent align="start"><DropdownMenuRadioGroup value={context.mode} onValueChange={context.choose}>
-      <DropdownMenuRadioItem value="light">日间模式</DropdownMenuRadioItem>
-      <DropdownMenuRadioItem value="dark">夜间模式</DropdownMenuRadioItem>
-      <DropdownMenuRadioItem value="system">跟随系统</DropdownMenuRadioItem>
-    </DropdownMenuRadioGroup></DropdownMenuContent>
-  </DropdownMenu>;
+  if (!context) throw new Error("useTheme requires ThemeProvider");
+  return context;
 }

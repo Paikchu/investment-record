@@ -1,6 +1,7 @@
 "use client";
 
-import { ThemeControl } from "./theme-control";
+import { useLanguage } from "@/app/language-provider";
+
 import { Empty, EmptyHeader, EmptyDescription } from "@/components/ui/empty";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -61,41 +62,42 @@ function PortfolioOverview({
   nextEarnings?: EarningsEvent;
   nextEarningsReminder: ReturnType<typeof buildEarningsReminder> | null;
 }) {
+  const { t } = useLanguage();
   return (
     <section className="portfolio-overview" aria-labelledby="portfolio-title">
       <div className="hero">
         <div className="portfolio-heading">
-          <div className="flex items-center gap-2"><h1 className="summary-nav-label" id="portfolio-title">当前净值</h1><ThemeControl /></div>
+          <div className="flex items-center gap-2"><h1 className="summary-nav-label" id="portfolio-title">{t("当前净值")}</h1></div>
           <strong className="summary-nav-value">{money(netLiquidation)}</strong>
           <div className="summary-return">
-            <span className="summary-pnl-label">累计盈亏</span>
+            <span className="summary-pnl-label">{t("累计盈亏")}</span>
             <strong className={`summary-pnl ${totalPnl < 0 ? "loss" : totalPnl > 0 ? "gain" : "muted"}`}>
               {money(totalPnl, true)} <i>{percent(totalPnlRate, true)}</i>
             </strong>
           </div>
         </div>
-        <div className="summary-support" aria-label="组合摘要">
-          <article><span>持仓净市值</span><strong>{money(netPositionsValue)}</strong></article>
-          <article><span>现金</span><strong>{money(cashBalance)}</strong></article>
-          <article><span>杠杆率</span><strong>{number(portfolioLeverage, 2, 2)}x</strong></article>
+        <div className="summary-support" aria-label={t("组合摘要")}>
+          <article><span>{t("持仓净市值")}</span><strong>{money(netPositionsValue)}</strong></article>
+          <article><span>{t("现金")}</span><strong>{money(cashBalance)}</strong></article>
+          <article><span>{t("杠杆率")}</span><strong>{number(portfolioLeverage, 2, 2)}x</strong></article>
           <article>
             <div className="summary-metric-label">
-              <span>净入金</span>
+              <span>{t("净入金")}</span>
 
             </div>
             <strong>{money(netDeposits)}</strong>
           </article>
         </div>
       </div>
-      <section className="header-position-summary" aria-label="持仓摘要">
-        <article><span>正股</span><strong>{money(stockMarketValue)}</strong></article>
-        <article><span>期权</span><strong>{money(optionMarketValue)}</strong></article>
-        <article><span>剔除期权浮盈亏</span><strong>{money(netLiquidationWithoutOptionPnl)}</strong></article>
+      <section className="header-position-summary" aria-label={t("持仓摘要")}>
+        <article><span>{t("正股")}</span><strong>{money(stockMarketValue)}</strong></article>
+        <article><span>{t("期权")}</span><strong>{money(optionMarketValue)}</strong></article>
+        <article><span>{t("剔除期权浮盈亏")}</span><strong>{money(netLiquidationWithoutOptionPnl)}</strong></article>
         {nextEarnings && nextEarningsReminder && (
           <article className="header-next-earnings">
-            <span>即将财报</span>
+            <span>{t("即将财报")}</span>
             <strong>{nextEarnings.symbol} {nextEarningsReminder.releaseDateLabel} · {nextEarningsReminder.sessionLabel}</strong>
-            <i>北京{nextEarningsReminder.viewDateLabel}{nextEarningsReminder.viewTimeLabel}，{nextEarningsReminder.countdownLabel}</i>
+            <i>{t("北京")}{nextEarningsReminder.viewDateLabel}{nextEarningsReminder.viewTimeLabel}，{nextEarningsReminder.countdownLabel}</i>
           </article>
         )}
       </section>
@@ -104,6 +106,7 @@ function PortfolioOverview({
 }
 
 function PositionReminder({ event, asOf }: { event?: EarningsEvent; asOf: string }) {
+  const { t } = useLanguage();
   if (!event) return null;
 
   const reminder = buildEarningsReminder(event, asOf);
@@ -113,7 +116,7 @@ function PositionReminder({ event, asOf }: { event?: EarningsEvent; asOf: string
       title={`美股 ${reminder.releaseDateLabel}${reminder.sessionLabel}发布；北京 ${reminder.viewDateLabel}${reminder.viewTimeLabel}查看`}
     >
       <strong>{reminder.releaseDateLabel} · {reminder.sessionLabel}</strong>
-      <small>北京{reminder.viewDateLabel}{reminder.viewTimeLabel} · {reminder.countdownLabel}</small>
+      <small>{t("北京")}{reminder.viewDateLabel}{reminder.viewTimeLabel} · {reminder.countdownLabel}</small>
     </span>
   );
 }
@@ -127,6 +130,7 @@ function AllocationRing({
   activeSymbol: string | null;
   onActiveSymbolChange: (symbol: string | null) => void;
 }) {
+  const { t } = useLanguage();
   const [showOther, setShowOther] = useState(false);
   const allocation = useMemo(() => buildAllocation(groups), [groups]);
   const otherActive = Boolean(activeSymbol && allocation.other.some((group) => group.symbol === activeSymbol));
@@ -173,7 +177,7 @@ function AllocationRing({
             />
           ))}
         </svg>
-        <span className="ring-center">{allocation.leadingWeight.toFixed(1)}%<small>前四大持仓</small></span>
+        <span className="ring-center">{allocation.leadingWeight.toFixed(1)}%<small>{t("前四大持仓")}</small></span>
       </div>
       <div className="legend">
         {allocation.leading.map((group, index) => (
@@ -200,11 +204,11 @@ function AllocationRing({
           onMouseLeave={() => setShowOther(false)}
           type="button"
         >
-          <span><i aria-hidden="true" />其他</span><b>{allocation.otherWeight.toFixed(2)}%</b>
+          <span><i aria-hidden="true" />{t("其他")}</span><b>{allocation.otherWeight.toFixed(2)}%</b>
         </button>
         {showOther && (
           <div className="other-popover" role="tooltip">
-            <strong>其他持仓与空头调整</strong>
+            <strong>{t("其他持仓与空头调整")}</strong>
             {allocation.other.map((group) => (
               <span key={group.symbol}><b>{group.symbol}</b><i>{group.weight > 0 ? "+" : "−"}{Math.abs(group.weight).toFixed(2)}%</i></span>
             ))}
@@ -216,6 +220,7 @@ function AllocationRing({
 }
 
 function SectorAllocationRing({ groups }: { groups: PositionGroupView[] }) {
+  const { t } = useLanguage();
   const allocation = useMemo(() => buildSectorAllocation(groups), [groups]);
   const segments = useMemo(() => {
     const total = allocation.classifiedWeight + allocation.unallocatedWeight;
@@ -252,9 +257,9 @@ function SectorAllocationRing({ groups }: { groups: PositionGroupView[] }) {
             />
           ))}
         </svg>
-        <span className="ring-center">{allocation.classifiedWeight.toFixed(1)}%<small>已归类板块</small></span>
+        <span className="ring-center">{allocation.classifiedWeight.toFixed(1)}%<small>{t("已归类板块")}</small></span>
       </div>
-      <div className="legend sector-legend" aria-label="板块占比图例">
+      <div className="legend sector-legend" aria-label={t("板块占比图例")}>
         {allocation.sectors.map((sector) => (
           <div className="legend-row sector-legend-row" key={sector.domain}>
             <span><i aria-hidden="true" style={{ "--holding-color": sector.color } as CSSProperties} />{sector.domain}</span><b>{sector.weight.toFixed(2)}%</b>
@@ -262,7 +267,7 @@ function SectorAllocationRing({ groups }: { groups: PositionGroupView[] }) {
         ))}
         {allocation.unallocatedWeight > 0 && (
           <div className="legend-row sector-legend-row legend-other">
-            <span><i aria-hidden="true" />现金与对冲</span><b>{allocation.unallocatedWeight.toFixed(2)}%</b>
+            <span><i aria-hidden="true" />{t("现金与对冲")}</span><b>{allocation.unallocatedWeight.toFixed(2)}%</b>
           </div>
         )}
       </div>
@@ -279,14 +284,15 @@ function AllocationPanel({
   activeSymbol: string | null;
   onActiveSymbolChange: (symbol: string | null) => void;
 }) {
+  const { t } = useLanguage();
   return (
     <div className="allocation-comparison">
       <section className="allocation-mode-panel" aria-labelledby="holding-allocation-title">
-        <h3 id="holding-allocation-title">个股</h3>
+        <h3 id="holding-allocation-title">{t("个股")}</h3>
         <AllocationRing groups={groups} activeSymbol={activeSymbol} onActiveSymbolChange={onActiveSymbolChange} />
       </section>
       <section className="allocation-mode-panel" aria-labelledby="sector-allocation-title">
-        <h3 id="sector-allocation-title">板块</h3>
+        <h3 id="sector-allocation-title">{t("板块")}</h3>
         <SectorAllocationRing groups={groups} />
       </section>
     </div>
@@ -324,6 +330,7 @@ function PositionLedger({
   earningsBySymbol: Map<string, EarningsEvent>;
   earningsUpdatedAt: string;
 }) {
+  const { t } = useLanguage();
   const [sortKey, setSortKey] = useState<LedgerSortKey>("weight");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const sortedGroups = useMemo(() => {
@@ -341,19 +348,19 @@ function PositionLedger({
   }, [groups, quotes, sortDirection, sortKey]);
 
   return (
-    <div className="position-scroll" aria-label="按 Ticker 分类的持仓">
-      <Table className="ledger-table" aria-label="投资账本">
+    <div className="position-scroll" aria-label={t("按 Ticker 分类的持仓")}>
+      <Table className="ledger-table" aria-label={t("投资账本")}>
         <TableHeader>
           <TableRow>
             {ledgerColumns.map((column) => (
               <TableHead key={column.key} scope="col" aria-sort={sortKey === column.key ? (sortDirection === "desc" ? "descending" : "ascending") : "none"}>
                 <Button variant="ghost" size="sm" type="button"
-                  aria-label={`${column.label}，点击${sortKey === column.key && sortDirection === "desc" ? "升序" : "降序"}`}
+                  aria-label={`${t(column.label)}，点击${sortKey === column.key && sortDirection === "desc" ? t("升序") : t("降序")}`}
                   onClick={() => {
                     setSortDirection(sortKey === column.key && sortDirection === "desc" ? "asc" : "desc");
                     setSortKey(column.key);
                   }}>
-                  {column.label}
+                  {t(column.label)}
                   <span className="ledger-sort-arrows" aria-hidden="true">
                     <ChevronUp data-active={sortKey === column.key && sortDirection === "asc"} />
                     <ChevronDown data-active={sortKey === column.key && sortDirection === "desc"} />
@@ -377,14 +384,14 @@ function PositionLedger({
                     <Link href={`/positions/${encodeURIComponent(group.symbol)}`} className="ledger-symbol">
                       <i className="holding-mark" aria-hidden="true" />
                       <CompanyLogo symbol={group.symbol} />
-                      <strong>{group.symbol}</strong><span className="sr-only">，查看持仓详情</span>
+                      <strong>{group.symbol}</strong><span className="sr-only">{t("，查看持仓详情")}</span>
                     </Link>
                     {earningsBySymbol.has(group.symbol) && <TooltipProvider><Tooltip><TooltipTrigger asChild>
                       <Button variant="ghost" size="icon-sm" aria-label={`${group.symbol} 财报提醒`}><CalendarDays /></Button>
                     </TooltipTrigger><TooltipContent><PositionReminder event={earningsBySymbol.get(group.symbol)} asOf={earningsUpdatedAt} /></TooltipContent></Tooltip></TooltipProvider>}
                   </div>
                 </TableCell>
-                <TableCell>{quotes[group.symbol] ? money(quotes[group.symbol].price) : <span className="quote-muted">{quoteStatus === "loading" ? "读取中" : "—"}</span>}</TableCell>
+                <TableCell>{quotes[group.symbol] ? money(quotes[group.symbol].price) : <span className="quote-muted">{quoteStatus === "loading" ? t("读取中") : "—"}</span>}</TableCell>
                 <TableCell><span className="daily-change-value" data-direction={quotes[group.symbol]?.changePercent < 0 ? "loss" : quotes[group.symbol]?.changePercent > 0 ? "gain" : "neutral"}>{quotes[group.symbol] ? percent(quotes[group.symbol].changePercent, true) : "—"}</span></TableCell>
                 <TableCell>{money(group.value)}</TableCell>
                 <TableCell>{percent(group.weight)}</TableCell>
@@ -399,9 +406,9 @@ function PositionLedger({
                   <div className="position-submenu" aria-label={`${group.symbol} 期权持仓`}>
                     {group.options.map((option) => (
                       <div className="position-submenu-row" key={option.contract}>
-                        <span className="submenu-type">期权</span>
+                        <span className="submenu-type">{t("期权")}</span>
                         <strong>{option.contract}</strong>
-                        <span className="submenu-quantity">{number(option.quantity, 0, 4)} 张</span>
+                        <span className="submenu-quantity">{number(option.quantity, 0, 4)}{t(" 张")}</span>
                         <i className="submenu-value">{money(option.marketValue)}</i>
                       </div>
                     ))}
@@ -410,7 +417,7 @@ function PositionLedger({
               )}
             </Fragment>
           ))}
-          {sortedGroups.length === 0 && <TableRow><TableCell colSpan={ledgerColumns.length}><Empty><EmptyHeader><EmptyDescription>当前快照没有持仓。</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
+          {sortedGroups.length === 0 && <TableRow><TableCell colSpan={ledgerColumns.length}><Empty><EmptyHeader><EmptyDescription>{t("当前快照没有持仓。")}</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
         </TableBody>
       </Table>
     </div>
@@ -431,6 +438,7 @@ const historicalLedgerColumns: Array<{ key: HistoricalSortKey; label: string }> 
 ];
 
 function HistoricalPositionLedger({ groups }: { groups: HistoricalPositionGroupView[] }) {
+  const { t } = useLanguage();
   const [sortKey, setSortKey] = useState<HistoricalSortKey>("lastTradeDate");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const sortedGroups = useMemo(() => [...groups].sort((left, right) => {
@@ -441,19 +449,19 @@ function HistoricalPositionLedger({ groups }: { groups: HistoricalPositionGroupV
   }), [groups, sortDirection, sortKey]);
 
   return (
-    <div className="position-scroll" aria-label="按 Ticker 分类的历史持仓">
-      <Table className="ledger-table historical-ledger-table" aria-label="历史投资账本">
+    <div className="position-scroll" aria-label={t("按 Ticker 分类的历史持仓")}>
+      <Table className="ledger-table historical-ledger-table" aria-label={t("历史投资账本")}>
         <TableHeader>
           <TableRow>
             {historicalLedgerColumns.map((column) => (
               <TableHead key={column.key} scope="col" aria-sort={sortKey === column.key ? (sortDirection === "desc" ? "descending" : "ascending") : "none"}>
                 <Button variant="ghost" size="sm" type="button"
-                  aria-label={`${column.label}，点击${sortKey === column.key && sortDirection === "desc" ? "升序" : "降序"}`}
+                  aria-label={`${t(column.label)}，点击${sortKey === column.key && sortDirection === "desc" ? t("升序") : t("降序")}`}
                   onClick={() => {
                     setSortDirection(sortKey === column.key && sortDirection === "desc" ? "asc" : "desc");
                     setSortKey(column.key);
                   }}>
-                  {column.label}
+                  {t(column.label)}
                   <span className="ledger-sort-arrows" aria-hidden="true">
                     <ChevronUp data-active={sortKey === column.key && sortDirection === "asc"} />
                     <ChevronDown data-active={sortKey === column.key && sortDirection === "desc"} />
@@ -476,12 +484,12 @@ function HistoricalPositionLedger({ groups }: { groups: HistoricalPositionGroupV
               </TableCell>
               <TableCell>{group.firstTradeDate}</TableCell>
               <TableCell>{group.lastTradeDate}</TableCell>
-              <TableCell>{number(group.stockTrades, 0, 0)} 笔</TableCell>
-              <TableCell>{number(group.optionTrades, 0, 0)} 笔</TableCell>
+              <TableCell>{number(group.stockTrades, 0, 0)}{t(" 笔")}</TableCell>
+              <TableCell>{number(group.optionTrades, 0, 0)}{t(" 笔")}</TableCell>
               <TableCell><Pnl value={group.realized} /></TableCell>
             </TableRow>
           ))}
-          {sortedGroups.length === 0 && <TableRow><TableCell colSpan={historicalLedgerColumns.length}><Empty><EmptyHeader><EmptyDescription>Flex 成交记录中还没有已清仓标的。</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
+          {sortedGroups.length === 0 && <TableRow><TableCell colSpan={historicalLedgerColumns.length}><Empty><EmptyHeader><EmptyDescription>{t("Flex 成交记录中还没有已清仓标的。")}</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
         </TableBody>
       </Table>
     </div>
@@ -515,6 +523,7 @@ export function PortfolioDashboard({
   netDeposits: number;
   cashBalance: number;
 }) {
+  const { t } = useLanguage();
   const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
   const [analysisExpanded, setAnalysisExpanded] = useState(false);
   const [earningsAsOf] = useState(() => new Date().toISOString());
@@ -570,7 +579,7 @@ export function PortfolioDashboard({
       </div>
 
       <div className="lower-grid portfolio-workspace">
-        <aside className="portfolio-analysis-stack" aria-label="仓位分析" data-expanded={analysisExpanded}>
+        <aside className="portfolio-analysis-stack" aria-label={t("仓位分析")} data-expanded={analysisExpanded}>
           <Button
             aria-controls="allocation-panel heatmap-section"
             aria-expanded={analysisExpanded}
@@ -579,11 +588,11 @@ export function PortfolioDashboard({
             type="button"
             variant="ghost"
           >
-            <span><strong>仓位分析</strong><small>仓位构成与热力图</small></span>
-            <span>{analysisExpanded ? "收起" : "展开"}<svg aria-hidden="true" viewBox="0 0 20 20"><path d="m5 7.5 5 5 5-5" /></svg></span>
+            <span><strong>{t("仓位分析")}</strong><small>{t("仓位构成与热力图")}</small></span>
+            <span>{analysisExpanded ? t("收起") : t("展开")}<svg aria-hidden="true" viewBox="0 0 20 20"><path d="m5 7.5 5 5 5-5" /></svg></span>
           </Button>
           <section className="allocation-panel" id="allocation-panel" aria-labelledby="allocation-title">
-            <h2 id="allocation-title">仓位构成</h2>
+            <h2 id="allocation-title">{t("仓位构成")}</h2>
             <div className="section-divider" aria-hidden="true" />
             <AllocationPanel groups={positionGroups} activeSymbol={activeSymbol} onActiveSymbolChange={setActiveSymbol} />
           </section>
@@ -592,12 +601,12 @@ export function PortfolioDashboard({
         <section className="ledger-panel ledger-page" aria-labelledby="ledger-title">
           <Tabs defaultValue="current" className="ledger-tabs gap-0">
             <div className="ledger-heading">
-              <h2 id="ledger-title">投资账本</h2>
+              <h2 id="ledger-title">{t("投资账本")}</h2>
               <div className="ledger-heading-actions">
-                <TabsList aria-label="账本持仓范围">
-                  <TabsTrigger value="current">当前持仓 <small>{positionGroups.length}</small></TabsTrigger>
-                  <TabsTrigger value="historical">历史持仓 <small>{historicalPositionGroups.length}</small></TabsTrigger>
-                  <TabsTrigger value="plans">持仓计划</TabsTrigger>
+                <TabsList aria-label={t("账本持仓范围")}>
+                  <TabsTrigger value="current">{t("当前持仓 ")}<small>{positionGroups.length}</small></TabsTrigger>
+                  <TabsTrigger value="historical">{t("历史持仓 ")}<small>{historicalPositionGroups.length}</small></TabsTrigger>
+                  <TabsTrigger value="plans">{t("持仓计划")}</TabsTrigger>
                 </TabsList>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import "./globals.css";
+import { LanguageProvider } from "./language-provider";
 import { ThemeProvider } from "./theme-control";
 import { themeScript } from "@/lib/theme-script";
 import { NavigationDock } from "@/components/navigation-dock";
@@ -49,7 +50,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: themeScript }} /></head>
-      <body><ThemeProvider><NavigationDock />{children}</ThemeProvider></body>
+      <body><ThemeProvider><LanguageProvider><NavigationDock />{children}</LanguageProvider></ThemeProvider></body>
     </html>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/app/language-provider";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -14,6 +16,7 @@ const items = [
 ];
 
 export function NavigationDock() {
+  const { t } = useLanguage();
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(false);
   const navigation = useRef<HTMLElement>(null);
@@ -59,9 +62,9 @@ export function NavigationDock() {
   }, []);
 
   return (
-    <nav ref={navigation} aria-label="主导航" className="navigation-dock" data-expanded={expanded}
+    <nav ref={navigation} aria-label={t("主导航")} className="navigation-dock" data-expanded={expanded}
       onPointerEnter={() => setExpanded(true)} onFocus={() => setExpanded(true)}>
-      <button type="button" className="navigation-dock-compact" aria-label="展开主导航"
+      <button type="button" className="navigation-dock-compact" aria-label={t("展开主导航")}
         aria-expanded={expanded} aria-controls="navigation-dock-menu" onClick={() => setExpanded(true)}>
         {items.map((item, index) => <span key={item.href} aria-hidden="true" data-active={index === activeIndex} />)}
       </button>
@@ -75,7 +78,7 @@ export function NavigationDock() {
             const content = <Icon size={22} strokeWidth={1.8} aria-hidden="true" />;
             const props = {
               className: "navigation-dock-link",
-              "aria-label": label,
+              "aria-label": t(label),
               "aria-current": active ? "page" as const : undefined,
               onClick: (event: React.MouseEvent<HTMLAnchorElement>) => {
                 if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0) {
@@ -93,7 +96,7 @@ export function NavigationDock() {
                       ? <a href={href} {...props}>{content}</a>
                       : <Link href={href} {...props}>{content}</Link>}
                   </TooltipTrigger>
-                  <TooltipContent side="right" sideOffset={18}>{label}</TooltipContent>
+                  <TooltipContent side="right" sideOffset={18}>{t(label)}</TooltipContent>
                 </Tooltip>
               </li>
             );

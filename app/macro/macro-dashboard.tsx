@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/app/language-provider";
+
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { useResolvedTheme } from "../theme-control";
@@ -23,6 +25,7 @@ function formatShanghaiTime(value: string) {
 }
 
 function TradingViewWidget({ symbol, label }: { symbol: string; label: string }) {
+  const { t } = useLanguage();
   const theme = useResolvedTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
@@ -48,8 +51,8 @@ function TradingViewWidget({ symbol, label }: { symbol: string; label: string })
   return (
     <div className="macro-widget-frame" aria-label={`${label} TradingView 走势图`}>
       <div className="tradingview-widget-container" ref={containerRef} />
-      {failed && <p className="macro-widget-error">图表暂时无法载入。<a href={sourceUrl} rel="noopener noreferrer" target="_blank">在 TradingView 查看</a></p>}
-      <a className="macro-widget-credit" href={sourceUrl} rel="noopener nofollow noreferrer" target="_blank">{label} 图表由 TradingView 提供</a>
+      {failed && <p className="macro-widget-error">{t("图表暂时无法载入。")}<a href={sourceUrl} rel="noopener noreferrer" target="_blank">{t("在 TradingView 查看")}</a></p>}
+      <a className="macro-widget-credit" href={sourceUrl} rel="noopener nofollow noreferrer" target="_blank">{label}{t(" 图表由 TradingView 提供")}</a>
     </div>
   );
 }
@@ -98,6 +101,7 @@ function ChartPanel({ title, note, charts, initialSymbol }: { title: string; not
 }
 
 function Freshness({ dashboard }: { dashboard: MacroDashboardV1 }) {
+  const { t } = useLanguage();
   const [stale, setStale] = useState(false);
   useEffect(() => {
     const refresh = () => setStale(Date.now() - Date.parse(dashboard.generatedAt) > 36 * 60 * 60 * 1000);
@@ -106,11 +110,12 @@ function Freshness({ dashboard }: { dashboard: MacroDashboardV1 }) {
     return () => window.clearInterval(timer);
   }, [dashboard.generatedAt]);
 
-  const state = stale ? "更新延迟" : dashboard.coverageStatus === "partial" ? "部分覆盖" : "已更新";
+  const state = stale ? t("更新延迟") : dashboard.coverageStatus === "partial" ? t("部分覆盖") : t("已更新");
   return <span className="macro-freshness" data-state={stale || dashboard.coverageStatus === "partial" ? "delayed" : "current"}>{state}</span>;
 }
 
 export function MacroDashboard({ dashboard }: { dashboard: MacroDashboardV1 }) {
+  const { t } = useLanguage();
   const sources = new Map(dashboard.sources.map((source) => [source.id, source]));
 
   return (
@@ -120,61 +125,61 @@ export function MacroDashboard({ dashboard }: { dashboard: MacroDashboardV1 }) {
         <h1 id="macro-title">{dashboard.headline}</h1>
         <p>{dashboard.summary}</p>
         <div className="macro-asof">
-          <time dateTime={dashboard.generatedAt}>上海时间 {formatShanghaiTime(dashboard.generatedAt)}</time>
-          <span>事件窗口：过去 24 小时 / 未来 7 天</span>
+          <time dateTime={dashboard.generatedAt}>{t("上海时间 ")}{formatShanghaiTime(dashboard.generatedAt)}</time>
+          <span>{t("事件窗口：过去 24 小时 / 未来 7 天")}</span>
           {dashboard.coverageNote && <span>{dashboard.coverageNote}</span>}
         </div>
       </section>
 
       <section className="macro-impact-section" aria-labelledby="macro-impact-title">
-        <div className="macro-section-heading"><span>EVENT → PORTFOLIO</span><h2 id="macro-impact-title">今日宏观影响</h2></div>
+        <div className="macro-section-heading"><span>EVENT → PORTFOLIO</span><h2 id="macro-impact-title">{t("今日宏观影响")}</h2></div>
         {dashboard.impacts.length > 0 ? (
           <div className="macro-impact-grid">
             {dashboard.impacts.map((impact) => (
               <article className="macro-impact-card" data-direction={impact.direction} key={impact.eventId}>
-                <div className="macro-impact-title"><span>{directionLabels[impact.direction]}</span><h3>{impact.title}</h3></div>
+                <div className="macro-impact-title"><span>{t(directionLabels[impact.direction])}</span><h3>{impact.title}</h3></div>
                 <div className="macro-impact-body">
-                  <div><b>已确认事实</b><p>{impact.fact}</p></div>
-                  <div><b>传导路径</b><p>{impact.transmission}</p></div>
-                  <div className="macro-implication"><b>组合含义</b><p>{impact.implication}</p></div>
+                  <div><b>{t("已确认事实")}</b><p>{impact.fact}</p></div>
+                  <div><b>{t("传导路径")}</b><p>{impact.transmission}</p></div>
+                  <div className="macro-implication"><b>{t("组合含义")}</b><p>{impact.implication}</p></div>
                 </div>
                 <div className="macro-impact-meta">
                   <span>{impact.channels.map((channel) => channelLabels[channel]).join(" / ")}</span>
-                  <span>{horizonLabels[impact.horizon]}</span>
-                  <span>{confidenceLabels[impact.confidence]}</span>
+                  <span>{t(horizonLabels[impact.horizon])}</span>
+                  <span>{t(confidenceLabels[impact.confidence])}</span>
                 </div>
                 <div className="macro-impact-footer">
                   <strong>{impact.tickers.join(" · ")}</strong>
-                  <span>{impact.sourceIds.map((id) => sources.get(id)).filter(Boolean).map((source) => <a href={source!.url} key={source!.id} rel="noopener noreferrer" target="_blank">来源</a>)}</span>
+                  <span>{impact.sourceIds.map((id) => sources.get(id)).filter(Boolean).map((source) => <a href={source!.url} key={source!.id} rel="noopener noreferrer" target="_blank">{t("来源")}</a>)}</span>
                 </div>
               </article>
             ))}
           </div>
-        ) : <p className="macro-empty">过去 24 小时没有纳入范围的高、中影响事件。</p>}
+        ) : <p className="macro-empty">{t("过去 24 小时没有纳入范围的高、中影响事件。")}</p>}
       </section>
 
-      <section className="macro-chart-grid" aria-label="市场与利率走势">
-        <ChartPanel charts={EQUITY_CHARTS} initialSymbol="AMEX:SPY" note="EQUITY" title="美国大盘" />
-        <ChartPanel charts={BOND_CHARTS} initialSymbol="NASDAQ:IEF" note="RATES PROXY" title="美债期限 ETF" />
+      <section className="macro-chart-grid" aria-label={t("市场与利率走势")}>
+        <ChartPanel charts={EQUITY_CHARTS} initialSymbol="AMEX:SPY" note="EQUITY" title={t("美国大盘")} />
+        <ChartPanel charts={BOND_CHARTS} initialSymbol="NASDAQ:IEF" note="RATES PROXY" title={t("美债期限 ETF")} />
       </section>
 
       <section className="macro-events" aria-labelledby="macro-events-title">
-        <div className="macro-section-heading"><span>NEXT 7 DAYS · ASIA/SHANGHAI</span><h2 id="macro-events-title">未来七天经济事件</h2></div>
+        <div className="macro-section-heading"><span>NEXT 7 DAYS · ASIA/SHANGHAI</span><h2 id="macro-events-title">{t("未来七天经济事件")}</h2></div>
         <div className="macro-event-list">
           {dashboard.upcomingEvents.map((event) => (
             <article key={event.id}>
               <time dateTime={event.scheduledAt}>{formatShanghaiTime(event.scheduledAt)}</time>
-              <span className="macro-importance" data-level={event.importance}>{event.importance === "high" ? "高" : "中"}</span>
-              <div><strong>{event.title}</strong><small>美国 · 待发布</small></div>
-              <span className="macro-event-sources">{event.sourceIds.map((id) => sources.get(id)).filter(Boolean).map((source) => <a href={source!.url} key={source!.id} rel="noopener noreferrer" target="_blank">日程来源</a>)}</span>
+              <span className="macro-importance" data-level={event.importance}>{event.importance === "high" ? t("高") : t("中")}</span>
+              <div><strong>{event.title}</strong><small>{t("美国 · 待发布")}</small></div>
+              <span className="macro-event-sources">{event.sourceIds.map((id) => sources.get(id)).filter(Boolean).map((source) => <a href={source!.url} key={source!.id} rel="noopener noreferrer" target="_blank">{t("日程来源")}</a>)}</span>
             </article>
           ))}
         </div>
       </section>
 
       <footer className="macro-sources">
-        <div><span>SOURCE LEDGER</span><h2>来源与口径</h2></div>
-        <p>事件事实来自美国官方发布。组合影响为基于当前持仓的传导判断，不是交易指令。TradingView 行情可能因交易所权限而延迟。</p>
+        <div><span>SOURCE LEDGER</span><h2>{t("来源与口径")}</h2></div>
+        <p>{t("事件事实来自美国官方发布。组合影响为基于当前持仓的传导判断，不是交易指令。TradingView 行情可能因交易所权限而延迟。")}</p>
         <ol>{dashboard.sources.map((source) => <li key={source.id}><a href={source.url} rel="noopener noreferrer" target="_blank">{source.title}</a></li>)}</ol>
       </footer>
     </>

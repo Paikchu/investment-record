@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/app/language-provider";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -14,6 +16,7 @@ import { CompanyLogo } from "./company-logo";
 type SearchResult = { symbol: string; name: string; exchange: string; type: "stock" | "etf"; isHeld: boolean };
 
 export function AddPlanDialog() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -57,30 +60,30 @@ export function AddPlanDialog() {
 
   return (
     <Dialog open={isOpen} onOpenChange={changeOpen}>
-      <DialogTrigger asChild><Button type="button"><PlusIcon data-icon="inline-start" />添加持仓计划</Button></DialogTrigger>
+      <DialogTrigger asChild><Button type="button"><PlusIcon data-icon="inline-start" />{t("添加持仓计划")}</Button></DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>添加持仓计划</DialogTitle>
-          <DialogDescription>输入美股 ticker 或公司名称，选择后进入独立详情页。</DialogDescription>
+          <DialogTitle>{t("添加持仓计划")}</DialogTitle>
+          <DialogDescription>{t("输入美股 ticker 或公司名称，选择后进入独立详情页。")}</DialogDescription>
         </DialogHeader>
         <Command shouldFilter={false}>
-          <CommandInput aria-label="搜索 ticker 或公司" value={query} onValueChange={updateQuery} placeholder="AAPL / Apple" autoFocus />
+          <CommandInput aria-label={t("搜索 ticker 或公司")} value={query} onValueChange={updateQuery} placeholder="AAPL / Apple" autoFocus />
           <CommandList aria-busy={loading}>
-            {loading && <div role="status" aria-label="正在搜索" className="flex flex-col gap-3 p-3">{[0,1,2].map((row) => <Skeleton key={row} className="h-12 w-full" />)}</div>}
-            {!loading && (!query.trim() || message) && <Empty><EmptyHeader><EmptyDescription>{message || "搜索 ticker 或公司名称"}</EmptyDescription></EmptyHeader></Empty>}
-            {!loading && results.length > 0 && <CommandGroup heading="搜索结果">
+            {loading && <div role="status" aria-label={t("正在搜索")} className="flex flex-col gap-3 p-3">{[0,1,2].map((row) => <Skeleton key={row} className="h-12 w-full" />)}</div>}
+            {!loading && (!query.trim() || message) && <Empty><EmptyHeader><EmptyDescription>{t(message || "搜索 ticker 或公司名称")}</EmptyDescription></EmptyHeader></Empty>}
+            {!loading && results.length > 0 && <CommandGroup heading={t("搜索结果")}>
               {results.map((result) => <CommandItem key={result.symbol} value={result.symbol} onSelect={() => {
                 setIsOpen(false);
                 router.push(`/positions/${encodeURIComponent(result.symbol)}`);
               }}>
                 <CompanyLogo symbol={result.symbol} />
                 <span className="flex min-w-0 flex-1 flex-col"><strong>{result.symbol}</strong><span className="truncate text-muted-foreground">{result.name}</span></span>
-                <span className="text-muted-foreground">{result.isHeld ? "当前持仓" : result.type === "etf" ? "ETF" : "股票"} · {result.exchange}</span>
+                <span className="text-muted-foreground">{result.isHeld ? t("当前持仓") : result.type === "etf" ? "ETF" : t("股票")} · {result.exchange}</span>
               </CommandItem>)}
             </CommandGroup>}
           </CommandList>
         </Command>
-        {!loading && directoryUpdatedAt && <p className="text-xs text-muted-foreground">证券目录更新于 {new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium" }).format(new Date(directoryUpdatedAt))}</p>}
+        {!loading && directoryUpdatedAt && <p className="text-xs text-muted-foreground">{t("证券目录更新于 ")}{new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium" }).format(new Date(directoryUpdatedAt))}</p>}
       </DialogContent>
     </Dialog>
   );

@@ -1,3 +1,4 @@
+import { LocalizedText } from "./language-provider";
 import earningsData from "@/data/earnings-calendar.json";
 import type { EarningsCalendarSnapshot } from "@/lib/earnings-calendar";
 import { buildHeatmapHoldings } from "@/lib/portfolio-heatmap";
@@ -20,7 +21,7 @@ export default async function Home() {
   const portfolioLeverage = snapshot.account.netLiquidation === 0 ? 0 : grossPositionsValue / snapshot.account.netLiquidation;
   return (
     <>
-      <a className="skip-link" href="#main-content">跳到主要内容</a>
+      <a className="skip-link" href="#main-content"><LocalizedText>跳到主要内容</LocalizedText></a>
       <main className="page-shell" id="main-content">
         <PortfolioDashboard
           heatmapHoldings={heatmapHoldings}

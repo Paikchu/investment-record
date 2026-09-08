@@ -71,15 +71,17 @@ test("redirects old ledger and retired report URLs to the combined page", async 
   }
 });
 
-test("renders empty macro and settings destinations with the shared dock", async () => {
-  for (const path of ["/macro", "/settings"]) {
-    const response = await render(path);
-    assert.equal(response.status, 200);
-    const html = await response.text();
-    assert.match(html, /aria-label="主导航"/);
-    assert.match(html, /class="dock-placeholder"/);
-    assert.doesNotMatch(html, /id="portfolio-panel"|Notifications/);
-  }
+test("renders settings with theme and language controls in the shared dock", async () => {
+  const response = await render("/settings");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /aria-label="主导航"/);
+  assert.match(html, /id="settings-title"/);
+  assert.match(html, /data-slot="card"/);
+  assert.match(html, /aria-labelledby="theme-label"/);
+  assert.match(html, /aria-labelledby="language-label"/);
+  for (const label of ["日间模式", "夜间模式", "跟随系统", "中文", "English"]) assert.ok(html.includes(label));
+  assert.doesNotMatch(await (await render()).text(), /切换日间或夜间模式|data-slot="toggle-group"/);
 });
 
 test("allows anonymous company browsing while protecting plan writes", async () => {
@@ -454,14 +456,14 @@ test("switches between current and Flex-derived historical ticker groups", async
   ]);
 
   assert.match(dashboard, /<Tabs defaultValue="current"/);
-  assert.match(dashboard, /<TabsList aria-label="账本持仓范围">/);
+  assert.match(dashboard, /<TabsList aria-label=\{t\("账本持仓范围"\)\}>/);
   for (const value of ["current", "historical", "plans"]) {
     assert.ok(dashboard.includes(`<TabsTrigger value="${value}">`));
     assert.ok(dashboard.includes(`<TabsContent value="${value}"`));
   }
   assert.doesNotMatch(dashboard, /<Switch|ledger-view-switch/);
-  assert.match(dashboard, /当前持仓 <small>\{positionGroups\.length\}<\/small>/);
-  assert.match(dashboard, /历史持仓 <small>\{historicalPositionGroups\.length\}<\/small>/);
+  assert.match(dashboard, /t\("当前持仓 "\)\}<small>\{positionGroups\.length\}<\/small>/);
+  assert.match(dashboard, /t\("历史持仓 "\)\}<small>\{historicalPositionGroups\.length\}<\/small>/);
   assert.match(dashboard, /<HistoricalPositionLedger groups=\{historicalPositionGroups\} \/>/);
   assert.match(dashboard, /累计已实现盈亏/);
   assert.match(viewModel, /if \(currentSymbols\.has\(symbol\)\) return groups;/);
@@ -528,7 +530,7 @@ test("uses independent position routes and removes the workspace dialog", async 
   assert.match(dashboard, /import Link from "next\/link"/);
   assert.doesNotMatch(dashboard, /PositionDetailDialog|selectedPosition/);
   assert.doesNotMatch(dashboard, /aria-label=\{`查看 \$\{group\.symbol\} 持仓详情`\}/);
-  assert.match(dashboard, /className="sr-only">，查看持仓详情/);
+  assert.match(dashboard, /className="sr-only">\{t\("，查看持仓详情"\)\}/);
   assert.match(addPlanDialog, /router\.push\(`\/positions\/\$\{encodeURIComponent\(result\.symbol\)\}`\)/);
   assert.match(detail, /className="detail-section-nav"/);
   for (const id of ["position-structure", "plan-editor", "sec-filings"]) {
@@ -550,7 +552,7 @@ test("renders price and daily change surfaces without source or snapshot labels"
   assert.match(detail, /activeQuote\.changePercent/);
   assert.match(detail, /RSI 14/);
   assert.match(detail, /activeQuote\.rsi14/);
-  assert.match(detail, /<span>股价<\/span>/);
+  assert.match(detail, /<span>\{t\("股价"\)\}<\/span>/);
   assert.doesNotMatch(detail, /Yahoo Finance|IBKR 快照|snapshotTime/);
   assert.match(detail, /行情暂不可用/);
   assert.doesNotMatch(detail, /position\.value\s*=\s*quote|position\.unrealized\s*=\s*quote/);
@@ -683,8 +685,8 @@ test("uses page-scrolling cards for mobile position details", async () => {
 
   assert.match(detailPage, /PositionDetailContent/);
   assert.match(detailContent, /id="position-structure"/);
-  assert.match(detailContent, /data-label="平均成本"/);
-  assert.match(detailContent, /data-label="未实现盈亏"/);
+  assert.match(detailContent, /data-label=\{t\("平均成本"\)\}/);
+  assert.match(detailContent, /data-label=\{t\("未实现盈亏"\)\}/);
   assert.doesNotMatch(detailContent, /持仓，可横向滚动|持仓明细，可横向滚动/);
   assert.match(css, /\.position-detail\.table-wrap \{\s*overflow: visible;\s*overscroll-behavior: auto;/);
   assert.match(css, /\.instrument-table thead \{ display: none; \}/);

@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/app/language-provider";
+
 import { CompanyLogo } from "./company-logo";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -58,6 +60,7 @@ export function PortfolioHeatmap({
   activeSymbol: string | null;
   onActiveSymbolChange: (symbol: string | null) => void;
 }) {
+  const { t } = useLanguage();
   const [showLogos, setShowLogos] = useState(false);
   const plotRef = useRef<HTMLDivElement>(null);
   const activeTileRef = useRef<HTMLButtonElement>(null);
@@ -129,23 +132,22 @@ export function PortfolioHeatmap({
     <section className="heatmap-section" id="heatmap-section" aria-labelledby="heatmap-title">
       <Separator className="my-5" />
       <div className="heatmap-heading">
-        <h3 id="heatmap-title">持仓主题热力图</h3>
-        <span className="exposure-label">
-          总敞口 <strong>{totalWeight.toFixed(2)}%</strong>
+        <h3 id="heatmap-title">{t("持仓主题热力图")}</h3>
+        <span className="exposure-label">{t(" 总敞口 ")}<strong>{totalWeight.toFixed(2)}%</strong>
           <Popover><PopoverTrigger asChild>
-            <Button variant="ghost" size="icon-sm" type="button" aria-label="总敞口计算口径"><InfoIcon /></Button>
-          </PopoverTrigger><PopoverContent>热力图内正股市值 ÷ 当前净值；期权负债不进入热力图。</PopoverContent></Popover>
+            <Button variant="ghost" size="icon-sm" type="button" aria-label={t("总敞口计算口径")}><InfoIcon /></Button>
+          </PopoverTrigger><PopoverContent>{t("热力图内正股市值 ÷ 当前净值；期权负债不进入热力图。")}</PopoverContent></Popover>
 
         </span>
       </div>
       <div className="heatmap-toolbar">
-        <div className="ledger-view-switch" role="group" aria-label="热力图显示方式">
-          <span data-active={!showLogos}>日涨跌幅</span>
-          <Switch aria-label="切换日涨跌幅与公司 Logo" checked={showLogos} onCheckedChange={setShowLogos} aria-controls="holdings-heatmap-plot" />
-          <span data-active={showLogos}>公司 Logo</span>
+        <div className="ledger-view-switch" role="group" aria-label={t("热力图显示方式")}>
+          <span data-active={!showLogos}>{t("日涨跌幅")}</span>
+          <Switch aria-label={t("切换日涨跌幅与公司 Logo")} checked={showLogos} onCheckedChange={setShowLogos} aria-controls="holdings-heatmap-plot" />
+          <span data-active={showLogos}>{t("公司 Logo")}</span>
         </div>
       </div>
-      <div id="holdings-heatmap-plot" data-mode={showLogos ? "logo" : "performance"} className="heatmap-plot" aria-label="持仓主题热力图" ref={plotRef}>
+      <div id="holdings-heatmap-plot" data-mode={showLogos ? "logo" : "performance"} className="heatmap-plot" aria-label={t("持仓主题热力图")} ref={plotRef}>
         {groupRectangles.map((groupRect) => {
           const group = groups.find((item) => item.domain === groupRect.id);
           if (!group) return null;
@@ -238,10 +240,10 @@ export function PortfolioHeatmap({
               <b>{selected.domain}</b>
             </div>
             <dl>
-              <div><dt>市值</dt><dd>{money(selected.marketValue)}</dd></div>
-              <div><dt>组合权重</dt><dd>{selected.portfolioWeight.toFixed(2)}%</dd></div>
-              <div><dt>持仓成本</dt><dd>{money(selected.costBasis)}</dd></div>
-              <div><dt>日涨跌幅</dt><dd className={selectedRate !== null && selectedRate < 0 ? "loss" : selectedRate !== null && selectedRate > 0 ? "gain" : "muted"}>{signedPercent(selectedRate)}</dd></div>
+              <div><dt>{t("市值")}</dt><dd>{money(selected.marketValue)}</dd></div>
+              <div><dt>{t("组合权重")}</dt><dd>{selected.portfolioWeight.toFixed(2)}%</dd></div>
+              <div><dt>{t("持仓成本")}</dt><dd>{money(selected.costBasis)}</dd></div>
+              <div><dt>{t("日涨跌幅")}</dt><dd className={selectedRate !== null && selectedRate < 0 ? "loss" : selectedRate !== null && selectedRate > 0 ? "gain" : "muted"}>{signedPercent(selectedRate)}</dd></div>
             </dl>
           </div>
         )}
