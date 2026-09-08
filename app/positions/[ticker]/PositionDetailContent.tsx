@@ -87,7 +87,34 @@ export function PositionDetailContent({
         <Button variant="ghost" asChild><a href="#sec-filings">{t("SEC 文件")}</a></Button>
       </nav>
 
-      {position ? (
+      <PositionHoldings ticker={ticker} position={position} />
+
+      {planStatus === "anonymous" ? null : planStatus === "loading" ? (
+        <section className="plan-editor plan-loading" id="plan-editor" aria-labelledby="plan-loading-title">
+          <div className="detail-section-heading">
+            <h2 id="plan-loading-title">{t("持仓计划")}</h2>
+          </div>
+          <div role="status" aria-label={t("正在读取计划")} className="mt-4"><Skeleton className="h-36 w-full" /></div>
+        </section>
+      ) : (
+        <PlanEditor
+          key={ticker}
+          ticker={ticker}
+          initialPlan={plan}
+          unavailable={planStatus === "unavailable"}
+          onDirtyChange={onPlanDirtyChange}
+        />
+      )}
+
+      <SecFilingsSection ticker={ticker} />
+    </>
+  );
+}
+
+export function PositionHoldings({ ticker, position }: { ticker: string; position?: PositionGroupView }) {
+  const { t } = useLanguage();
+  return (<>
+{position ? (
         <>
           <section className="position-summary" aria-label={`${ticker} 持仓摘要`}>
             <article><span>{t("净市值")}</span><strong>{money(position.value)}</strong></article>
@@ -113,25 +140,5 @@ export function PositionDetailContent({
       ) : (
         <section id="position-structure" className="mt-6"><Empty><EmptyHeader><EmptyTitle>{t("暂无持仓数据")}</EmptyTitle><EmptyDescription>{t("这份计划不会写入 IBKR 账本；建立持仓后，快照数据会自动出现在这里。")}</EmptyDescription></EmptyHeader></Empty></section>
       )}
-
-      {planStatus === "anonymous" ? null : planStatus === "loading" ? (
-        <section className="plan-editor plan-loading" id="plan-editor" aria-labelledby="plan-loading-title">
-          <div className="detail-section-heading">
-            <h2 id="plan-loading-title">{t("持仓计划")}</h2>
-          </div>
-          <div role="status" aria-label={t("正在读取计划")} className="mt-4"><Skeleton className="h-36 w-full" /></div>
-        </section>
-      ) : (
-        <PlanEditor
-          key={ticker}
-          ticker={ticker}
-          initialPlan={plan}
-          unavailable={planStatus === "unavailable"}
-          onDirtyChange={onPlanDirtyChange}
-        />
-      )}
-
-      <SecFilingsSection ticker={ticker} />
-    </>
-  );
+  </>);
 }

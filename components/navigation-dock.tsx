@@ -30,8 +30,8 @@ export function NavigationDock() {
     return () => window.removeEventListener("scroll", collapse);
   }, []);
   const activeIndex = items.findIndex(({ href }) => href === "/"
-    ? pathname === "/" || pathname === "/ledger" || pathname.startsWith("/positions/")
-    : pathname === href || pathname.startsWith(`${href}/`));
+    ? pathname === "/" || pathname === "/ledger"
+    : pathname === href || pathname.startsWith(`${href}/`) || (href === "/analysis" && pathname.startsWith("/positions/")));
   const droplet = useRef<HTMLSpanElement>(null);
   const destination = useRef(activeIndex);
   const animation = useRef<Animation | null>(null);

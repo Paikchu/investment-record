@@ -4,16 +4,17 @@ import { getHoldingPlan, type HoldingPlanRecord } from "@/lib/holding-plan-store
 import { buildPortfolioViewModel } from "@/lib/portfolio-view-model";
 import { currentPortfolioSnapshot, findSecurity } from "@/lib/site-data";
 import { normalizeTicker } from "@/lib/symbol-directory";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
-import { PositionDetailContent } from "./PositionDetailContent";
+import { StockDetail } from "./StockDetail";
+import { canonicalUnderlying } from "@/lib/portfolio-snapshot";
+import "@/app/analysis/earning-report.css";
 
 export const dynamic = "force-dynamic";
 
 export default async function PositionPage({ params }: { params: Promise<{ ticker: string }> }) {
   const ticker = normalizeTicker((await params).ticker);
-  const portfolioViewModel = buildPortfolioViewModel(await currentPortfolioSnapshot());
+  const snapshot = await currentPortfolioSnapshot();
+  const portfolioViewModel = buildPortfolioViewModel(snapshot);
   const security = findSecurity(ticker, portfolioViewModel);
   if (!security) notFound();
   const user = await getChatGPTUser();
@@ -27,15 +28,15 @@ export default async function PositionPage({ params }: { params: Promise<{ ticke
   }
 
   return (
-    <main className="detail-shell">
-      <Button variant="ghost" asChild className="mb-4"><Link href="/#ledger-title">← 返回投资账本</Link></Button>
-      <PositionDetailContent
-        companyName={security.name}
-        plan={plan}
-        planStatus={!user ? "anonymous" : planUnavailable ? "unavailable" : "ready"}
-        position={position}
-        ticker={ticker}
-      />
-    </main>
+    <StockDetail
+      key={ticker}
+      companyName={security.name}
+      exchange={security.exchange}
+      plan={plan}
+      planStatus={!user ? "anonymous" : planUnavailable ? "unavailable" : "ready"}
+      position={position}
+      ticker={ticker}
+      trades={snapshot.trades.filter((trade) => canonicalUnderlying(trade.symbol) === ticker).sort((a, b) => b.tradeTime.localeCompare(a.tradeTime))}
+    />
   );
 }

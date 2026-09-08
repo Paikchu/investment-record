@@ -11,7 +11,7 @@ import type { SecurityType } from "@/lib/earning-report/web/symbol-directory.ts"
 
 type SearchResult = { symbol: string; name: string; exchange: string; type: SecurityType };
 
-export function SiteHeader({ initialQuery = "" }: { initialQuery?: string }) {
+export function SiteHeader({ initialQuery = "", compact = false }: { initialQuery?: string; compact?: boolean }) {
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -40,13 +40,13 @@ export function SiteHeader({ initialQuery = "" }: { initialQuery?: string }) {
     if (ticker) {
       setResults([]);
       setSearchActive(false);
-      router.push(`/analysis/stocks/${encodeURIComponent(ticker)}`);
+      router.push(`/positions/${encodeURIComponent(ticker)}`);
     }
   }
 
   return (
     <header className="analysis-toolbar">
-      <span className="analysis-toolbar-title">财报 AI 分析</span>
+      {!compact && <span className="analysis-toolbar-title">财报 AI 分析</span>}
       <form className="analysis-search" onSubmit={submit} role="search">
         <FieldGroup><Field><FieldLabel className="sr-only" htmlFor="sec-company-search">搜索股票代码或公司名称</FieldLabel>
         <InputGroup><InputGroupInput
@@ -71,7 +71,7 @@ export function SiteHeader({ initialQuery = "" }: { initialQuery?: string }) {
                 setQuery(result.symbol);
                 setResults([]);
                 setSearchActive(false);
-                router.push(`/analysis/stocks/${encodeURIComponent(result.symbol)}`);
+                router.push(`/positions/${encodeURIComponent(result.symbol)}`);
               }}>
                 <strong>{result.symbol}</strong><span className="truncate">{result.name}</span>
               </Button>

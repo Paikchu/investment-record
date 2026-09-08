@@ -3352,3 +3352,85 @@
 .earning-report.position-disclosure-timeline { min-height: 0; width: 100%; }
 .position-disclosure-timeline .sec-filings-section { margin-top: 32px; padding-top: 0; }
 .position-disclosure-timeline .sec-filing-scroll { overflow: visible; }
+
+/* Unified stock detail: one company header and six shadcn tab panels. */
+.earning-report.unified-stock { background: var(--background); font-weight: 400; --font-mono: ui-monospace, "SFMono-Regular", Menlo, monospace; width: min(1180px, 100%); min-height: calc(100dvh - 32px); margin: 0 auto; padding: 0 24px 64px; }
+.unified-stock .stock-detail-search { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--background) 90%, transparent); backdrop-filter: blur(8px); }
+.unified-stock .analysis-toolbar { justify-content: center; flex-direction: row; padding: 12px 0; border: 0; }
+.unified-stock .analysis-search { width: min(420px, 100%); }
+.stock-detail-identity { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px 32px; padding: 24px 0 22px; }
+.stock-detail-company { display: flex; align-items: center; min-width: 0; gap: 14px; }
+.stock-detail-company-text { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 12px; min-width: 0; }
+.stock-detail-company h1 { margin: 0; font-size: 28px; font-weight: 650; letter-spacing: -.025em; }
+.stock-detail-company p { margin: 0; color: var(--muted-foreground); font-size: 14px; overflow-wrap: anywhere; }
+.stock-detail-price { display: flex; align-items: baseline; gap: 14px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.stock-detail-price strong { font-size: 28px; font-weight: 600; letter-spacing: -.025em; }
+.stock-detail-price > span { font-size: 16px; }
+.stock-detail-tabs { min-width: 0; gap: 22px; }
+.stock-detail-tab-bar { position: sticky; top: 60px; z-index: 10; background: var(--background); border-bottom: 1px solid var(--border); overflow-x: auto; padding-bottom: 5px; }
+.stock-detail-tab-bar [data-slot="tabs-list"] { height: 44px; justify-content: flex-start; }
+.stock-detail-tab-bar [data-slot="tabs-trigger"] { flex: none; padding: 10px 14px; }
+.stock-detail-tabs > [data-slot="tabs-content"][hidden] { display: none; }
+.stock-detail-overview { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 40px; align-items: start; }
+.unified-stock .stock-outlook { padding: 0; border: 0; --outlook-body-size: 14px; --outlook-body-leading: 1.75; }
+.unified-stock .stock-outlook__meta { justify-content: flex-start; gap: 10px; margin-bottom: 14px; }
+.unified-stock .stock-outlook__headline[data-length] { font-size: 27px; font-weight: 650; line-height: 1.35; letter-spacing: -.02em; text-wrap: pretty; }
+.unified-stock .stock-outlook__lede { margin: 18px 0 28px; font-size: 16px; line-height: 1.7; }
+.unified-stock .stock-outlook__clues { margin-top: 0; gap: 12px 24px; }
+.unified-stock .stock-outlook__clue { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto; grid-row: span 3; grid-template-rows: subgrid; border: 0; padding: 0; row-gap: 8px; margin-bottom: 16px; }
+.unified-stock .stock-outlook__clue-index { grid-column: 1; grid-row: 1; color: var(--muted-foreground); font-family: var(--font-mono); font-weight: 400; }
+.unified-stock .stock-outlook__clue-title { grid-column: 1; grid-row: 2; margin: 0; font-size: 16px; line-height: 1.5; text-wrap: pretty; }
+.unified-stock .stock-outlook__clue-content { grid-column: 1; grid-row: 3; }
+.stock-detail-aside { display: flex; flex-direction: column; gap: 36px; position: sticky; top: 136px; padding-top: 4px; }
+.stock-detail-aside h2 { margin: 0 0 16px; color: var(--muted-foreground); font-size: 12px; font-weight: 600; }
+.stock-detail-aside dl { display: flex; flex-direction: column; gap: 12px; margin: 0 0 18px; }
+.stock-detail-aside dl > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.stock-detail-aside dt { color: var(--muted-foreground); font-size: 13px; }
+.stock-detail-aside dd { margin: 0; font-size: 13px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.stock-detail-aside section > p { margin-bottom: 16px; }
+.stock-detail-recent { list-style: none; display: flex; flex-direction: column; gap: 14px; margin: 0 0 18px; padding: 0; }
+.stock-detail-recent li { display: flex; gap: 10px; align-items: center; color: var(--muted-foreground); font-size: 12px; }
+.stock-detail-recent [data-slot="badge"] { flex: none; }
+.stock-detail-section-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+.stock-detail-section-title h2, .stock-detail-trades h2 { font-size: 20px; font-weight: 600; margin: 0; }
+.stock-detail-section-title > span { font-size: 12px; color: var(--muted-foreground); }
+.stock-detail-technical { display: flex; flex-direction: column; gap: 28px; }
+.stock-detail-technical .stock-detail-section-title { margin-bottom: 0; }
+.stock-detail-rsi { width: min(560px, 100%); display: flex; flex-direction: column; gap: 12px; }
+.stock-detail-rsi > div { display: flex; justify-content: space-between; align-items: baseline; }
+.stock-detail-rsi strong { font-size: 22px; font-family: var(--font-mono); }
+.stock-detail-rsi-track { position: relative; height: 6px; border-radius: 999px; background: linear-gradient(90deg, var(--muted) 30%, color-mix(in srgb, var(--primary) 12%, var(--background)) 30%, color-mix(in srgb, var(--primary) 12%, var(--background)) 70%, var(--muted) 70%); }
+.stock-detail-rsi-track i { position: absolute; top: -4px; width: 2px; height: 14px; background: var(--foreground); }
+.stock-detail-rsi-scale { color: var(--muted-foreground); font-size: 11px; }
+.stock-detail-trades { margin-top: 36px; }
+.stock-detail-trades h2 { margin-bottom: 16px; }
+.unified-stock .instrument-section { margin-top: 24px; }
+.unified-stock .instrument-table { min-width: 1040px; }
+.unified-stock .position-summary { margin-top: 0; }
+.unified-stock .plan-editor { max-width: 900px; margin-top: 0; padding-top: 0; border-top: 0; }
+.unified-stock .stock-detail-timeline { max-width: 920px; }
+.stock-detail-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-bottom: 32px; }
+.stock-detail-financials td, .stock-detail-trades td { white-space: nowrap; font-variant-numeric: tabular-nums; }
+@media (max-width: 900px) {
+  .stock-detail-overview { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .stock-detail-aside { position: static; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+}
+@media (max-width: 620px) {
+  .earning-report.unified-stock { padding-inline: 4px; }
+  .stock-detail-identity { padding: 16px 0; }
+  .stock-detail-company-text { display: block; }
+  .stock-detail-company h1, .stock-detail-price strong { font-size: 24px; }
+  .stock-detail-company p { font-size: 12px; }
+  .stock-detail-price { padding-left: 60px; }
+  .unified-stock .stock-outlook__headline[data-length] { font-size: 23px; }
+  .stock-detail-aside, .stock-detail-charts { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Keep the reference's compact holdings table scrollable on small screens. */
+.unified-stock .instrument-section [data-slot="table-container"] { overflow-x: auto; }
+.unified-stock .instrument-table { display: table; }
+.unified-stock .instrument-table thead { display: table-header-group; }
+.unified-stock .instrument-table tbody { display: table-row-group; }
+.unified-stock .instrument-table tr { display: table-row; }
+.unified-stock .instrument-table td { display: table-cell; padding: 12px 16px; white-space: nowrap; }
+.unified-stock .instrument-table td::before { display: none; }

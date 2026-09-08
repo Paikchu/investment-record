@@ -107,7 +107,7 @@ export function SecReportDocument({ companyName, filing }: { companyName: string
 
   return (
     <main className="sec-report-shell">
-      <Link className="back-link" href={`/analysis/stocks/${encodeURIComponent(filing.ticker)}#sec-filings`}>← 返回 {filing.ticker} SEC 文件</Link>
+      <Link className="back-link" href={`/positions/${encodeURIComponent(filing.ticker)}#sec-filings`}>← 返回 {filing.ticker} SEC 文件</Link>
       <header className="sec-report-header">
         <div>
           <span className="sec-report-kicker">{filing.form} · SEC 完整分析报告</span>
