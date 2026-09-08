@@ -34,6 +34,7 @@ export default async function Home() {
           optionMarketValue={portfolio.optionMarketValue}
           netPositionsValue={portfolio.netPositionsValue}
           earningsEvents={earnings.events}
+          earningsCalendar={earnings}
           netLiquidation={snapshot.account.netLiquidation}
           netLiquidationWithoutOptionPnl={netLiquidationWithoutOptionPnl}
           portfolioLeverage={portfolioLeverage}

@@ -1,7 +1,7 @@
 "use client";
 
 import { EarningsCalendarPanel } from "./earnings-calendar-panel";
-import { emptyCalendar, withinReminderWindow, type CalendarEvent } from "@/lib/earnings-live";
+import { emptyCalendar, withinReminderWindow, type CalendarEvent, type CalendarState } from "@/lib/earnings-live";
 import { useLanguage } from "@/app/language-provider";
 
 import { Empty, EmptyHeader, EmptyDescription } from "@/components/ui/empty";
@@ -506,6 +506,7 @@ export function PortfolioDashboard({
   optionMarketValue,
   netPositionsValue,
   earningsEvents: initialEarningsEvents,
+  earningsCalendar,
   netLiquidation,
   netLiquidationWithoutOptionPnl,
   portfolioLeverage,
@@ -519,6 +520,7 @@ export function PortfolioDashboard({
   optionMarketValue: number;
   netPositionsValue: number;
   earningsEvents: EarningsEvent[];
+  earningsCalendar?: CalendarState;
   netLiquidation: number;
   netLiquidationWithoutOptionPnl: number;
   portfolioLeverage: number;
@@ -529,7 +531,7 @@ export function PortfolioDashboard({
   const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
   const [analysisExpanded, setAnalysisExpanded] = useState(false);
   const [earningsAsOf, setEarningsAsOf] = useState(() => new Date().toISOString());
-  const [calendar, setCalendar] = useState(() => ({...emptyCalendar(), events: initialEarningsEvents as CalendarEvent[]}));
+  const [calendar, setCalendar] = useState(() => (earningsCalendar ?? {...emptyCalendar(), events: initialEarningsEvents as CalendarEvent[]}));
   const earningsEvents = calendar.events;
   useEffect(() => {
     const controller = new AbortController();
