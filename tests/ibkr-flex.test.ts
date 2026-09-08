@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { extractCapitalFlows, fetchFlexStatement, normalizeFlexStatement, parseCsv, parseFlexDateTime } from "../lib/ibkr-flex.ts";
 import { publishFlexSnapshot, readPortfolioSnapshot, type PortfolioDatabase } from "../lib/portfolio-store.ts";
-import { runIbkrFlexSync, type IbkrSyncEnv } from "../workers/sec-cron/ibkr-sync.ts";
+import { handleIbkrSyncRequest, runIbkrFlexSync, type IbkrSyncEnv } from "../workers/sec-cron/ibkr-sync.ts";
 
 const fixture = [
   '"HEADER","ACCT","ClientAccountID","CurrencyPrimary","DateFunded"',
@@ -189,6 +189,57 @@ test("extracts and reconciles capital flows, rejecting incomplete cash data", ()
   assert.equal(report.flows[0].amount, 1000);
   assert.equal(report.fromDate, "2026-01-01");
   assert.throws(() => extractCapitalFlows(fixture.replace('"1000","deposit1"', '"900","deposit1"')), /reconcile/);
+});
+
+test("Cloudflare sync omits Sites credentials and rejects redirects", async () => {
+  const calls: Request[] = [];
+  const responses = [
+    Response.json({ lastSuccessfulTradeAt: "2026-12-30T20:00:00.000Z" }),
+    new Response('<FlexStatementResponse><Status>Success</Status><ReferenceCode>123456</ReferenceCode></FlexStatementResponse>'),
+    new Response(fixture),
+    Response.json({ status: "published", reportDate: "2026-12-31", positions: 1, trades: 1 }),
+  ];
+  const env = {
+    MAX_SITE_ORIGIN: "https://site.example",
+    MAX_SITE_BYPASS_TOKEN: "old-sites-secret",
+    PORTFOLIO_TARGET_PLATFORM: "cloudflare",
+    SEC_REFRESH_KEY: "",
+    IBKR_FLEX_TOKEN: "1234567890",
+    IBKR_FLEX_QUERY_ID: "1628251",
+    PORTFOLIO_SYNC_KEY: "portfolio-key",
+    SEC_ANALYSIS_WORKFLOW: { async create() { return { id: "unused" }; } },
+  } satisfies IbkrSyncEnv;
+  await runIbkrFlexSync(env, (async (input, init) => {
+    calls.push(new Request(input, init));
+    return responses.shift()!;
+  }) as typeof fetch, new Date("2027-01-01T14:00:00.000Z"));
+  for (const request of [calls[0], calls.at(-1)!]) {
+    assert.equal(request.headers.get("oai-sites-authorization"), null);
+    assert.equal(request.headers.get("x-portfolio-sync-key"), "portfolio-key");
+    assert.equal(request.redirect, "error");
+  }
+});
+
+test("manual portfolio trigger requires POST and a matching secret before fetching IBKR", async () => {
+  const env = { PORTFOLIO_SYNC_KEY: "test-key" } as IbkrSyncEnv;
+  let calls = 0;
+  const sync = async () => {
+    calls++;
+    return { status: "unchanged" as const, reportDate: "2026-09-04", positions: 1, trades: 1 };
+  };
+  const url = "https://worker.example/internal/portfolio/sync";
+  assert.equal((await handleIbkrSyncRequest(new Request(url), env, sync)).status, 405);
+  assert.equal((await handleIbkrSyncRequest(new Request(url, { method: "POST" }), env, sync)).status, 401);
+  assert.equal((await handleIbkrSyncRequest(new Request(url, { method: "POST", headers: { "x-portfolio-sync-key": "wrong" } }), env, sync)).status, 401);
+  assert.equal(calls, 0);
+  const authorized = new Request(url, { method: "POST", headers: { "x-portfolio-sync-key": "test-key" } });
+  const response = await handleIbkrSyncRequest(authorized, env, sync);
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).status, "unchanged");
+  assert.equal(calls, 1);
+  const failure = await handleIbkrSyncRequest(authorized, env, async () => { throw new Error("private-provider-detail"); });
+  assert.equal(failure.status, 502);
+  assert.doesNotMatch(await failure.text(), /private-provider-detail/);
 });
 
 test("backfills same-date net deposits atomically, then skips an identical report", async () => {

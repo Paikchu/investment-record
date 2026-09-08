@@ -5,7 +5,7 @@ import { executeSecMemoryWorkflow } from "./memory-workflow.ts";
 import { createSecPipelineOperations, type SecPipelineEnv } from "./operations.ts";
 import { retryDelayForAttempt } from "./retry-policy.ts";
 import { executeSecAnalysisWorkflow, type WorkflowStepContextLike, type WorkflowStepLike } from "./workflow-core.ts";
-import { runIbkrFlexSync, type IbkrSyncEnv } from "./ibkr-sync.ts";
+import { handleIbkrSyncRequest, runIbkrFlexSync, type IbkrSyncEnv } from "./ibkr-sync.ts";
 
 const WORKFLOW_RETRY = {
   retries: {
@@ -39,7 +39,10 @@ export class SecMemoryWorkflow extends WorkflowEntrypoint<SecPipelineEnv, SecMem
 }
 
 const worker = {
-  async fetch(request: Request, env: SecPipelineEnv) {
+  async fetch(request: Request, env: SecPipelineEnv & IbkrSyncEnv) {
+    if (new URL(request.url).pathname === "/internal/portfolio/sync") {
+      return handleIbkrSyncRequest(request, env);
+    }
     if (new URL(request.url).pathname === "/health") {
       return Response.json({ status: "ok", executor: "workflow", modelConfigured: Boolean(env.AI_API_KEY || env.SEC_BOOTSTRAP_PRIVATE_KEY) }, { headers: { "cache-control": "no-store" } });
     }
@@ -57,6 +60,6 @@ const worker = {
       console.log(JSON.stringify({ event: "sec-workflows", analysis: results[0], memory: results[1] }));
     }));
   },
-} satisfies ExportedHandler<SecPipelineEnv>;
+} satisfies ExportedHandler<SecPipelineEnv & IbkrSyncEnv>;
 
 export default worker;

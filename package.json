@@ -21,7 +21,9 @@
     "market-close:check": "node --experimental-strip-types scripts/validate-market-close-briefs.ts",
     "db:generate": "drizzle-kit generate",
     "sec-cron:check": "wrangler deploy --config workers/sec-cron/wrangler.jsonc --dry-run",
-    "sec-cron:deploy": "wrangler deploy --config workers/sec-cron/wrangler.jsonc --keep-vars"
+    "sec-cron:deploy": "wrangler deploy --config workers/sec-cron/wrangler.jsonc --keep-vars",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote --config wrangler.jsonc",
+    "deploy:cloudflare": "npm run db:migrate:remote && wrangler deploy --config dist/server/wrangler.json --keep-vars && npm run sec-cron:deploy"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

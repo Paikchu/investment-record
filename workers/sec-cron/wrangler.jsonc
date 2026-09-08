@@ -5,7 +5,8 @@
   "compatibility_date": "2026-08-26",
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
-    "MAX_SITE_ORIGIN": "https://max-investment-record.max-zhangyuchen.chatgpt.site",
+    "MAX_SITE_ORIGIN": "https://investment-record.max-zhangyuchen.workers.dev",
+    "PORTFOLIO_TARGET_PLATFORM": "cloudflare",
     "IBKR_FLEX_QUERY_ID": "1628251",
     "SEC_USER_AGENT": "max-investment-record/1.0 max.zhangyuchen@gmail.com",
     "SEC_ANALYSIS_MODEL": "deepseek-v4-flash"

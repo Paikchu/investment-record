@@ -4,20 +4,20 @@
 
 ## GitHub → Cloudflare 自动部署
 
-GitHub `Paikchu/investment-record` 已连接 Cloudflare Workers Builds，目标 Worker 是 `investment-record`。推送 `main` 后，Cloudflare 自动执行：
+GitHub `Paikchu/investment-record` 已连接 Cloudflare Workers Builds。推送 `main` 后，同一次构建依次应用 D1 迁移、部署网站 `investment-record`、部署后台 `max-investment-record-sec-cron`：
 
 | 设置 | 值 |
 | --- | --- |
 | 根目录 | 仓库根目录 |
 | 生产分支 | `main` |
 | 构建命令 | `npm run build` |
-| 部署命令 | `npx wrangler deploy` |
+| 部署命令 | `npm run deploy:cloudflare` |
 
 根目录 `wrangler.jsonc` 管理独立 Cloudflare Worker，Vite 从该文件读取配置并生成 `dist/server/wrangler.json`。已启用 `nodejs_compat`，D1 `DB` 绑定到 `investment-record-db`。数据库 ID 是资源标识，不是密钥。
 
 原失败原因是 Vite 把本地占位数据库 ID `00000000-0000-4000-8000-000000000000` 写进部署产物，导致 Cloudflare 报错 10181。现在使用实际数据库。
 
-首次数据库结构已通过仓库的 7 个迁移初始化。后续增加迁移时，在部署前执行：
+首次数据库结构已通过仓库的 7 个迁移初始化。部署脚本会自动执行新增迁移，也可以单独执行：
 
 ```bash
 npx wrangler d1 migrations apply DB --remote --config wrangler.jsonc
@@ -25,9 +25,15 @@ npx wrangler d1 migrations apply DB --remote --config wrangler.jsonc
 
 本地数据库初始化将 `--remote` 换成 `--local`。务必指定根配置，避免使用构建产物中相对路径不同的迁移目录。
 
-运行时 Secret 在 Cloudflare Worker 的 Settings → Variables and Secrets 配置；本地 `.env.local` 不会自动上传，构建日志也不应包含密钥。新增 D1 目前只有表结构，首页使用仓库快照；原 Sites 的实时 D1 数据、持仓计划和 SEC 内容没有自动迁入。
+运行时 Secret 在 Cloudflare Worker 的 Settings → Variables and Secrets 配置；本地 `.env.local` 不会自动上传，构建日志也不应包含密钥。两个 Worker 使用相同的 `PORTFOLIO_SYNC_KEY`，IBKR Token 保留在后台 Worker Secret 中。
 
-独立 Cloudflare 不提供 Sites 的 ChatGPT 登录网关。首页可以查看，依赖登录的持仓计划与详情功能需要另行配置认证；Worker 会删除客户端传入的 `oai-authenticated-user-*` 头，避免身份伪造。IBKR 定时 Worker 仍连接原 Sites，尚未切换到此部署。
+独立 Cloudflare 不提供 Sites 的 ChatGPT 登录网关。首页可以查看，依赖登录的持仓计划与详情功能需要另行配置认证；Worker 会删除客户端传入的 `oai-authenticated-user-*` 头，避免身份伪造。原 Sites 的持仓计划与 SEC 数据没有整体迁移。
+
+后台通过 `https://investment-record.max-zhangyuchen.workers.dev/api/internal/portfolio/sync` 更新新网站 D1；请求只发送同步密钥，不再发送 Sites bypass token。Cron 保持北京时间周二至周六 14:00（UTC `0 6 * * 2-6`），原 Sites 不再由该 Cron 更新。同步校验失败会保留上一份有效数据。
+
+需要立即同步时，对后台 `/internal/portfolio/sync` 发送带 `x-portfolio-sync-key` 的 POST；使用安全脚本从本地密钥文件读取请求头，不要将密钥写进命令行。该入口与 Cron 使用同一条 IBKR 读取、校验和原子写入链路，返回同步状态、报告日期与条目数。未认证请求返回 401，GET 返回 405。
+
+SEC 页面继续使用现有 `earning-report-analysis-sec-web` 财报服务；本次只接通现有 IBKR 数据任务，没有新增 SEC 扫描或 AI 任务。
 
 普通代码更新可运行 `git push github main` 自动发布。仓库 GitHub remote 为 `github`，Sites remote 为 `origin`。
 
@@ -69,7 +75,7 @@ npm run sec-cron:check
 
 ### `.env.local`
 
-根目录的 `.env.local` 是 2026-09-08 从当前 Sites 生产环境同步的本地副本，目前只有：
+根目录的 `.env.local` 保存新 Cloudflare 网站与后台 Worker 共用的实际同步密钥。早前 Sites 导出返回的是脱敏值，现已在切换时替换为新密钥。目前只有：
 
 ```text
 PORTFOLIO_SYNC_KEY
@@ -129,7 +135,7 @@ Cloudflare 不允许在 Secret 创建后重新读取明文，因此无法把现�
 
 R2 与 Workflow 都通过 binding 注入 Worker，不需要在代码里保存账号级 API 密钥。参考 Cloudflare 的 [R2 binding](https://developers.cloudflare.com/r2/api/workers/workers-api-reference/)、[Workflow binding](https://developers.cloudflare.com/workflows/build/trigger-workflows/) 与 [Cron Trigger](https://developers.cloudflare.com/workers/configuration/cron-triggers/) 文档。
 
-当前仓库配置里的 `MAX_SITE_ORIGIN` 仍是旧地址 `https://max-investment-record.max-zhangyuchen.chatgpt.site`，而 Sites 当前线上地址是 `https://investment-record.max-zhangyuchen.chatgpt.site`。下次部署 Worker 前，应先验证旧地址是否仍为有效别名；若不是，更新为当前线上地址后再部署。
+当前仓库配置里的 `MAX_SITE_ORIGIN` 已切换为 `https://investment-record.max-zhangyuchen.workers.dev`，`PORTFOLIO_TARGET_PLATFORM=cloudflare` 会关闭 IBKR 请求中的 Sites bypass 头。
 
 ### 3. Secret 配置
 
