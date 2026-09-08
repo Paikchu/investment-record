@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Search, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { InputGroup, InputGroupInput, InputGroupAddon, InputGroupButton } from "@/components/ui/input-group";
 import { useRouter } from "next/navigation";
 
 import type { SecurityType } from "@/lib/earning-report/web/symbol-directory.ts";
@@ -18,8 +22,10 @@ export function SiteHeader({ initialQuery = "" }: { initialQuery?: string }) {
     if (!value || !searchActive) return;
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
-      const response = await fetch(`/api/analysis/v1/search?q=${encodeURIComponent(value)}`, { signal: controller.signal });
-      if (response.ok) setResults((await response.json() as { results?: SearchResult[] }).results ?? []);
+      try {
+        const response = await fetch(`/api/analysis/v1/search?q=${encodeURIComponent(value)}`, { signal: controller.signal });
+        if (response.ok) setResults((await response.json() as { results?: SearchResult[] }).results ?? []);
+      } catch { if (!controller.signal.aborted) setResults([]); }
     }, 120);
     return () => {
       window.clearTimeout(timer);
@@ -39,11 +45,11 @@ export function SiteHeader({ initialQuery = "" }: { initialQuery?: string }) {
   }
 
   return (
-    <header className="site-header sec-site-header">
-      <form className="sec-search-form" onSubmit={submit} role="search">
-        <label className="sr-only" htmlFor="sec-company-search">搜索股票代码或公司名称</label>
-        <span className="sec-search-icon" aria-hidden="true">⌕</span>
-        <input
+    <header className="analysis-toolbar">
+      <span className="analysis-toolbar-title">财报 AI 分析</span>
+      <form className="analysis-search" onSubmit={submit} role="search">
+        <FieldGroup><Field><FieldLabel className="sr-only" htmlFor="sec-company-search">搜索股票代码或公司名称</FieldLabel>
+        <InputGroup><InputGroupInput
           id="sec-company-search"
           autoComplete="off"
           value={query}
@@ -55,18 +61,20 @@ export function SiteHeader({ initialQuery = "" }: { initialQuery?: string }) {
           }}
           placeholder="搜索股票代码或公司名称"
         />
-        <kbd>↵</kbd>
+        <InputGroupAddon><Search aria-hidden="true" /></InputGroupAddon>
+        <InputGroupAddon align="inline-end"><InputGroupButton type="submit" aria-label="搜索公司"><ArrowRight /></InputGroupButton></InputGroupAddon>
+        </InputGroup></Field></FieldGroup>
         {searchActive && results.length > 0 && (
-          <div className="sec-search-results" role="listbox">
+          <div className="analysis-search-results" aria-label="搜索结果">
             {results.map((result) => (
-              <button type="button" key={result.symbol} onClick={() => {
+              <Button variant="ghost" className="w-full justify-start gap-3" type="button" key={result.symbol} onClick={() => {
                 setQuery(result.symbol);
                 setResults([]);
                 setSearchActive(false);
                 router.push(`/analysis/stocks/${encodeURIComponent(result.symbol)}`);
               }}>
-                <strong>{result.symbol}</strong><span>{result.name}</span>
-              </button>
+                <strong>{result.symbol}</strong><span className="truncate">{result.name}</span>
+              </Button>
             ))}
           </div>
         )}

@@ -1,6 +1,11 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Empty, EmptyHeader, EmptyDescription } from "@/components/ui/empty";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -8,7 +13,7 @@ import type { SecEventCategory } from "@/lib/earning-report/shared/analysis-cont
 import { formatSecMetricLabel, formatSecMetricValue } from "@/lib/earning-report/web/sec-metric-format.ts";
 import type { PublicSecFiling } from "@/lib/earning-report/shared/analysis-contract/filings.ts";
 
-const expandEase = [0.22, 1, 0.36, 1] as const;
+
 
 /** Distance from the end of the rail that starts the next page. */
 const TIMELINE_PREFETCH_PX = 180;
@@ -66,15 +71,6 @@ export function SecFilingsSection({ ticker, title = "SEC 文件与 AI 解读" }:
     return () => window.removeEventListener("pageshow", restoreDefaultSummary);
   }, []);
 
-  const toggleAccession = useCallback((accession: string) => {
-    setOpenAccessions((current) => {
-      const next = new Set(current);
-      if (next.has(accession)) next.delete(accession);
-      else next.add(accession);
-      return next;
-    });
-  }, []);
-
   // The rail is its own scroller beside the chart column but scrolls with the page once the layout
   // stacks, and a tall viewport can leave it shorter than its column. Watching the end of the rail
   // reach the viewport covers all three: no scroll offset of any single element is involved.
@@ -95,22 +91,20 @@ export function SecFilingsSection({ ticker, title = "SEC 文件与 AI 解读" }:
       <div className="detail-section-heading">
         <h2 id="sec-filings-title">{title}</h2>
       </div>
-      {status === "loading" && <p className="sec-state" role="status">正在读取 SEC 文件…</p>}
-      {status === "error" && <p className="sec-state sec-state-error" role="alert">SEC 数据读取失败。</p>}
-      {status === "ready" && filings.length === 0 && <p className="sec-state">暂未收录该股票的 SEC 报告。</p>}
+      {status === "loading" && <div role="status" className="flex flex-col gap-3 py-5"><span className="sr-only">正在读取 SEC 文件…</span><Skeleton className="h-8 w-2/3" /><Skeleton className="h-40 w-full" /></div>}
+      {status === "error" && <Alert variant="destructive"><AlertDescription>SEC 数据读取失败。<Button variant="outline" size="sm" onClick={() => void load(null, false)}>重新读取</Button></AlertDescription></Alert>}
+      {status === "ready" && filings.length === 0 && <Empty><EmptyHeader><EmptyDescription>暂未收录该股票的 SEC 报告。</EmptyDescription></EmptyHeader></Empty>}
       {status === "ready" && filings.length > 0 && (
         <div className="sec-filing-scroll">
-          <div className="sec-filing-list">
+          <Accordion type="multiple" value={[...openAccessions]} onValueChange={(values) => setOpenAccessions(new Set(values))} className="analysis-filing-list">
             {filings.map((filing, index) => (
               <SecFilingCard
                 filing={filing}
                 isLatestPeriodic={isPeriodicFiling(filing.form) && !filings.slice(0, index).some((candidate) => isPeriodicFiling(candidate.form))}
-                isOpen={openAccessions.has(filing.accessionNumber)}
                 key={filing.accessionNumber}
-                onToggle={() => toggleAccession(filing.accessionNumber)}
               />
             ))}
-          </div>
+          </Accordion>
           <p className="sec-filing-rail-status" ref={railEndRef} role="status">
             {loadingMore
               ? "正在载入更早申报…"
@@ -124,10 +118,7 @@ export function SecFilingsSection({ ticker, title = "SEC 文件与 AI 解读" }:
   );
 }
 
-function SecFilingCard({ filing, isLatestPeriodic, isOpen, onToggle }: { filing: PublicSecFiling; isLatestPeriodic: boolean; isOpen: boolean; onToggle: () => void }) {
-  const reduceMotion = useReducedMotion();
-  const panelId = `sec-filing-${filing.accessionNumber.replace(/[^A-Za-z0-9]/g, "")}`;
-  const duration = reduceMotion ? 0.01 : 0.38;
+function SecFilingCard({ filing, isLatestPeriodic }: { filing: PublicSecFiling; isLatestPeriodic: boolean }) {
   const headline = filing.summary?.headline || filing.analysis?.headline || "";
   // The report page renders whatever narrative is stored, so the entry point
   // asks the same question it does. Requiring the current summary version made
@@ -137,50 +128,25 @@ function SecFilingCard({ filing, isLatestPeriodic, isOpen, onToggle }: { filing:
     ? `/analysis/stocks/${encodeURIComponent(filing.ticker)}/sec/${encodeURIComponent(filing.accessionNumber)}`
     : null;
   return (
-    <article className={isOpen ? "sec-filing-card is-open" : "sec-filing-card"}>
-      <button aria-controls={panelId} aria-expanded={isOpen} onClick={onToggle} type="button">
-        <span className="sec-filing-date">
-          <strong>{formatMonthDay(filing.filingDate)}</strong>
-          <small>{formatYear(filing.filingDate)}</small>
-        </span>
-        <span className="sec-filing-entry">
-          <span className="sec-filing-meta">
-            <span className="sec-form-badge" data-form={filing.form}>{filing.form}</span>
-            <small>{formDescription(filing.form)}{filing.reportDate ? ` · 报告期 ${formatMonthDay(filing.reportDate)}` : ""}</small>
-            <span className="sec-disclosure" aria-hidden="true"><i /><i /></span>
+    <AccordionItem value={filing.accessionNumber} className="analysis-filing-item">
+      <AccordionTrigger>
+        <span className="analysis-filing-heading">
+          <span className="analysis-filing-meta">
+            <Badge variant={isLatestPeriodic ? "default" : "secondary"}>{filing.form}</Badge>
+            <span>{formatYear(filing.filingDate)}年{formatMonthDay(filing.filingDate)}</span>
+            <span>{formDescription(filing.form)}{filing.reportDate ? ` · 报告期 ${formatMonthDay(filing.reportDate)}` : ""}</span>
           </span>
-          <strong className="sec-filing-headline" data-pending={headline ? undefined : "true"}>
-            {headline || "AI 解读生成中"}
-          </strong>
+          <span className="analysis-filing-headline">{headline || "AI 解读生成中"}</span>
         </span>
-      </button>
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            animate={{ height: "auto" }}
-            className="sec-filing-panel"
-            exit={{ height: 0 }}
-            id={panelId}
-            initial={{ height: 0 }}
-            transition={{ duration, ease: expandEase }}
-          >
-            <motion.div
-              animate={{ opacity: 1, y: 0 }}
-              className="sec-filing-body"
-              exit={{ opacity: 0, y: reduceMotion ? 0 : -6 }}
-              initial={{ opacity: 0, y: reduceMotion ? 0 : -8 }}
-              transition={{ duration: reduceMotion ? 0.01 : 0.28, ease: expandEase }}
-            >
-              <FilingSummary filing={filing} />
-              <div className="sec-filing-actions">
-                {fullReportHref && <Link className="sec-full-report-link" href={fullReportHref}>阅读完整报告 →</Link>}
-                <a href={filing.edgarUrl} rel="noopener noreferrer" target="_blank">查看 SEC EDGAR 原文 ↗</a>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </article>
+      </AccordionTrigger>
+      <AccordionContent>
+        <FilingSummary filing={filing} />
+        <div className="flex flex-wrap items-center gap-2 pt-4">
+          {fullReportHref && <Button asChild size="sm"><Link href={fullReportHref}>阅读完整报告 →</Link></Button>}
+          <Button asChild variant="outline" size="sm"><a href={filing.edgarUrl} rel="noopener noreferrer" target="_blank">SEC EDGAR 原文 ↗</a></Button>
+        </div>
+      </AccordionContent>
+    </AccordionItem>
   );
 }
 
@@ -193,7 +159,7 @@ function FilingSummary({ filing }: { filing: PublicSecFiling }) {
   const reportLabel = summary.eventCategory === "earnings_update" || summary.eventCategory === "guidance" ? "业绩要点" : "事件详情";
   return (
     <div className="sec-summary">
-      {categoryLabel && <span className="sec-event-category" data-category={summary.eventCategory}>{categoryLabel}</span>}
+      {categoryLabel && <Badge variant="secondary">{categoryLabel}</Badge>}
       {summary.bullets.length > 0 && (
         <ul>
           {summary.bullets.map((bullet, index) => (
@@ -237,10 +203,10 @@ function StructuredAnalysis({ filing }: { filing: PublicSecFiling }) {
       )}
       {changes.length > 0 && <ul className="sec-analysis-changes">{changes.map((change, index) => <li key={`${change.label}-${change.topicKey}-${index}`}><i aria-hidden="true" /><span><strong>{change.label} · {change.topicKey}</strong>{change.currentStatement ?? change.priorStatement ?? ""}</span></li>)}</ul>}
       {report.dataQuality.warnings.length > 0 && (
-        <details className="sec-analysis-quality">
-          <summary>数据口径与修正说明（{report.dataQuality.warnings.length}）</summary>
+        <Accordion type="single" collapsible><AccordionItem value="quality">
+          <AccordionTrigger>数据口径与修正说明（{report.dataQuality.warnings.length}）</AccordionTrigger><AccordionContent>
           {report.dataQuality.warnings.map((warning) => <p className="sec-analysis-warning" key={warning}>{warning}</p>)}
-        </details>
+        </AccordionContent></AccordionItem></Accordion>
       )}
       <small className="sec-ai-note">结构化财报解读 · {formatDateTime(filing.summary?.generatedAt ?? new Date().toISOString())}</small>
     </div>

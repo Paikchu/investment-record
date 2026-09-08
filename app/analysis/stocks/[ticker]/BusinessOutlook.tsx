@@ -1,5 +1,8 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useEffect, useState } from "react";
 
 import { COMPANY_ANALYSIS_OVERVIEW_LABEL } from "@/lib/earning-report/shared/analysis-contract/company-analysis.ts";
@@ -55,18 +58,18 @@ function BusinessOutlookContent({ ticker }: { ticker: string }) {
     return (
       <section className="stock-outlook stock-outlook--state" aria-labelledby="stock-outlook-heading">
         <span className="stock-outlook__eyebrow" id="stock-outlook-heading">{COMPANY_ANALYSIS_OVERVIEW_LABEL}</span>
-        {status === "loading" && <p className="stock-outlook__state" role="status">正在读取最新业务判断…</p>}
+        {status === "loading" && <div role="status" className="flex flex-col gap-3 py-4"><span className="sr-only">正在读取最新业务判断…</span><Skeleton className="h-16 w-full" /><Skeleton className="h-24 w-full" /></div>}
         {status === "empty" && (
           <div className="stock-outlook__state-row" role="status">
             <p className="stock-outlook__state">{companyAnalysisNotice(analysis?.latestRun)}</p>
-            <button type="button" onClick={() => setRefresh((value) => value + 1)}>重新读取</button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setRefresh((value) => value + 1)}>重新读取</Button>
           </div>
         )}
         {status === "error" && (
-          <div className="stock-outlook__state-row" role="alert">
+          <Alert variant="destructive"><AlertDescription>
             <p className="stock-outlook__state">AI 业务综述暂时不可用。</p>
-            <button type="button" onClick={() => setRefresh((value) => value + 1)}>重新读取</button>
-          </div>
+            <Button variant="outline" size="sm" type="button" onClick={() => setRefresh((value) => value + 1)}>重新读取</Button>
+          </AlertDescription></Alert>
         )}
       </section>
     );

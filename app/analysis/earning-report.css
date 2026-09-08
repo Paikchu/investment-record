@@ -1,29 +1,15 @@
-@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300..700;1,8..60,300..700&family=Noto+Serif+SC:wght@300;400;500;600;700&display=swap');
-
+/* Report-specific document and chart layouts. Host theme tokens stay authoritative.
+   Keep legacy rules in the component layer so shared shadcn utilities own controls. */
+@layer components {
 .earning-report {
-  --paper: #f3f2f2;
-  --paper-deep: #e4e2df;
-  --ink: #201e1d;
-  --ink-soft: #444141;
-  --ink-muted: #7d7979;
-  --color-loss: #aa0b56;
-  --color-profit: #006786;
-  --color-neutral: var(--ink-muted);
-  --daily-gain: var(--color-profit);
-  --daily-loss: var(--color-loss);
-  --vermilion: var(--color-loss);
-  --sage: var(--color-profit);
-  --accent: #0088b0;
-  --flag: #d6006c;
-  --hairline: #d7d3d3;
-  /* The picked quarter in the fundamentals chart. Warm enough to separate from
-     every series colour in the palette, dark enough to hold on paper stock. */
-  --chart-selected: #c2560f;
-  --hairline-soft: #e0dcdc;
-  --serif: "Source Serif 4", "Noto Serif SC", "Iowan Old Style", Baskerville, "Songti SC", serif;
-  --sans: "Source Serif 4", "Noto Serif SC", "Iowan Old Style", Baskerville, "Songti SC", serif;
+  --hairline: var(--border);
+  --hairline-soft: var(--border);
+  --flag: var(--primary);
+  --chart-selected: var(--primary);
+  min-height: 100svh;
+  color: var(--foreground);
+  font-family: var(--sans);
 }
-
 .earning-report * { box-sizing: border-box; }
 
 .earning-report .sr-only {
@@ -41,9 +27,9 @@
 /* Quarterly fundamentals chart primitives. These classes are intentionally
    page-agnostic so P5 can compose them without coupling chart math to layout. */
 .earning-report .fundamental-chart {
-  --chart-border: rgb(32 30 29 / 16%);
-  --chart-grid: rgb(32 30 29 / 12%);
-  --chart-surface: rgb(255 255 255 / 24%);
+  --chart-border: var(--border);
+  --chart-grid: var(--border);
+  --chart-surface: var(--card);
   min-width: 0;
   margin: 0;
   padding: clamp(18px, 2.4vw, 28px) 0 14px;
@@ -263,12 +249,12 @@
   -webkit-tap-highlight-color: rgb(32 30 29 / 14%);
 }
 
-.earning-report a {
-  color: var(--color-profit);
+.earning-report a:not([data-slot]) {
+  color: var(--primary);
   text-decoration: none;
 }
 
-.earning-report a:hover {
+.earning-report a:not([data-slot]):hover {
   color: var(--color-loss);
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -2810,7 +2796,7 @@
   color: var(--color-profit); font: 600 .75rem/1.5 var(--sans); cursor: pointer;
 }
 .earning-report .stock-outlook__read-more:hover { color: var(--color-loss); }
-.earning-report .stock-outlook__read-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.earning-report .stock-outlook__read-more:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
 @container outlook (min-width: 34rem) {
   .earning-report .stock-outlook__clues { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 1.5rem; }
   /* Subgrid so the two judgments in a row share title and body rows: one title wrapping to a
@@ -2826,7 +2812,7 @@
 @media (pointer: coarse) { .earning-report .stock-outlook__read-more { min-height: 44px; } }
 .earning-report .stock-outlook__state-row button {
   padding: 0 0 3px;
-  color: var(--accent);
+  color: var(--primary);
   border: 0;
   border-bottom: 1px solid currentColor;
   background: transparent;
@@ -2834,7 +2820,7 @@
   cursor: pointer;
 }
 .earning-report .stock-outlook__state-row button:hover { color: var(--color-loss); }
-.earning-report .stock-outlook__state-row button:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
+.earning-report .stock-outlook__state-row button:focus-visible { outline: 2px solid var(--primary); outline-offset: 5px; }
 .earning-report .stock-outlook__state { margin: 0; padding: 8px 0 4px; color: var(--ink-muted); font: 500 14px/1.6 var(--serif); }
 .earning-report .stock-outlook__state-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem 1rem; }
 .earning-report .stock-outlook__state-row button { font-size: 14px; }
@@ -3309,6 +3295,48 @@
   @keyframes fundamentals-sheet-in { from { transform: translateY(28px); opacity: .72; } }
 }
 
-/* Host integration: preserve source typography, paper, and layout inside tab two. */
-body:has(.earning-report) { padding-inline: 0; background: #f3f2f2; }
-.earning-report { min-height: 100svh; }
+
+}
+
+/* Match the portfolio canvas and type scale, retaining the report reading layout. */
+.earning-report .sec-app-shell,
+.earning-report .stock-analysis-shell { width: 100%; margin: 0 auto; padding-inline: 0; background: var(--background); }
+.earning-report .stock-analysis-page { padding: 24px 0 64px; }
+.earning-report .stock-analysis-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 32px; }
+.earning-report .stock-analysis-header { min-height: 48px; align-items: center; border-color: var(--border); }
+.earning-report .stock-analysis-header h1 { font-size: clamp(22px, 2vw, 30px); line-height: 1.25; white-space: normal; overflow-wrap: anywhere; }
+.earning-report .stock-analysis-header span { letter-spacing: .03em; }
+.earning-report .stock-outlook { --outlook-body-size: .875rem; --outlook-body-leading: 1.75; }
+.earning-report .stock-outlook__eyebrow,
+.earning-report .stock-outlook__clue-index { color: var(--primary); letter-spacing: normal; }
+.earning-report .stock-outlook__headline { font-size: 20px; line-height: 1.6; }
+.earning-report .stock-outlook__headline[data-length] { font-size: 18px; line-height: 1.6; font-weight: 600; }
+.earning-report .stock-outlook__clue-title { font-size: 14px; line-height: 1.65; }
+.earning-report .stock-analysis-filings { min-height: 0; }
+.earning-report .stock-analysis-filings .sec-filings-section { position: static; margin: 0; padding: 0; border: 0; }
+.earning-report .stock-analysis-filings .detail-section-heading { min-height: 48px; align-items: center; border-color: var(--border); }
+.earning-report .stock-analysis-filings .detail-section-heading h2 { font-size: 18px; line-height: 1.4; }
+.earning-report .stock-analysis-filings .sec-filing-scroll { padding-top: 8px; overflow: visible; }
+.earning-report .stock-analysis-filings .sec-filing-rail-status { padding: 16px 0; }
+.earning-report .sec-analysis-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.earning-report .sec-analysis-metric { padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--muted); }
+.earning-report .sec-analysis-metric strong { font-size: 17px; line-height: 1.3; }
+.analysis-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 0; border-bottom: 1px solid var(--border); }
+.analysis-toolbar-title { font-size: 14px; font-weight: 600; white-space: nowrap; }
+.analysis-search { position: relative; width: min(360px, 100%); }
+.analysis-search-results { position: absolute; top: calc(100% + 6px); width: 100%; z-index: 10; padding: 4px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--popover); color: var(--popover-foreground); box-shadow: 0 6px 20px color-mix(in srgb, var(--foreground) 10%, transparent); }
+.analysis-filing-item { padding: 8px 0; }
+.analysis-filing-heading { display: flex; min-width: 0; flex-direction: column; gap: 10px; padding-right: 8px; }
+.analysis-filing-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; color: var(--muted-foreground); font-size: 12px; font-weight: 400; }
+.analysis-filing-headline { line-height: 1.7; }
+@media (max-width: 1100px) {
+  .earning-report .stock-analysis-grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .earning-report .stock-analysis-filings { margin-top: 0; padding-top: 0; border-top: 0; }
+}
+@media (max-width: 620px) {
+  .analysis-toolbar { align-items: stretch; flex-direction: column; gap: 12px; }
+  .analysis-search { width: 100%; }
+  .earning-report .stock-analysis-header { flex-direction: row; align-items: center; }
+  .earning-report .stock-analysis-header h1 { font-size: 22px; }
+  .earning-report .sec-analysis-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

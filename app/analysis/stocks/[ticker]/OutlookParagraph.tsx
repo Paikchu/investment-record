@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useEffect, useId, useRef, useState } from "react";
 
 /** Keep the original analysis intact; only long paragraphs need progressive disclosure. */
@@ -28,10 +29,10 @@ export function OutlookParagraph({ text, label, className }: { text: string; lab
     <div className={`stock-outlook__paragraph ${className}`}>
       <p ref={paragraph} id={id} className="stock-outlook__excerpt" data-expanded={expanded}>{text}</p>
       {overflows && (
-        <button type="button" className="stock-outlook__read-more" aria-expanded={expanded} aria-controls={id}
+        <Button variant="ghost" size="sm" type="button" className="mt-1" aria-expanded={expanded} aria-controls={id}
           aria-label={`${expanded ? "收起" : "展开"}${label}`} onClick={() => setExpanded((value) => !value)}>
           {expanded ? "收起" : "展开"}<span aria-hidden="true">{expanded ? "−" : "+"}</span>
-        </button>
+        </Button>
       )}
     </div>
   );
