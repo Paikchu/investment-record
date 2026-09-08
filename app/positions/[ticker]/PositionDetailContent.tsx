@@ -8,7 +8,6 @@ import { useMarketQuotes, type QuoteLoadStatus } from "@/app/use-market-quotes";
 import { CompanyLogo } from "@/app/company-logo";
 import { PlanEditor } from "./PlanEditor";
 import { SecFilingsSection } from "./SecFilingsSection";
-import { OwnershipSection } from "./OwnershipSection";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -82,7 +81,6 @@ export function PositionDetailContent({
       <nav className="detail-section-nav" aria-label="详情章节">
         <Button variant="ghost" asChild><a href="#position-structure">持仓构成</a></Button>
         <Button variant="ghost" asChild><a href="#plan-editor">持仓计划</a></Button>
-        <Button variant="ghost" asChild><a href="#ownership-structure">股权结构</a></Button>
         <Button variant="ghost" asChild><a href="#sec-filings">SEC 文件</a></Button>
       </nav>
 
@@ -130,7 +128,6 @@ export function PositionDetailContent({
         />
       )}
 
-      <OwnershipSection ticker={ticker} />
       <SecFilingsSection ticker={ticker} />
     </>
   );

@@ -89,6 +89,7 @@ test("allows anonymous company browsing while protecting plan writes", async () 
     assert.equal(response.headers.get("location"), null);
     const html = await response.text();
     assert.match(html, /id="position-detail-title"/);
+    assert.doesNotMatch(html, /ownership-structure|股权结构/);
     assert.doesNotMatch(html, /<textarea/);
   }
   const response = await render("/api/plans/NOK");
@@ -530,7 +531,7 @@ test("uses independent position routes and removes the workspace dialog", async 
   assert.match(dashboard, /className="sr-only">，查看持仓详情/);
   assert.match(addPlanDialog, /router\.push\(`\/positions\/\$\{encodeURIComponent\(result\.symbol\)\}`\)/);
   assert.match(detail, /className="detail-section-nav"/);
-  for (const id of ["position-structure", "plan-editor", "ownership-structure", "sec-filings"]) {
+  for (const id of ["position-structure", "plan-editor", "sec-filings"]) {
     assert.match(detail, new RegExp(`href="#${id}"`));
   }
   assert.match(css, /\.detail-section-nav \{[^]*?position: sticky;/);
