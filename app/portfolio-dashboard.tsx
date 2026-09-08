@@ -1,5 +1,7 @@
 "use client";
 
+import { EarningsCalendarPanel } from "./earnings-calendar-panel";
+import { emptyCalendar, withinReminderWindow, type CalendarEvent } from "@/lib/earnings-live";
 import { useLanguage } from "@/app/language-provider";
 
 import { Empty, EmptyHeader, EmptyDescription } from "@/components/ui/empty";
@@ -19,7 +21,7 @@ import {
   type PositionSortKey,
   type SortDirection,
 } from "@/lib/portfolio-dashboard";
-import { buildEarningsReminder, isUpcomingEarnings, type EarningsEvent } from "@/lib/earnings-calendar";
+import { buildEarningsReminder, type EarningsEvent } from "@/lib/earnings-calendar";
 import { money, number, percent } from "@/lib/portfolio-format";
 import { heatmapThemeColor, type HeatmapHolding } from "@/lib/portfolio-heatmap";
 import type { HistoricalPositionGroupView, PositionGroupView } from "@/lib/portfolio-view-model";
@@ -96,8 +98,8 @@ function PortfolioOverview({
         {nextEarnings && nextEarningsReminder && (
           <article className="header-next-earnings">
             <span>{t("即将财报")}</span>
-            <strong>{nextEarnings.symbol} {nextEarningsReminder.releaseDateLabel} · {nextEarningsReminder.sessionLabel}</strong>
-            <i>{t("北京")}{nextEarningsReminder.viewDateLabel}{nextEarningsReminder.viewTimeLabel}，{nextEarningsReminder.countdownLabel}</i>
+            <strong>{(nextEarnings as CalendarEvent).confidence === "confirmed" ? "" : "预计 "}{nextEarnings.symbol} {nextEarningsReminder.releaseDateLabel} · {nextEarningsReminder.sessionLabel}</strong>
+            <i>{nextEarnings.session === "unknown" ? "北京时间待确认" : `北京 ${nextEarningsReminder.viewDateLabel}${nextEarningsReminder.viewTimeLabel}`} · {(nextEarnings as CalendarEvent).confidence === "confirmed" ? "公司已确认" : "日期未确认"}</i>
           </article>
         )}
       </section>
@@ -503,7 +505,7 @@ export function PortfolioDashboard({
   stockMarketValue,
   optionMarketValue,
   netPositionsValue,
-  earningsEvents,
+  earningsEvents: initialEarningsEvents,
   netLiquidation,
   netLiquidationWithoutOptionPnl,
   portfolioLeverage,
@@ -526,7 +528,24 @@ export function PortfolioDashboard({
   const { t } = useLanguage();
   const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
   const [analysisExpanded, setAnalysisExpanded] = useState(false);
-  const [earningsAsOf] = useState(() => new Date().toISOString());
+  const [earningsAsOf, setEarningsAsOf] = useState(() => new Date().toISOString());
+  const [calendar, setCalendar] = useState(() => ({...emptyCalendar(), events: initialEarningsEvents as CalendarEvent[]}));
+  const earningsEvents = calendar.events;
+  useEffect(() => {
+    const controller = new AbortController();
+    const update = async () => {
+      setEarningsAsOf(new Date().toISOString());
+      try {
+        const response = await fetch('/api/earnings', {signal: controller.signal, cache: 'no-store'});
+        if (!response.ok) throw new Error('Calendar unavailable');
+        const fresh = await response.json();
+        if (!controller.signal.aborted) setCalendar(fresh);
+      } catch { if (!controller.signal.aborted) setCalendar(previous => ({...previous, status:'unavailable'})); }
+    };
+    void update();
+    const timer = window.setInterval(update, 5 * 60_000);
+    return () => {controller.abort(); window.clearInterval(timer);};
+  }, []);
   const positionSymbols = useMemo(() => new Set(positionGroups.map((group) => group.symbol)), [positionGroups]);
   const quoteSymbols = useMemo(() => positionGroups.map((group) => group.symbol).join(","), [positionGroups]);
   const quoteState = useMarketQuotes(quoteSymbols);
@@ -535,7 +554,7 @@ export function PortfolioDashboard({
     for (const event of earningsEvents) {
       if (
         positionSymbols.has(event.symbol) &&
-        isUpcomingEarnings(event, earningsAsOf) &&
+        withinReminderWindow(event, new Date(earningsAsOf)) &&
         !events.has(event.symbol)
       ) events.set(event.symbol, event);
     }
@@ -543,7 +562,7 @@ export function PortfolioDashboard({
   }, [earningsAsOf, earningsEvents, positionSymbols]);
 
   const nextEarnings = earningsEvents.find((event) => (
-    positionSymbols.has(event.symbol) && isUpcomingEarnings(event, earningsAsOf)
+    positionSymbols.has(event.symbol) && withinReminderWindow(event, new Date(earningsAsOf))
   ));
   const nextEarningsReminder = nextEarnings ? buildEarningsReminder(nextEarnings, earningsAsOf) : null;
   const configuredTotalPnl = netLiquidation - netDeposits;
@@ -578,6 +597,7 @@ export function PortfolioDashboard({
         />
       </div>
 
+      <EarningsCalendarPanel calendar={calendar} asOf={earningsAsOf} symbols={positionSymbols} />
       <div className="lower-grid portfolio-workspace">
         <aside className="portfolio-analysis-stack" aria-label={t("仓位分析")} data-expanded={analysisExpanded}>
           <Button

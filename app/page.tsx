@@ -1,16 +1,19 @@
 import { LocalizedText } from "./language-provider";
-import earningsData from "@/data/earnings-calendar.json";
-import type { EarningsCalendarSnapshot } from "@/lib/earnings-calendar";
+import { getD1 } from "@/db";
+import { readCalendar } from "@/lib/earnings-store";
+import { emptyCalendar } from "@/lib/earnings-live";
+
 import { buildHeatmapHoldings } from "@/lib/portfolio-heatmap";
 import { buildPortfolioViewModel } from "@/lib/portfolio-view-model";
 import { currentPortfolioSnapshot } from "@/lib/site-data";
 import { PortfolioDashboard } from "./portfolio-dashboard";
 
-const earnings = earningsData as EarningsCalendarSnapshot;
+
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const snapshot = await currentPortfolioSnapshot();
+  const earnings = await getD1().then(readCalendar).catch(() => emptyCalendar());
   const heatmapHoldings = buildHeatmapHoldings(snapshot);
   const portfolio = buildPortfolioViewModel(snapshot);
   const optionUnrealizedPnl = snapshot.positions

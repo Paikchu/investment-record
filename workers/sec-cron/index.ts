@@ -50,6 +50,17 @@ const worker = {
   },
 
   async scheduled(controller: ScheduledController, env: SecPipelineEnv & IbkrSyncEnv, context: ExecutionContext) {
+    if (controller.cron === "15 * * * *") {
+      context.waitUntil((async () => {
+        if (!env.PORTFOLIO_SITE || !env.PORTFOLIO_SYNC_KEY) throw new Error("Earnings refresh binding or credential missing");
+        const response = await env.PORTFOLIO_SITE.fetch("https://investment-record.internal/api/internal/earnings/refresh", {
+          method: "POST", headers: { "x-portfolio-sync-key": env.PORTFOLIO_SYNC_KEY },
+        });
+        if (!response.ok) throw new Error(`Earnings refresh HTTP ${response.status}`);
+        console.log(JSON.stringify({event: "earnings-calendar-refresh", result: await response.json()}));
+      })());
+      return;
+    }
     if (controller.cron === "0 6 * * 2-6") {
       context.waitUntil(runIbkrFlexSync(env).then((result) => {
         console.log(JSON.stringify({ event: "ibkr-flex-sync", ...result }));

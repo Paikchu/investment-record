@@ -284,3 +284,8 @@ export const secPublishedReports = sqliteTable("sec_published_reports", {
   verificationStatus: text("verification_status").notNull(),
   generatedAt: text("generated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [primaryKey({ columns: [table.ticker, table.periodId, table.reportVersion] })]);
+
+export const earningsCalendarState = sqliteTable("earnings_calendar_state", {
+  id: text("id").primaryKey(),
+  payload: text("payload").notNull(),
+});
