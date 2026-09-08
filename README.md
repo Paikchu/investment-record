@@ -15,6 +15,8 @@ GitHub `Paikchu/investment-record` 已连接 Cloudflare Workers Builds。推送 
 
 根目录 `wrangler.jsonc` 管理独立 Cloudflare Worker，Vite 从该文件读取配置并生成 `dist/server/wrangler.json`。已启用 `nodejs_compat`，D1 `DB` 绑定到 `investment-record-db`。数据库 ID 是资源标识，不是密钥。
 
+后台部署脚本只在其子进程中移除 Builds 注入的网站名称与标签覆盖变量（`WRANGLER_CI_OVERRIDE_NAME`、`WRANGLER_CI_MATCH_TAG`），并显式指定后台名称及配置文件，避免 Cloudflare 将后台代码覆盖到网站 Worker。
+
 原失败原因是 Vite 把本地占位数据库 ID `00000000-0000-4000-8000-000000000000` 写进部署产物，导致 Cloudflare 报错 10181。现在使用实际数据库。
 
 首次数据库结构已通过仓库的 7 个迁移初始化。部署脚本会自动执行新增迁移，也可以单独执行：
