@@ -2,6 +2,37 @@
 
 个人投资账本。首页读取 IBKR 组合快照，个股详情按当前 ChatGPT 身份读取持仓计划、SEC 文件和 AI 解读。
 
+## GitHub → Cloudflare 自动部署
+
+GitHub `Paikchu/investment-record` 已连接 Cloudflare Workers Builds，目标 Worker 是 `investment-record`。推送 `main` 后，Cloudflare 自动执行：
+
+| 设置 | 值 |
+| --- | --- |
+| 根目录 | 仓库根目录 |
+| 生产分支 | `main` |
+| 构建命令 | `npm run build` |
+| 部署命令 | `npx wrangler deploy` |
+
+根目录 `wrangler.jsonc` 管理独立 Cloudflare Worker，Vite 从该文件读取配置并生成 `dist/server/wrangler.json`。已启用 `nodejs_compat`，D1 `DB` 绑定到 `investment-record-db`。数据库 ID 是资源标识，不是密钥。
+
+原失败原因是 Vite 把本地占位数据库 ID `00000000-0000-4000-8000-000000000000` 写进部署产物，导致 Cloudflare 报错 10181。现在使用实际数据库。
+
+首次数据库结构已通过仓库的 7 个迁移初始化。后续增加迁移时，在部署前执行：
+
+```bash
+npx wrangler d1 migrations apply DB --remote --config wrangler.jsonc
+```
+
+本地数据库初始化将 `--remote` 换成 `--local`。务必指定根配置，避免使用构建产物中相对路径不同的迁移目录。
+
+运行时 Secret 在 Cloudflare Worker 的 Settings → Variables and Secrets 配置；本地 `.env.local` 不会自动上传，构建日志也不应包含密钥。新增 D1 目前只有表结构，首页使用仓库快照；原 Sites 的实时 D1 数据、持仓计划和 SEC 内容没有自动迁入。
+
+独立 Cloudflare 不提供 Sites 的 ChatGPT 登录网关。首页可以查看，依赖登录的持仓计划与详情功能需要另行配置认证；Worker 会删除客户端传入的 `oai-authenticated-user-*` 头，避免身份伪造。IBKR 定时 Worker 仍连接原 Sites，尚未切换到此部署。
+
+普通代码更新可运行 `git push github main` 自动发布。仓库 GitHub remote 为 `github`，Sites remote 为 `origin`。
+
+官方参考：[Workers Builds 配置](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)、[Vite 配置入口](https://developers.cloudflare.com/workers/vite-plugin/reference/api/)。
+
 ## 当前同步状态
 
 - Sites 项目：`投资记录`
@@ -60,7 +91,7 @@ Cloudflare 不允许在 Secret 创建后重新读取明文，因此无法把现�
 
 这些值应继续保留在 Cloudflare Secret 中。若确需本地调试独立 Worker，在 `workers/sec-cron/.dev.vars` 中手动提供；该文件同样不得提交。Cloudflare 官方建议敏感值使用 Secret，本地使用 `.dev.vars` 或 `.env`，并加入 Git 忽略规则：<https://developers.cloudflare.com/workers/configuration/environment-variables/>。
 
-## Cloudflare 配置方案
+## 原 Sites 架构与独立定时 Worker
 
 本项目不是单个 Worker，而是两个清晰的运行边界：
 
@@ -84,7 +115,7 @@ Cloudflare 不允许在 Secret 创建后重新读取明文，因此无法把现�
 - `DB` 是 Sites 管理的 D1 binding，业务代码通过 `env.DB` 使用它。不要把本地占位的 D1 ID 当成生产数据库 ID。Cloudflare 的 D1 binding 机制见：<https://developers.cloudflare.com/d1/get-started/>。
 - Sites 生产 Secret 保留 `PORTFOLIO_SYNC_KEY`。
 - 源码包含的 `AI_API_KEY`、`SEC_REFRESH_KEY`、`SEC_PIPELINE_ORIGIN`、`SEC_BOOTSTRAP_PUBLIC_KEY` 目前没有配置到 Sites 生产环境。只有在重新启用对应的 SEC 调用链时才补齐，不要为了“配置完整”而放入无效值。
-- Web 应用的发布继续走 Sites 的保存版本与部署流程，不要直接用根目录的 Wrangler 配置覆盖 Sites 运行时。
+- 原 Sites 应用通过 Sites 保存版本和部署；GitHub 独立 Cloudflare 应用使用根目录 Wrangler 配置及上文自动部署流程。
 
 ### 2. 独立定时 Worker
 

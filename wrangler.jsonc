@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "investment-record",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-09-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "keep_vars": true,
+  "vars": { "HOSTING_PLATFORM": "cloudflare" },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "investment-record-db",
+      "database_id": "146d9e34-10e7-4d92-bb2a-6659fb90474c",
+      "migrations_dir": "./drizzle"
+    }
+  ],
+  "observability": { "enabled": true }
+}
