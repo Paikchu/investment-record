@@ -17,6 +17,7 @@ import type { PublicSecFiling } from "@/lib/earning-report/shared/analysis-contr
 
 /** Distance from the end of the rail that starts the next page. */
 const TIMELINE_PREFETCH_PX = 180;
+const TIMELINE_PAGE_SIZE = 5;
 /** Guard so a cursor that keeps returning nothing cannot page in a loop. */
 const TIMELINE_EMPTY_PAGE_LIMIT = 6;
 
@@ -32,12 +33,15 @@ export function SecFilingsSection({ ticker, title = "SEC 文件与 AI 解读" }:
   const filingsRef = useRef<PublicSecFiling[]>([]);
   const railEndRef = useRef<HTMLParagraphElement | null>(null);
   const emptyPages = useRef(0);
+  const requestPending = useRef(false);
 
   const load = useCallback(async (cursor: string | null, append: boolean) => {
+    if (requestPending.current) return;
+    requestPending.current = true;
     if (append) setLoadingMore(true);
     else setStatus("loading");
     try {
-      const query = cursor ? `?cursor=${encodeURIComponent(cursor)}&limit=20` : "?limit=20";
+      const query = cursor ? `?cursor=${encodeURIComponent(cursor)}&limit=${TIMELINE_PAGE_SIZE}` : `?limit=${TIMELINE_PAGE_SIZE}`;
       const response = await fetch(`/api/analysis/v1/companies/${encodeURIComponent(ticker)}/filings${query}`, { cache: "no-store" });
       if (!response.ok) throw new Error("SEC 数据读取失败。");
       const page = await response.json() as Page;
@@ -53,6 +57,7 @@ export function SecFilingsSection({ ticker, title = "SEC 文件与 AI 解读" }:
     } catch {
       setStatus("error");
     } finally {
+      requestPending.current = false;
       setLoadingMore(false);
     }
   }, [ticker]);

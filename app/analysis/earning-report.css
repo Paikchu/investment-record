@@ -3316,7 +3316,14 @@
 .earning-report .stock-analysis-filings .sec-filings-section { position: static; margin: 0; padding: 0; border: 0; }
 .earning-report .stock-analysis-filings .detail-section-heading { min-height: 48px; align-items: center; border-color: var(--border); }
 .earning-report .stock-analysis-filings .detail-section-heading h2 { font-size: 18px; line-height: 1.4; }
-.earning-report .stock-analysis-filings .sec-filing-scroll { padding-top: 8px; overflow: visible; }
+.earning-report .stock-analysis-filings .sec-filing-scroll {
+  flex: initial;
+  max-height: min(70dvh, 760px);
+  padding-top: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
 .earning-report .stock-analysis-filings .sec-filing-rail-status { padding: 16px 0; }
 .earning-report .sec-analysis-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .earning-report .sec-analysis-metric { padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--muted); }
