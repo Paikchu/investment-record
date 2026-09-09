@@ -11,6 +11,8 @@ import { executeSecAnalysisWorkflow, type WorkflowStepContextLike, type Workflow
 const WORKFLOW_RETRY = {
   retries: {
     limit: 3,
+    // The delay function already applies backoff; avoid multiplying it a second time.
+    backoff: "constant" as const,
     delay: ({ ctx }: { ctx: WorkflowStepContextLike }) => retryDelayForAttempt(ctx.attempt),
   },
   timeout: "5 minutes",
