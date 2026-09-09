@@ -32,7 +32,7 @@ function SecTrendChart({ block }: { block: Extract<SecPresentationBlock, { type:
       {block.mark === 'line' && <polyline points={points.map((p, i) => `${x(i)},${y(p.value)}`).join(' ')} fill="none" className="sec-trend-line" strokeWidth="2" />}
       {points.map((p, i) => <g key={p.date}>
         {block.mark === 'bar' ? <rect x={x(i) - 12} y={Math.min(y(0), y(p.value))} width="24" height={Math.max(1, Math.abs(y(p.value) - y(0)))} className="sec-trend-mark" /> : <circle cx={x(i)} cy={y(p.value)} r="3" className="sec-trend-mark" />}
-        <text x={x(i)} y={Math.max(15, y(p.value) - 8)} textAnchor="middle" fontSize="11" className="sec-trend-label">{format(p.value)}</text>
+        <text data-mobile-hidden={points.length > 6 && i > 0 && i < points.length - 1 && (i % 2 !== 0 || i === points.length - 2) ? true : undefined} x={x(i)} y={Math.max(15, y(p.value) - 8)} textAnchor="middle" fontSize="11" className="sec-trend-label">{format(p.value)}</text>
         {(i === 0 || i === points.length - 1) && <text x={i === 0 ? 25 : 555} y="207" textAnchor={i === 0 ? "start" : "end"} fontSize="11" className="sec-trend-label sec-trend-date">{p.date}</text>}
       </g>)}
     </svg>

@@ -3290,4 +3290,5 @@
 @media (max-width: 700px) {
   .earning-report .sec-trend-label { font-size: 18px; }
   .earning-report .sec-trend-date { font-size: 16px; }
+  .earning-report .sec-trend-label[data-mobile-hidden="true"] { display: none; }
 }
