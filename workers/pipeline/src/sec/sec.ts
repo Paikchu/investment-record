@@ -273,6 +273,8 @@ export async function streamSecSubmissionParts(
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+  let documentChunks: string[] = [];
+  const boundaryMarker = "</DOCUMENT>";
   const parts: SecSubmissionPart[] = [];
   let receivedBytes = 0;
 
@@ -295,17 +297,21 @@ export async function streamSecSubmissionParts(
       throw new Error("SEC submission exceeds 32 MiB text extraction budget");
     }
     buffer += decoder.decode(value, { stream: true });
-    let boundary = buffer.indexOf("</DOCUMENT>");
+    let boundary = buffer.indexOf(boundaryMarker);
     while (boundary !== -1) {
-      const chunk = buffer.slice(0, boundary + "</DOCUMENT>".length);
-      buffer = buffer.slice(boundary + "</DOCUMENT>".length);
-      const opening = chunk.indexOf("<DOCUMENT>");
-      handleDocument(opening === -1 ? chunk : chunk.slice(opening + "<DOCUMENT>".length));
-      boundary = buffer.indexOf("</DOCUMENT>");
+      documentChunks.push(buffer.slice(0, boundary));
+      handleDocument(documentChunks.join(""));
+      documentChunks = [];
+      buffer = buffer.slice(boundary + boundaryMarker.length);
+      boundary = buffer.indexOf(boundaryMarker);
     }
+    // Keep only the possible split delimiter. Re-scanning the entire accumulated filing on
+    // every network chunk makes large annual submissions quadratic in CPU and allocations.
+    const consumed = Math.max(0, buffer.length - (boundaryMarker.length - 1));
+    if (consumed) documentChunks.push(buffer.slice(0, consumed));
+    buffer = buffer.slice(consumed);
   }
-  const tail = buffer.trim();
-  if (tail.includes("</DOCUMENT>")) handleDocument(tail);
+  if ((documentChunks.join("") + buffer).includes("<DOCUMENT>")) throw new Error("SEC submission ended before document boundary");
   return parts;
 }
 

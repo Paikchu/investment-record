@@ -3,6 +3,7 @@ import test from 'node:test';
 import { buildSecTrends, composeSecPresentation } from '../../workers/pipeline/src/sec/presentation.ts';
 import { buildSecAnalysisBrief, type SecHistorySnapshot } from '../../workers/pipeline/src/sec/analysis.ts';
 import { prepareSecFiling } from '../../workers/pipeline/src/sec/pipeline.ts';
+import { streamSecSubmissionParts } from '../../workers/pipeline/src/sec/sec.ts';
 import type { SecFiling, SecNodeResult } from '../../workers/pipeline/src/sec/sec.ts';
 
 const node: SecNodeResult = { id: 'business', title: '需求质量', status: 'complete', narrative: '客户用量增加推动增长。', findings: [], evidence: [{ start: 0, end: 15, excerpt: 'Customer usage.', score: 80, reasons: [] }] };
@@ -68,4 +69,17 @@ test('charts must directly follow the business explanation they support', () => 
   const plotted = result?.sections[0].blocks[1];
   assert.equal(plotted?.type, 'sec_chart');
   if (plotted?.type === 'sec_chart') assert.equal(plotted.nodeId, node.id);
+});
+
+
+test('submission parser preserves split delimiters and UTF-8 across network chunks', async () => {
+  const text = part('10-K', 'annual.htm', '<p>业务增长</p>') + part('GRAPHIC', 'image.png', 'noise') + part('EX-99.2', 'deck.htm', '<p>Cloud customers</p>');
+  const bytes = new TextEncoder().encode(text);
+  let offset = 0;
+  const parsed = await streamSecSubmissionParts(1, 'test', async () => new Response(new ReadableStream({ pull(controller) {
+    if (offset >= bytes.length) return controller.close();
+    controller.enqueue(bytes.slice(offset, offset + 7)); offset += 7;
+  } })), 'test');
+  assert.deepEqual(parsed.map((p) => p.filename), ['annual.htm', 'deck.htm']);
+  assert.match(parsed[0].text, /业务增长/);
 });
