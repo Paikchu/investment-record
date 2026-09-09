@@ -3138,7 +3138,7 @@
 
 /* Unified stock detail: one company header and six shadcn tab panels. */
 .earning-report.unified-stock { background: var(--background); font-weight: 400; --font-mono: ui-monospace, "SFMono-Regular", Menlo, monospace; width: min(1180px, 100%); min-height: calc(100dvh - 32px); margin: 0 auto; padding: 0 24px 64px; }
-.unified-stock .stock-detail-search { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--background) 90%, transparent); backdrop-filter: blur(8px); }
+.unified-stock .stock-detail-search { position: sticky; top: 0; z-index: 20; background: var(--background); }
 .unified-stock .analysis-toolbar { justify-content: center; flex-direction: row; padding: 12px 0; border: 0; }
 .unified-stock .analysis-search { width: min(420px, 100%); }
 .stock-detail-identity { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px 32px; padding: 24px 0 22px; }
@@ -3150,7 +3150,7 @@
 .stock-detail-price strong { font-size: 28px; font-weight: 600; letter-spacing: -.025em; }
 .stock-detail-price > span { font-size: 16px; }
 .stock-detail-tabs { min-width: 0; gap: 22px; }
-.stock-detail-tab-bar { position: sticky; top: 60px; z-index: 10; background: var(--background); border-bottom: 1px solid var(--border); overflow-x: auto; padding-bottom: 5px; }
+.stock-detail-tab-bar { position: sticky; top: var(--stock-search-height, 56px); z-index: 10; background: var(--background); border-bottom: 1px solid var(--border); overflow-x: auto; padding-bottom: 5px; }
 .stock-detail-tab-bar [data-slot="tabs-list"] { height: 44px; justify-content: flex-start; }
 .stock-detail-tab-bar [data-slot="tabs-trigger"] { flex: none; padding: 10px 14px; }
 .stock-detail-tabs > [data-slot="tabs-content"][hidden] { display: none; }
@@ -3164,7 +3164,7 @@
 .unified-stock .stock-outlook__clue-index { grid-column: 1; grid-row: 1; color: var(--muted-foreground); font-family: var(--font-mono); font-weight: 400; }
 .unified-stock .stock-outlook__clue-title { grid-column: 1; grid-row: 2; margin: 0; font-size: 16px; line-height: 1.5; text-wrap: pretty; }
 .unified-stock .stock-outlook__clue-content { grid-column: 1; grid-row: 3; }
-.stock-detail-aside { display: flex; flex-direction: column; gap: 36px; position: sticky; top: 136px; padding-top: 4px; }
+.stock-detail-aside { display: flex; flex-direction: column; gap: 36px; position: sticky; top: calc(var(--stock-search-height, 56px) + 76px); padding-top: 4px; }
 .stock-detail-aside h2 { margin: 0 0 16px; color: var(--muted-foreground); font-size: 12px; font-weight: 600; }
 .stock-detail-aside dl { display: flex; flex-direction: column; gap: 12px; margin: 0 0 18px; }
 .stock-detail-aside dl > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }

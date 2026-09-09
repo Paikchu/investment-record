@@ -39,6 +39,7 @@ export function StockDetail({ ticker, companyName, exchange, position, trades, p
   ticker: string; companyName: string; exchange: string; position?: PositionGroupView; embedded?: boolean;
   trades: PortfolioTrade[]; plan: HoldingPlanRecord | null; planStatus: PositionPlanStatus;
 }) {
+  const main = useRef<HTMLElement>(null);
   const tabBar = useRef<HTMLDivElement>(null);
   const indicator = useRef<HTMLSpanElement>(null);
   const { path, navigate } = useAppNavigation();
@@ -63,6 +64,19 @@ export function StockDetail({ ticker, companyName, exchange, position, trades, p
   }, [embedded, path]);
 
   useLayoutEffect(() => {
+    const root = main.current;
+    const search = embedded
+      ? root?.closest(".analysis-workspace")?.querySelector<HTMLElement>(":scope > .analysis-toolbar")
+      : root?.querySelector<HTMLElement>(".stock-detail-search");
+    if (!root || !search) return;
+    const update = () => root.style.setProperty("--stock-search-height", `${search.getBoundingClientRect().height}px`);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(search, { box: "border-box" });
+    return () => observer.disconnect();
+  }, [embedded]);
+
+  useLayoutEffect(() => {
     const bar = tabBar.current;
     if (!bar) return;
     const update = () => {
@@ -73,6 +87,18 @@ export function StockDetail({ ticker, companyName, exchange, position, trades, p
       line.style.opacity = "1";
     };
     update();
+    const selected = bar.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
+    if (selected) {
+      const left = selected.offsetLeft;
+      const right = left + selected.offsetWidth;
+      if (left < bar.scrollLeft) bar.scrollLeft = left;
+      else if (right > bar.scrollLeft + bar.clientWidth) bar.scrollLeft = right - bar.clientWidth;
+    }
+    // A tab change starts the new panel below the sticky navigation, even after
+    // reading far down a longer panel. The tabs root retains its flow position.
+    const tabsTop = bar.parentElement!.getBoundingClientRect().top;
+    const searchHeight = parseFloat(getComputedStyle(main.current!).getPropertyValue("--stock-search-height")) || 0;
+    if (tabsTop < searchHeight) window.scrollTo({ top: window.scrollY + tabsTop - searchHeight, behavior: "instant" });
     const observer = new ResizeObserver(update);
     observer.observe(bar);
     return () => observer.disconnect();
@@ -85,7 +111,7 @@ export function StockDetail({ ticker, companyName, exchange, position, trades, p
   }
 
   return (
-    <main className="earning-report unified-stock">
+    <main ref={main} className="earning-report unified-stock">
       {!embedded && <div className="stock-detail-search"><SiteHeader compact /></div>}
       <header className="stock-detail-identity">
         <div className="stock-detail-company">
