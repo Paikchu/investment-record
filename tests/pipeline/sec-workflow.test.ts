@@ -433,3 +433,29 @@ test("does not change a published report when asynchronous Memory launch fails",
   assert.deepEqual(result.analyzed, [filing.accessionNumber]);
   assert.equal(published, 1);
 });
+
+
+test("retries an empty manager plan inside the durable step before publishing", async () => {
+  const base = operations();
+  const models: Array<string | undefined> = [];
+  const step: WorkflowStepLike = {
+    async do<T>(name: string, callback: (context?: { attempt: number }) => Promise<T>): Promise<T> {
+      try { return await callback({ attempt: 1 }); }
+      catch (error) {
+        if (!name.startsWith('manager:')) throw error;
+        assert.match(String(error), /Manager planned no analysis nodes/);
+        return callback({ attempt: 2 });
+      }
+    },
+  };
+  const ops = operations({
+    async plan(filingArg, prepared, brief, execution) {
+      models.push(execution?.model);
+      return execution?.attempt === 1 ? { nodes: [], outlineSections: 1 } : base.plan(filingArg, prepared, brief, execution);
+    },
+  });
+  const result = await executeSecAnalysisWorkflow({ ticker: 'TESTCO', requestedBy: 'manual' }, 'empty-plan-retry', step, ops);
+  assert.deepEqual(models, [undefined, 'hy3']);
+  assert.deepEqual(result.failed, []);
+  assert.deepEqual(result.analyzed, [filing.accessionNumber]);
+});

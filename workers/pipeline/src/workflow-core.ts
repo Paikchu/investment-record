@@ -193,8 +193,11 @@ export async function executeSecAnalysisWorkflow(
         : buildFallbackBrief(filing, context));
       assertBriefCanProceed(brief);
       stage = "manager";
-      const plan = await step.do(`manager:${accession}`, (stepContext) => operations.plan(filing, prepared, brief, executionFor(stepContext)));
-      if (!plan.nodes.length) throw new Error("Manager planned no analysis nodes");
+      const plan = await step.do(`manager:${accession}`, async (stepContext) => {
+        const planned = await operations.plan(filing, prepared, brief, executionFor(stepContext));
+        if (!planned.nodes.length) throw new Error("Manager planned no analysis nodes");
+        return planned;
+      });
       stage = "nodes-round-0";
       const nodes = await mapWithConcurrency(plan.nodes, SEC_NODE_CONCURRENCY, (spec, index) => step.do(
         `node:${accession}:round:0:${index}:${spec.id}`,
