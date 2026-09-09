@@ -578,10 +578,15 @@ test('rebuilds presentation from allowed references and preserves facts on exhau
   const stored = new Map<string, string>();
   const env = { ...modelEnv, SEC_FILINGS: { async get() { return null; }, async put(key: string, value: string) { stored.set(key, value); return {}; } } } as unknown as SecPipelineEnv;
   const report = { ticker: 'MSFT', periodId: 'annual', reportVersion: 'v3', headline: '增长', keyMetrics: [], changes: { qoq: [], yoy: [], guidance: [], risks: [] }, dataQuality: { coverage: 1, verificationStatus: 'verified', warnings: ['模型报告编排未通过校验，已保留完整标准报告。'] } } as SecAnalysisArtifact['report'];
-  const nodes = [{ id: 'growth', title: '增长', narrative: '已核验的业务分析', findings: [], evidence: [], status: 'complete' as const }];
+  const nodes = [{ id: 'growth', title: '增长', narrative: '已核验的业务分析', findings: [], evidence: [], status: 'complete' as const }, { id: 'facts-only', title: '修复证据', narrative: '', findings: [{ label: '收入', detail: '已披露事实', importance: 'high' as const }], evidence: [], status: 'complete' as const }];
   const brief = { periodScope: 'annual', history: { series: [] } } as import('../../workers/pipeline/src/sec/analysis.ts').SecAnalysisBrief;
   let valid = true;
-  const ops = createSecPipelineOperations(env, async () => Response.json({ choices: [{ message: { content: JSON.stringify({ sections: [{ title: '业务增长', blocks: [{ type: 'narrative', nodeId: valid ? 'growth' : 'invented' }] }] }) } }] }));
+  const ops = createSecPipelineOperations(env, async (_input, init) => {
+    const payload = JSON.parse(JSON.parse(String(init?.body)).messages[1].content);
+    assert.deepEqual(payload.requiredNodeIds, ['growth', 'facts-only']);
+    assert.equal(payload.nodes[1].findings[0].detail, '已披露事实');
+    return Response.json({ choices: [{ message: { content: JSON.stringify({ sections: [{ title: '业务增长', blocks: [{ type: 'narrative', nodeId: valid ? 'growth' : 'invented' }, { type: 'findings', nodeId: 'facts-only' }] }] }) } }] });
+  });
   const result = await ops.composePresentation!(filing, { key: 'filings/MSFT/annual', filing }, report, nodes, brief, modelExecutionForAttempt(1));
   assert.equal(result.presentation?.sections[0].blocks[0].type, 'prose');
   assert.equal(result.dataQuality.warnings.length, 0);

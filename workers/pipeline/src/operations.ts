@@ -158,14 +158,15 @@ export function createSecPipelineOperations(env: SecPipelineEnv, fetcher: typeof
       const usableNodes = nodes.filter((node) => node.status === "complete" && (node.narrative || node.findings.length));
       if (!usableNodes.length) return report;
       try {
-        const candidate = await modelFor(execution)("presentation", "你是公司业务研究报告的编辑。只为已完成的分析设计阅读结构，不生成事实、正文或数据。严格按 schema 输出一个 JSON 对象，顶层为 density 和 sections。每个已完成节点必须由 narrative/findings/callout 覆盖，chart 紧跟同一节点的正文块。只使用提供的 ID 和可用块类型。", {
+        const candidate = await modelFor(execution)("presentation", "你是公司业务研究报告的编辑。只为已完成的分析设计阅读结构，不生成事实、正文或数据。严格按 schema 输出一个 JSON 对象，顶层为 density 和 sections。必须覆盖 requiredNodeIds 中每个节点；没有 narrative 的节点使用 findings，不能遗漏。不要同时用 narrative 和 callout 重复同一节点正文。chart 紧跟同一节点的 narrative/findings/callout。可用趋势与业务问题直接相关时，应选择至少一张辅助解释的图表；不以全公司收入替代分部或客户数据。只使用提供的 ID 和可用块类型。", {
           schema: SEC_PRESENTATION_SCHEMA,
+          requiredNodeIds: usableNodes.map((node) => node.id),
           nodes: usableNodes.map((node) => ({
-            nodeId: node.id, title: node.title, summary: node.narrative.slice(0, 500),
-            allowedBlocks: [...(node.narrative ? ["narrative", "callout"] : []), ...(node.findings.length ? ["findings"] : []), ...(node.evidence.length ? ["evidence"] : [])],
+            nodeId: node.id, title: node.title, summary: node.narrative.slice(0, 500), findings: node.findings,
+            allowedBlocks: [...(node.narrative ? ["narrative", "callout"] : []), ...(node.findings.length ? ["findings"] : []), ...(node.evidence.length ? ["evidence"] : []), ...(trends.length ? ["chart"] : [])],
           })),
           availableMetrics: report.keyMetrics.filter((metric) => metric.status === "verified" || metric.status === "derived").map((metric) => metric.metricKey),
-          availableCharts: trends.map((trend) => ({ metricKey: trend.metricKey, unit: trend.unit, periodScope: trend.periodScope })),
+          availableCharts: trends,
         });
         await putArtifact(env.SEC_FILINGS, reference, "presentation/candidate", candidate);
         const presentation = composeSecPresentation(candidate.presentation ?? candidate, usableNodes, report.keyMetrics, trends);
