@@ -36,3 +36,16 @@
 `Paikchu/earning-report-analysis`，根目录 `/`，Build command `npm run worker:pipeline:check`，
 Deploy command `npm run worker:pipeline:deploy`，生产分支 `main`。
 本次迁移不改变数据库结构，不需要数据回滚。
+
+## 2026-09-09 切换验收
+
+- 代码迁入提交：`c7b6180f244369ec6a2ff2ff50710fcda0cc7093`。
+- 235 项 Pipeline 测试、19 项投资看板分析接入测试全部通过。
+- Pipeline 类型检查、边界检查、dry-run 和投资看板 production build 通过。
+- 生产 D1 的 12 条已应用迁移与迁入文件匹配；业务源码、共享契约、资源配置和迁移文件逐字节保持一致。
+- Cloudflare Settings → Builds 已显示 `Paikchu/investment-record`、`main` 和上述独立命令。
+- 保留原构建 token、关闭 preview builds；watch paths 暂保留 `*`，新仓库每次 main 提交都会触发构建。
+- 此验收提交用于触发切换后的首次 Git 自动部署；最终构建和线上探针结果以 Cloudflare 为准。
+
+Cloudflare 连接向导可能建议把根目录 `wrangler.jsonc` 的 Worker 名改成 Pipeline 名。
+不要应用该建议：根配置属于投资看板，Pipeline 命令明确指定 `workers/pipeline/wrangler.jsonc`。
