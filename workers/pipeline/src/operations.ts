@@ -163,7 +163,7 @@ export function createSecPipelineOperations(env: SecPipelineEnv, fetcher: typeof
           requiredNodeIds: usableNodes.map((node) => node.id),
           nodes: usableNodes.map((node) => ({
             nodeId: node.id, title: node.title, summary: node.narrative.slice(0, 500), findings: node.findings,
-            allowedBlocks: [...(node.narrative ? ["narrative", "callout"] : []), ...(node.findings.length ? ["findings"] : []), ...(node.evidence.length ? ["evidence"] : []), ...(trends.length ? ["chart"] : [])],
+            allowedBlocks: [...(node.narrative ? ["narrative"] : []), ...(node.narrative || node.findings.length ? ["callout"] : []), ...(node.findings.length ? ["findings"] : []), ...(node.evidence.length ? ["evidence"] : []), ...(trends.length ? ["chart"] : [])],
           })),
           availableMetrics: report.keyMetrics.filter((metric) => metric.status === "verified" || metric.status === "derived").map((metric) => metric.metricKey),
           availableCharts: trends,

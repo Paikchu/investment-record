@@ -57,7 +57,7 @@ export function composeSecPresentation(value: unknown, nodes: SecNodeResult[], m
         if (!node) return undefined;
         if (block.type === 'narrative' && node.narrative) blocks.push({ type: 'prose', id, title, text: node.narrative });
         else if (block.type === 'findings' && node.findings.length) blocks.push({ type: 'key_points', id, title, points: node.findings });
-        else if (block.type === 'callout' && node.narrative) blocks.push({ type: 'callout', id, title: title || node.title, text: node.narrative, tone: block.tone === 'positive' || block.tone === 'negative' || block.tone === 'caution' ? block.tone : 'neutral' });
+        else if (block.type === 'callout' && (node.narrative || node.findings.length)) blocks.push({ type: 'callout', id, title: title || node.title, text: node.narrative || node.findings[0].detail, tone: block.tone === 'positive' || block.tone === 'negative' || block.tone === 'caution' ? block.tone : 'neutral' });
         else if (block.type === 'evidence' && node.evidence.length) blocks.push({ type: 'evidence', id, title, items: node.evidence });
         else return undefined;
         if (block.type !== 'evidence') covered.add(node.id);

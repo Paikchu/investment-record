@@ -84,3 +84,16 @@ test("cached report navigators keep distinct accessible menu targets", () => {
   assert.equal(controls.length, 2);
   assert.equal(new Set(controls).size, 2);
 });
+
+test('chart displays ratios as percentages and preserves gaps between observation dates', async () => {
+  const { SecComposedSection } = await import('../components/earning-report/report-blocks/SecComposedSection');
+  const report = { keyMetrics: [] } as unknown as import('../shared/analysis-contract/report').PublishedSecReport;
+  const html = renderToStaticMarkup(<SecComposedSection report={report} section={{ id: 'chart', title: '毛利率', layout: 'flow', blocks: [{ id: 'margin', type: 'sec_chart', title: '毛利率', mark: 'line', trend: { metricKey: 'gross_margin', unit: 'ratio', basis: 'gaap', periodScope: 'quarter', points: [{ date: '2025-01-01', value: 0.25, accession: 'a' }, { date: '2025-04-01', value: 0.5, accession: 'b' }, { date: '2026-01-01', value: 0.6, accession: 'c' }] } }] }} />);
+  assert.match(html, />25%<\/text>/);
+  assert.match(html, /data-chart-value="0.25">25%/);
+  const points = html.match(/<polyline points="([^"]+)"/)?.[1].split(' ').map((point) => Number(point.split(',')[0]));
+  assert.ok(points);
+  assert.equal(points[0], 45);
+  assert.ok(points[1] > 160 && points[1] < 170, 'a three-month gap must occupy less space than the following nine-month gap');
+  assert.equal(points[2], 535);
+});

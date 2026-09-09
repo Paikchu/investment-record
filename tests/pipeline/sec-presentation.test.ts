@@ -83,3 +83,12 @@ test('submission parser preserves split delimiters and UTF-8 across network chun
   assert.deepEqual(parsed.map((p) => p.filename), ['annual.htm', 'deck.htm']);
   assert.match(parsed[0].text, /业务增长/);
 });
+
+test('a findings-only node can supply a trusted callout followed by its chart', () => {
+  const factsOnly = { ...node, narrative: '', findings: [{ label: '需求', detail: '客户用量同比增加。', importance: 'high' as const }] };
+  const result = composeSecPresentation({ sections: [{ title: '需求', blocks: [{ type: 'callout', nodeId: node.id, text: 'invented claim' }, { type: 'chart', nodeId: node.id, metricKey: 'revenue' }] }] }, [factsOnly], [], [trend]);
+  assert.equal(result?.sections[0].blocks[0].type, 'callout');
+  assert.match(JSON.stringify(result), /客户用量同比增加/);
+  assert.doesNotMatch(JSON.stringify(result), /invented claim/);
+  assert.equal(result?.sections[0].blocks[1].type, 'sec_chart');
+});

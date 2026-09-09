@@ -3283,3 +3283,11 @@
   .earning-report .sec-report-header { grid-template-columns: minmax(0, 1fr); }
   .earning-report .sec-composed-content[data-layout="grid"] { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Filing identifiers and taxonomy tags can be longer than a narrow report column. */
+.earning-report .sec-report-shell,
+.earning-report .sec-report-shell .report-block-points-list span { overflow-wrap: anywhere; }
+@media (max-width: 700px) {
+  .earning-report .sec-trend-label { font-size: 18px; }
+  .earning-report .sec-trend-date { font-size: 16px; }
+}
