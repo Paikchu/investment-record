@@ -105,7 +105,7 @@ export function AppNavigation({ children, dock }: { children: ReactNode; dock: R
     function link(event: MouseEvent) {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const anchor = (event.target as Element).closest?.("a[href]") as HTMLAnchorElement | null;
-      if (!anchor || anchor.target === "_blank" || anchor.hasAttribute("download")) return;
+      if (!anchor || anchor.target === "_blank" || anchor.hasAttribute("download") || anchor.hasAttribute("data-app-local-anchor")) return;
       const href = anchor.getAttribute("href")!;
       if (!normalize(href, active.current)) return;
       event.preventDefault();
@@ -114,7 +114,7 @@ export function AppNavigation({ children, dock }: { children: ReactNode; dock: R
     }
     function warm(event: Event) {
       const anchor = (event.target as Element).closest?.("a[href]") as HTMLAnchorElement | null;
-      if (!anchor || anchor.target === "_blank") return;
+      if (!anchor || anchor.target === "_blank" || anchor.hasAttribute("data-app-local-anchor")) return;
       const next = normalize(anchor.getAttribute("href")!, active.current);
       if (next) void fetchPage(next.split("#")[0]).catch(() => {});
     }

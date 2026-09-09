@@ -130,7 +130,10 @@ export function SecReportNavigator({ initialSections }: { initialSections: Repor
     setMenuOpen(false);
     const target = document.getElementById(id);
     if (target instanceof HTMLDetailsElement) target.open = true;
-    window.requestAnimationFrame(() => target?.focus({ preventScroll: true }));
+    window.requestAnimationFrame(() => {
+      target?.scrollIntoView({ behavior: reduceMotion ? "instant" : "smooth", block: "start" });
+      target?.focus({ preventScroll: true });
+    });
   };
 
   return (
@@ -184,8 +187,9 @@ export function SecReportNavigator({ initialSections }: { initialSections: Repor
                 <a
                   key={section.id}
                   href={`#${section.id}`}
+                  data-app-local-anchor
                   aria-current={section.id === activeId ? "location" : undefined}
-                  onClick={() => navigate(section.id)}
+                  onClick={(event) => { event.preventDefault(); navigate(section.id); }}
                   className={`grid grid-cols-[36px_minmax(0,1fr)] gap-3 border-b border-[var(--paper-deep)] pr-4 text-[var(--ink)] no-underline last:border-b-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[var(--ink)] ${nested ? "min-h-12 py-2 pl-8" : "min-h-14 px-4 py-3"}`}
                 >
                   <span className="pt-1 text-[10px] font-bold tracking-[.08em] text-primary">{displayIndex(section, index)}</span>
@@ -235,11 +239,12 @@ export function SecReportNavigator({ initialSections }: { initialSections: Repor
                     else railLinks.current.delete(section.id);
                   }}
                   href={`#${section.id}`}
+                  data-app-local-anchor
                   aria-current={active ? "location" : undefined}
                   aria-label={`${displayIndex(section, index)} ${section.title}：${section.description}`}
                   onPointerEnter={() => setPreviewId(section.id)}
                   onFocus={() => setPreviewId(section.id)}
-                  onClick={() => navigate(section.id)}
+                  onClick={(event) => { event.preventDefault(); navigate(section.id); }}
                   className={`group relative flex w-16 items-center text-[var(--ink)] no-underline ${nested ? "h-4" : "h-5"}`}
                 >
                   <motion.span
