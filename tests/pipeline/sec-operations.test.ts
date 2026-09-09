@@ -543,3 +543,33 @@ test("memory extraction still receives this filing's claims and prior memory ids
     triggerRef: "job-1:3",
   });
 });
+
+test("recovers once on the primary model when the fallback is rate limited", async () => {
+  for (const status of [429, 503]) {
+    const objects = new Map<string, string>();
+    const models: string[] = [];
+    const env = { ...modelEnv, SEC_FILINGS: {
+      async get(key: string) { const value = objects.get(key); return value === undefined ? null : { async text() { return value; } }; },
+      async put(key: string, value: string) { objects.set(key, value); return {}; },
+    } } as unknown as SecPipelineEnv;
+    const fetcher: typeof fetch = async (input, init) => {
+      if (String(input) === filing.documentUrl) return new Response('<h1>Item 7. Management Discussion</h1><p>Revenue grew.</p>');
+      if (String(input) !== 'https://api.b.ai/v1/chat/completions') throw new Error('Unavailable test source');
+      const body = JSON.parse(String(init?.body)); models.push(body.model);
+      if (models.length === 1) return new Response('provider unavailable', { status });
+      const section = body.messages[1] && JSON.parse(body.messages[1].content).sections[0];
+      return Response.json({ choices: [{ message: { content: JSON.stringify({ nodes: [{ id: 'growth', title: '增长', question: '增长来源', sectionIds: [section.id] }] }) } }] });
+    };
+    const operations = createSecPipelineOperations(env, fetcher);
+    const reference = await operations.prepare(filing);
+    const run = operations.plan(filing, reference, undefined, modelExecutionForAttempt(2));
+    if (status === 429) {
+      const plan = await run;
+      assert.equal(plan.nodes.length, 1);
+      assert.deepEqual(models, ['hy3', 'primary-model']);
+    } else {
+      await assert.rejects(run, /HTTP 503/);
+      assert.deepEqual(models, ['hy3']);
+    }
+  }
+});

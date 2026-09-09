@@ -51,12 +51,21 @@ export function modelForStage(env: SecPipelineEnv, stage: string, override?: str
 export function createSecPipelineOperations(env: SecPipelineEnv, fetcher: typeof fetch = fetch): SecPipelineOperations {
   const repository = () => new D1SecRepository(requireDb(env));
   const modelFor = (execution?: SecModelExecution): SecModelCall => async (stage, system, payload) => {
+    // Keep an in-step recovery below the Workflow's five-minute deadline.
+    const deadline = Date.now() + 240_000;
+    const call = (nextStage: string, nextSystem: string, model?: string) =>
+      callWorkerSecModel(env, fetcher, nextStage, nextSystem, payload, model, Math.max(1, Math.min(180_000, deadline - Date.now())));
+    const selectedModel = modelForStage(env, stage, execution?.model);
     try {
-      return await callWorkerSecModel(env, fetcher, stage, system, payload, modelForStage(env, stage, execution?.model));
+      return await call(stage, system, selectedModel);
     } catch (error) {
+      const primaryModel = env.SEC_ANALYSIS_MODEL || "glm-5.3-flash";
+      // A shared fallback-provider rate limit must not trap every remaining attempt on that model.
+      if (error instanceof SecModelHttpError && error.status === 429 && selectedModel && selectedModel !== primaryModel) {
+        return call(`${stage}:rate-limit-recovery`, system, primaryModel);
+      }
       if (!(error instanceof SyntaxError) && !String(error).includes("JSON object")) throw error;
-      const retryStage = `${stage}:schema-retry`;
-      return callWorkerSecModel(env, fetcher, retryStage, `${system}\nYour previous response violated the JSON schema. Return one valid JSON object only.`, payload, modelForStage(env, retryStage, execution?.model));
+      return call(`${stage}:schema-retry`, `${system}\nYour previous response violated the JSON schema. Return one valid JSON object only.`, selectedModel);
     }
   };
   return {
@@ -309,6 +318,11 @@ function collectArtifactKeys(reference: PreparedFilingReference, synthesisKey: s
   };
 }
 
+class SecModelHttpError extends Error {
+  readonly status: number;
+  constructor(status: number, message: string) { super(message); this.status = status; }
+}
+
 export async function callWorkerSecModel(
   env: SecPipelineEnv,
   fetcher: typeof fetch,
@@ -316,6 +330,7 @@ export async function callWorkerSecModel(
   system: string,
   payload: unknown,
   modelOverride?: string,
+  timeoutMs = 180_000,
 ): Promise<Record<string, unknown>> {
   const apiKey = await resolveWorkerModelKey(env, fetcher);
   const response = await fetcher("https://api.b.ai/v1/chat/completions", {
@@ -332,11 +347,11 @@ export async function callWorkerSecModel(
       // Streaming keeps bytes flowing so the provider's proxy cannot time the request out at ~100s.
       stream: true,
     }),
-    signal: AbortSignal.timeout(180_000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!response.ok) {
     const detail = await response.text();
-    throw new Error(`DeepSeek ${stage} HTTP ${response.status}: ${detail.slice(0, 300)}`);
+    throw new SecModelHttpError(response.status, `DeepSeek ${stage} HTTP ${response.status}: ${detail.slice(0, 300)}`);
   }
   return parseModelJson(await readModelContent(response, stage));
 }
