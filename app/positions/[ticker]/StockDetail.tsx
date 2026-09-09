@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useAppNavigation } from "@/app/app-navigation";
 import { CompanyLogo } from "@/app/company-logo";
 import { useMarketQuotes } from "@/app/use-market-quotes";
@@ -38,6 +38,8 @@ export function StockDetail({ ticker, companyName, exchange, position, trades, p
   ticker: string; companyName: string; exchange: string; position?: PositionGroupView; embedded?: boolean;
   trades: PortfolioTrade[]; plan: HoldingPlanRecord | null; planStatus: PositionPlanStatus;
 }) {
+  const tabBar = useRef<HTMLDivElement>(null);
+  const indicator = useRef<HTMLSpanElement>(null);
   const { path, navigate } = useAppNavigation();
   const [activeTab, setActiveTab] = useState("outlook");
   const [visited, setVisited] = useState(() => new Set(["outlook"]));
@@ -59,6 +61,22 @@ export function StockDetail({ ticker, companyName, exchange, position, trades, p
     return () => window.removeEventListener("hashchange", restore);
   }, [embedded, path]);
 
+  useLayoutEffect(() => {
+    const bar = tabBar.current;
+    if (!bar) return;
+    const update = () => {
+      const selected = bar.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
+      const line = indicator.current;
+      if (!selected || !line || selected.offsetWidth === 0) return;
+      line.style.transform = `translateX(${selected.offsetLeft}px) scaleX(${selected.offsetWidth})`;
+      line.style.opacity = "1";
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(bar);
+    return () => observer.disconnect();
+  }, [activeTab]);
+
   function selectTab(value: string) {
     setActiveTab(value);
     setVisited((current) => new Set([...current, value]));
@@ -79,9 +97,9 @@ export function StockDetail({ ticker, companyName, exchange, position, trades, p
         </div>
       </header>
       <Tabs value={activeTab} onValueChange={selectTab} className="stock-detail-tabs">
-        <div className="stock-detail-tab-bar"><TabsList variant="line" aria-label="个股详情">
+        <div ref={tabBar} className="stock-detail-tab-bar"><TabsList variant="line" aria-label="个股详情">
           {sections.map(([key, label]) => <TabsTrigger value={key} key={key}>{label}</TabsTrigger>)}
-        </TabsList></div>
+        </TabsList><span ref={indicator} aria-hidden="true" className="stock-tab-indicator" /></div>
         <TabsContent value="outlook" forceMount hidden={activeTab !== "outlook"}>
           <div className="stock-detail-overview">
             <BusinessOutlook ticker={ticker} />

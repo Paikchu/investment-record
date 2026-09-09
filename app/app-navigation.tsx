@@ -1,10 +1,11 @@
 "use client";
 
-import { Component, createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { Component, createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { revealContent } from "./content-motion";
 import { loadAppPage } from "./load-app-page";
 
-const NavigationContext = createContext<{ path: string; navigate: (href: string) => void } | null>(null);
+const NavigationContext = createContext<{ path: string; pendingPath: string | null; navigate: (href: string, source?: HTMLElement) => void } | null>(null);
 
 export function useAppNavigation() {
   const context = useContext(NavigationContext);
@@ -38,13 +39,15 @@ export function AppNavigation({ children, dock }: { children: ReactNode; dock: R
   const [initialPath] = useState(routePath);
   const [path, setPath] = useState(initialPath);
   const [pages, setPages] = useState<Record<string, ReactNode>>({ [initialPath]: children });
-  const [pending, setPending] = useState(false);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const [transition, setTransition] = useState<{ key: string; kind: "page" | "report" | "return" } | null>(null);
   const [error, setError] = useState("");
   const cache = useRef(new Map<string, ReactNode>([[initialPath, children]]));
   const inflight = useRef(new Map<string, Promise<ReactNode>>());
   const active = useRef(initialPath);
   const sequence = useRef(0);
   const scroll = useRef(new Map<string, number>());
+  const visited = useRef(new Set([initialPath]));
 
   const fetchPage = useCallback((key: string) => {
     if (cache.current.has(key)) return Promise.resolve(cache.current.get(key));
@@ -56,29 +59,42 @@ export function AppNavigation({ children, dock }: { children: ReactNode; dock: R
     return task;
   }, []);
 
-  const navigate = useCallback(async (href: string) => {
+  const navigate = useCallback(async (href: string, source?: HTMLElement) => {
     const next = normalize(href, active.current);
     if (!next) return;
     const key = next.split("#")[0];
     const id = ++sequence.current;
     setError("");
-    setPending(!cache.current.has(key));
+    setPendingPath(null);
+    const timer = window.setTimeout(() => {
+      if (id !== sequence.current) return;
+      setPendingPath(key);
+      source?.setAttribute("data-navigation-loading", "true");
+      source?.setAttribute("aria-busy", "true");
+    }, 150);
     try {
       const node = await fetchPage(key);
       if (id !== sequence.current) return;
-      scroll.current.set(active.current.split("#")[0], window.scrollY);
+      const previousKey = active.current.split("#")[0];
+      const returning = visited.current.has(key);
+      visited.current.add(key);
+      scroll.current.set(previousKey, window.scrollY);
+      if (key !== previousKey) setTransition({ key, kind: returning ? "return" : key.includes("/sec/") ? "report" : "page" });
       setPages((current) => ({ ...current, [key]: node }));
       active.current = next;
       setPath(next);
       requestAnimationFrame(() => {
         const hash = next.split("#")[1];
-        if (hash) document.querySelector(`[data-app-page="${CSS.escape(key)}"] #${CSS.escape(decodeURIComponent(hash))}`)?.scrollIntoView({ behavior: "smooth" });
+        if (hash) document.querySelector(`[data-app-page="${CSS.escape(key)}"] #${CSS.escape(decodeURIComponent(hash))}`)?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
         else window.scrollTo({ top: scroll.current.get(key) ?? 0, behavior: "instant" });
       });
     } catch {
       if (id === sequence.current) setError("页面暂时无法加载，请再次点击重试。");
     } finally {
-      if (id === sequence.current) setPending(false);
+      window.clearTimeout(timer);
+      source?.removeAttribute("data-navigation-loading");
+      source?.removeAttribute("aria-busy");
+      if (id === sequence.current) setPendingPath(null);
     }
   }, [fetchPage]);
 
@@ -93,7 +109,7 @@ export function AppNavigation({ children, dock }: { children: ReactNode; dock: R
       if (!normalize(href, active.current)) return;
       event.preventDefault();
       event.stopPropagation();
-      void navigate(href);
+      void navigate(href, anchor);
     }
     function warm(event: Event) {
       const anchor = (event.target as Element).closest?.("a[href]") as HTMLAnchorElement | null;
@@ -107,9 +123,16 @@ export function AppNavigation({ children, dock }: { children: ReactNode; dock: R
     return () => { document.removeEventListener("click", link, true); document.removeEventListener("pointerover", warm); document.removeEventListener("focusin", warm); };
   }, [initialPath, navigate, fetchPage]);
 
-  return <NavigationContext.Provider value={{ path, navigate }}>
+  useLayoutEffect(() => {
+    if (!transition) return;
+    const element = document.querySelector<HTMLElement>(`[data-app-page="${CSS.escape(transition.key)}"]`);
+    const animation = revealContent(element, transition.kind);
+    return () => animation?.cancel();
+  }, [transition]);
+
+  return <NavigationContext.Provider value={{ path, navigate, pendingPath }}>
     {dock}
-    {pending && <div role="status" className="fixed right-4 top-4 z-50 rounded-md bg-background px-3 py-2 text-sm shadow-sm">正在加载…</div>}
+    <span role="status" className="sr-only">{pendingPath ? "正在加载页面" : ""}</span>
     {error && <div role="alert" className="fixed right-4 top-4 z-50 rounded-md bg-background px-3 py-2 text-sm text-destructive shadow-sm">{error}</div>}
     {Object.entries(pages).map(([key, node]) => <div key={key} hidden={key !== path.split("#")[0]} inert={key !== path.split("#")[0]} data-app-page={key}><PageBoundary>{node}</PageBoundary></div>)}
   </NavigationContext.Provider>;

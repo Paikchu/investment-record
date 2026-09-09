@@ -1,18 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, ArrowRight } from "lucide-react";
+import { Search, ArrowRight, LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { InputGroup, InputGroupInput, InputGroupAddon, InputGroupButton } from "@/components/ui/input-group";
+import { useDelayedBusy } from "@/app/use-delayed-busy";
 import { useAppNavigation } from "@/app/app-navigation";
 
 import type { SecurityType } from "@/lib/earning-report/web/symbol-directory.ts";
 
 type SearchResult = { symbol: string; name: string; exchange: string; type: SecurityType };
 
-export function SiteHeader({ initialQuery = "", compact = true, onSelect }: { initialQuery?: string; compact?: boolean; onSelect?: (ticker: string) => void }) {
-  const { navigate } = useAppNavigation();
+export function SiteHeader({ initialQuery = "", compact = true, loading = false, onSelect }: { initialQuery?: string; compact?: boolean; loading?: boolean; onSelect?: (ticker: string) => void }) {
+  const { navigate, pendingPath } = useAppNavigation();
+  const delayedBusy = useDelayedBusy(loading);
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searchActive, setSearchActive] = useState(false);
@@ -45,6 +47,8 @@ export function SiteHeader({ initialQuery = "", compact = true, onSelect }: { in
     }
   }
 
+  const busy = delayedBusy || Boolean(pendingPath?.startsWith("/positions/"));
+
   return (
     <header className="analysis-toolbar">
       {!compact && <span className="analysis-toolbar-title">财报 AI 分析</span>}
@@ -63,7 +67,7 @@ export function SiteHeader({ initialQuery = "", compact = true, onSelect }: { in
           placeholder="搜索股票代码或公司名称"
         />
         <InputGroupAddon><Search aria-hidden="true" /></InputGroupAddon>
-        <InputGroupAddon align="inline-end"><InputGroupButton type="submit" aria-label="搜索公司"><ArrowRight /></InputGroupButton></InputGroupAddon>
+        <InputGroupAddon align="inline-end"><InputGroupButton type="submit" aria-label="搜索公司">{busy ? <LoaderCircle className="content-spinner" aria-label="正在加载个股" /> : <ArrowRight />}</InputGroupButton></InputGroupAddon>
         </InputGroup></Field></FieldGroup>
         {searchActive && results.length > 0 && (
           <div className="analysis-search-results" aria-label="搜索结果">

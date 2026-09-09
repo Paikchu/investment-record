@@ -1,6 +1,9 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { revealContent } from "@/app/content-motion";
+import { useDelayedBusy } from "@/app/use-delayed-busy";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SiteHeader } from "./site-header";
 import { StockDetail } from "@/app/positions/[ticker]/StockDetail";
 import type { HoldingPlanRecord } from "@/lib/holding-plan-store";
@@ -16,6 +19,14 @@ export function AnalysisWorkspace({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const request = useRef(0);
+
+  const content = useRef<HTMLDivElement>(null);
+  const showSkeleton = useDelayedBusy(loading) && !stock;
+  useLayoutEffect(() => {
+    if (!stock) return;
+    const animation = revealContent(content.current, "stock");
+    return () => animation?.cancel();
+  }, [stock]);
 
   async function select(ticker: string) {
     const id = ++request.current;
@@ -35,12 +46,16 @@ export function AnalysisWorkspace({ children }: { children: ReactNode }) {
     }
   }
 
-  return <div className="sec-app-shell">
-    <SiteHeader onSelect={select} />
-    {loading && <p role="status" className="py-3 text-sm text-muted-foreground">正在加载个股详情…</p>}
+  return <div className="sec-app-shell analysis-workspace">
+    <SiteHeader onSelect={select} loading={loading} />
+    <span role="status" className="sr-only">{loading ? "正在加载个股详情" : ""}</span>
     {error && <p role="alert" className="py-3 text-sm text-destructive">{error}</p>}
-    <div aria-busy={loading}>
-      {stock ? <StockDetail key={stock.ticker} {...stock} embedded /> : children}
+    <div ref={content} aria-busy={loading}>
+      {stock ? <StockDetail key={stock.ticker} {...stock} embedded /> : showSkeleton ? <div className="stock-loading-placeholder" aria-label="正在加载个股详情">
+        <div className="flex items-center gap-4"><Skeleton className="size-12 rounded-lg" /><div className="grid gap-2"><Skeleton className="h-7 w-24" /><Skeleton className="h-4 w-48" /></div></div>
+        <Skeleton className="mt-8 h-10 w-full" /><Skeleton className="mt-6 h-7 w-3/4" />
+        <Skeleton className="mt-4 h-4 w-full" /><Skeleton className="mt-3 h-4 w-5/6" />
+      </div> : children}
     </div>
   </div>;
 }
