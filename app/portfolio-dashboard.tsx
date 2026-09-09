@@ -2,7 +2,6 @@
 
 import { emptyCalendar, withinReminderWindow, type CalendarEvent, type CalendarState } from "@/lib/earnings-live";
 import { useLanguage } from "@/app/language-provider";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useMemo, useState } from "react";
 import { buildEarningsReminder, type EarningsEvent } from "@/lib/earnings-calendar";
@@ -47,7 +46,6 @@ export function PortfolioDashboard({
 }) {
   const { t } = useLanguage();
   const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
-  const [analysisExpanded, setAnalysisExpanded] = useState(false);
   const [earningsAsOf, setEarningsAsOf] = useState(() => new Date().toISOString());
   const [calendar, setCalendar] = useState(() => (earningsCalendar ?? {...emptyCalendar(), events: initialEarningsEvents as CalendarEvent[]}));
   const earningsEvents = calendar.events;
@@ -118,25 +116,6 @@ export function PortfolioDashboard({
       </div>
 
       <div className="lower-grid portfolio-workspace">
-        <aside className="portfolio-analysis-stack" aria-label={t("仓位分析")} data-expanded={analysisExpanded}>
-          <Button
-            aria-controls="allocation-panel heatmap-section"
-            aria-expanded={analysisExpanded}
-            className="portfolio-analysis-toggle"
-            onClick={() => setAnalysisExpanded((current) => !current)}
-            type="button"
-            variant="ghost"
-          >
-            <span><strong>{t("仓位分析")}</strong><small>{t("仓位构成与热力图")}</small></span>
-            <span>{analysisExpanded ? t("收起") : t("展开")}<svg aria-hidden="true" viewBox="0 0 20 20"><path d="m5 7.5 5 5 5-5" /></svg></span>
-          </Button>
-          <section className="allocation-panel" id="allocation-panel" aria-labelledby="allocation-title">
-            <h2 id="allocation-title">{t("仓位构成")}</h2>
-            <div className="section-divider" aria-hidden="true" />
-            <AllocationPanel groups={positionGroups} activeSymbol={activeSymbol} onActiveSymbolChange={setActiveSymbol} />
-          </section>
-          <PortfolioHeatmap quotes={quoteState.quotes} holdings={heatmapHoldings} activeSymbol={activeSymbol} onActiveSymbolChange={setActiveSymbol} />
-        </aside>
         <section className="ledger-panel ledger-page" aria-labelledby="ledger-title">
           <Tabs defaultValue="current" className="ledger-tabs gap-0">
             <div className="ledger-heading">
@@ -146,6 +125,7 @@ export function PortfolioDashboard({
                   <TabsTrigger value="current">{t("当前持仓 ")}<small>{positionGroups.length}</small></TabsTrigger>
                   <TabsTrigger value="historical">{t("历史持仓 ")}<small>{historicalPositionGroups.length}</small></TabsTrigger>
                   <TabsTrigger value="plans">{t("持仓计划")}</TabsTrigger>
+                  <TabsTrigger value="allocation">{t("仓位构成")}</TabsTrigger>
                 </TabsList>
               </div>
             </div>
@@ -166,6 +146,14 @@ export function PortfolioDashboard({
             </TabsContent>
             <TabsContent value="plans" forceMount className="ledger-content">
               <HoldingPlansPanel />
+            </TabsContent>
+            <TabsContent value="allocation" forceMount className="ledger-content">
+              <div className="portfolio-analysis-stack">
+                <section className="allocation-panel" id="allocation-panel" aria-label={t("仓位构成")}>
+                  <AllocationPanel groups={positionGroups} activeSymbol={activeSymbol} onActiveSymbolChange={setActiveSymbol} />
+                </section>
+                <PortfolioHeatmap quotes={quoteState.quotes} holdings={heatmapHoldings} activeSymbol={activeSymbol} onActiveSymbolChange={setActiveSymbol} />
+              </div>
             </TabsContent>
           </Tabs>
         </section>

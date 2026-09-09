@@ -406,15 +406,22 @@ h2:not([data-slot]) {
 .lower-grid {
   padding: 0 0 56px;
   display: grid;
-  grid-template-columns: minmax(240px, 28fr) minmax(0, 72fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: clamp(32px, 3.5vw, 54px);
   border-top: 1px solid var(--ink);
 }
 
-.portfolio-analysis-stack { min-width: 0; display: flex; flex-direction: column; }
+.portfolio-analysis-stack {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(300px, 2fr) minmax(0, 3fr);
+  align-items: start;
+  gap: clamp(28px, 3vw, 48px);
+}
+.portfolio-analysis-stack .allocation-comparison { grid-template-columns: minmax(0, 1fr); }
 .portfolio-workspace { align-items: start; }
 
-.portfolio-analysis-toggle { display: none; }
+.portfolio-analysis-stack > .allocation-panel { padding-top: 0; }
 
 .allocation-panel,
 .ledger-panel {
@@ -428,11 +435,14 @@ h2:not([data-slot]) {
 .ledger-heading h2 { font-size: 22px; }
 
 .portfolio-analysis-stack > .heatmap-section {
-  margin-top: 16px;
+  min-width: 0;
+  margin-top: 0;
   padding-top: 0;
   display: flex;
   flex-direction: column;
 }
+
+.portfolio-analysis-stack > .heatmap-section > [data-slot="separator"] { display: none; }
 
 .portfolio-analysis-stack > .heatmap-section .heatmap-heading {
   min-height: 34px;
@@ -1789,34 +1799,7 @@ td { font-size: 14px; }
 
 @media (max-width: 1024px) {
   .lower-grid { grid-template-columns: 1fr; gap: 18px; }
-  .portfolio-analysis-toggle {
-    width: 100%;
-    min-height: 52px;
-    padding: 8px 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-radius: 0;
-    border-bottom: 1px solid var(--paper-deep);
-  }
-  .portfolio-analysis-toggle > span { display: flex; align-items: center; gap: 10px; }
-  .portfolio-analysis-toggle > span:first-child { min-width: 0; text-align: left; }
-  .portfolio-analysis-toggle strong { color: var(--ink); font: 600 18px/1.1 var(--serif); }
-  .portfolio-analysis-toggle small { color: var(--ink-muted); font-size: 12px; font-weight: 500; }
-  .portfolio-analysis-toggle > span:last-child { color: var(--ink-soft); font-size: 12px; }
-  .portfolio-analysis-toggle svg {
-    width: 18px;
-    height: 18px;
-    fill: none;
-    stroke: currentColor;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    stroke-width: 1.5;
-    transition: transform .18s ease;
-  }
-  .portfolio-analysis-stack[data-expanded="true"] .portfolio-analysis-toggle svg { transform: rotate(180deg); }
-  .portfolio-analysis-stack[data-expanded="false"] > .allocation-panel,
-  .portfolio-analysis-stack[data-expanded="false"] > .heatmap-section { display: none; }
+  .portfolio-analysis-stack { grid-template-columns: minmax(0, 1fr); }
   .allocation-wrap { max-width: 520px; }
   .legend-row { min-height: 40px; }
   .heatmap-plot { height: 420px; }
@@ -1867,7 +1850,7 @@ td { font-size: 14px; }
   .review-driver-list span,
   .review-driver-list small { grid-column: 1; }
   .ledger-heading { align-items: start; flex-wrap: wrap; gap: 12px; }
-  .ledger-heading-actions { width: 100%; justify-content: space-between; gap: 12px; }
+  .ledger-heading-actions { width: 100%; min-width: 0; overflow-x: auto; justify-content: space-between; gap: 12px; }
   .add-plan-button { min-height: 44px; padding: 0 10px; font-size: 12px; }
   .allocation-panel h2,
   .ledger-heading h2 { font-size: 18px; }
