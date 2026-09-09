@@ -42,6 +42,7 @@ export function StockDetail({ ticker, companyName, exchange, position, trades, p
   const main = useRef<HTMLElement>(null);
   const tabBar = useRef<HTMLDivElement>(null);
   const indicator = useRef<HTMLSpanElement>(null);
+  const resetPanelScroll = useRef(false);
   const { path, navigate } = useAppNavigation();
   const [activeTab, setActiveTab] = useState("outlook");
   const [visited, setVisited] = useState(() => new Set(["outlook"]));
@@ -98,13 +99,24 @@ export function StockDetail({ ticker, companyName, exchange, position, trades, p
     // reading far down a longer panel. The tabs root retains its flow position.
     const tabsTop = bar.parentElement!.getBoundingClientRect().top;
     const searchHeight = parseFloat(getComputedStyle(main.current!).getPropertyValue("--stock-search-height")) || 0;
-    if (tabsTop < searchHeight) window.scrollTo({ top: window.scrollY + tabsTop - searchHeight, behavior: "instant" });
+    if (resetPanelScroll.current || tabsTop < searchHeight) {
+      resetPanelScroll.current = false;
+      const target = window.scrollY + tabsTop - searchHeight;
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      // Short panels cannot reach the sticky position; show the company header
+      // completely instead of letting the browser clamp it halfway underneath.
+      window.scrollTo({ top: target <= maxScroll ? target : 0, behavior: "instant" });
+    }
     const observer = new ResizeObserver(update);
     observer.observe(bar);
     return () => observer.disconnect();
   }, [activeTab]);
 
   function selectTab(value: string) {
+    if (value !== activeTab && tabBar.current) {
+      const searchHeight = parseFloat(getComputedStyle(main.current!).getPropertyValue("--stock-search-height")) || 0;
+      resetPanelScroll.current = tabBar.current.parentElement!.getBoundingClientRect().top < searchHeight;
+    }
     setActiveTab(value);
     setVisited((current) => new Set([...current, value]));
     if (!embedded) navigate(`#${value}`);
