@@ -49,3 +49,8 @@ Deploy command `npm run worker:pipeline:deploy`，生产分支 `main`。
 
 Cloudflare 连接向导可能建议把根目录 `wrangler.jsonc` 的 Worker 名改成 Pipeline 名。
 不要应用该建议：根配置属于投资看板，Pipeline 命令明确指定 `workers/pipeline/wrangler.jsonc`。
+
+首次新仓库 Pipeline 构建成功（`d83aecb2-be97-41a5-bead-62fd40e86a05`），
+部署版本 `6acec965-04b3-4f97-b6b9-c6d17f583e39`，`/ready` 的六项检查均通过。
+前端首次部署暴露旧 Cloudflare Vite 插件生成 `legacy_env` 与 Wrangler 4.127.1 的不兼容；
+将插件同步到来源项目的 1.54.2 后，前端重新 build、前端部署 dry-run、投资定时 Worker dry-run 均通过。
