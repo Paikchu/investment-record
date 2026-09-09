@@ -129,6 +129,7 @@ export type SecPipelineOperations = {
   plan(filing: SecFiling, prepared: PreparedFilingReference, brief?: SecAnalysisBrief, execution?: SecModelExecution): Promise<SecNodePlan>;
   analyzeNode(spec: SecNodeSpec, filing: SecFiling, prepared: PreparedFilingReference, brief?: SecAnalysisBrief, round?: number, execution?: SecModelExecution): Promise<SecNodeResult>;
   review?(filing: SecFiling, prepared: PreparedFilingReference, brief: SecAnalysisBrief, plan: SecNodePlan, nodes: SecNodeResult[], round: number, execution?: SecModelExecution): Promise<ManagerReview>;
+  composePresentation?(filing: SecFiling, prepared: PreparedFilingReference, report: SecAnalysisArtifact['report'], nodes: SecNodeResult[], brief: SecAnalysisBrief, execution?: SecModelExecution): Promise<SecAnalysisArtifact['report']>;
   summarizeEvent(filing: SecFiling, prepared: PreparedFilingReference, execution?: SecModelExecution): Promise<SecFilingSummary>;
   summarize(filing: SecFiling, prepared: PreparedFilingReference, context: SecAnalysisContext, plan: SecNodePlan, nodes: SecNodeResult[], brief?: SecAnalysisBrief, review?: ManagerReview, execution?: SecModelExecution): Promise<{ artifact: SecAnalysisArtifact; summary: SecFilingSummary | null }>;
   publish(artifact: SecAnalysisArtifact, summary: SecFilingSummary | null): Promise<void | { memoryJobId?: string }>;
@@ -233,6 +234,10 @@ export async function executeSecAnalysisWorkflow(
         }));
         failed.push(accession);
         continue;
+      }
+      if (!result.artifact.report.presentation && operations.composePresentation) {
+        stage = "presentation";
+        result.artifact.report = await step.do(`presentation:${accession}`, (stepContext) => operations.composePresentation!(filing, prepared, result.artifact.report, loop.nodes, brief, executionFor(stepContext)));
       }
       const summary = result.summary ? {
         ...result.summary,

@@ -12,6 +12,8 @@ import {
   type PreparedSecFilingMeta,
   type SecModelCall,
 } from "./sec/pipeline.ts";
+import { SEC_PRESENTATION_SCHEMA } from "../../../shared/analysis-contract/sec-presentation.ts";
+import { buildSecTrends, composeSecPresentation } from "./sec/presentation.ts";
 import { D1SecRepository } from "./sec/d1.ts";
 import type { SecAnalysisArtifact } from "./sec/types.ts";
 import { cleanSecAccession, cleanSecTicker, type SecFiling, type SecFilingFeed, type SecFilingSummary, type SecNodePlan, type SecNodeResult, type SecNodeSpec } from "./sec/sec.ts";
@@ -53,8 +55,9 @@ export function createSecPipelineOperations(env: SecPipelineEnv, fetcher: typeof
   const modelFor = (execution?: SecModelExecution): SecModelCall => async (stage, system, payload) => {
     // Keep an in-step recovery below the Workflow's five-minute deadline.
     const deadline = Date.now() + 240_000;
+    const requestBudget = REASONING_STAGE.test(stage) ? 240_000 : 180_000;
     const call = (nextStage: string, nextSystem: string, model?: string) =>
-      callWorkerSecModel(env, fetcher, nextStage, nextSystem, payload, model, Math.max(1, Math.min(180_000, deadline - Date.now())));
+      callWorkerSecModel(env, fetcher, nextStage, nextSystem, payload, model, Math.max(1, Math.min(requestBudget, deadline - Date.now())));
     const selectedModel = modelForStage(env, stage, execution?.model);
     try {
       return await call(stage, system, selectedModel);
@@ -149,6 +152,30 @@ export function createSecPipelineOperations(env: SecPipelineEnv, fetcher: typeof
       const result = await summarizePreparedSecFiling(await readMeta(env.SEC_FILINGS, reference), context, modelFor(execution), new Date(), plan, nodes, brief, review);
       const synthesisKey = await putArtifact(env.SEC_FILINGS, reference, "synthesis", result);
       return { ...result, artifact: { ...result.artifact, blocks: [], artifactKeys: collectArtifactKeys(reference, synthesisKey) } };
+    },
+    composePresentation: async (filing, reference, report, nodes, brief, execution) => {
+      const trends = buildSecTrends(brief, filing.filingDate, filing.reportDate);
+      const usableNodes = nodes.filter((node) => node.status === "complete" && (node.narrative || node.findings.length));
+      if (!usableNodes.length) return report;
+      try {
+        const candidate = await modelFor(execution)("presentation", "你是公司业务研究报告的编辑。只为已完成的分析设计阅读结构，不生成事实、正文或数据。严格按 schema 输出一个 JSON 对象，顶层为 density 和 sections。每个已完成节点必须由 narrative/findings/callout 覆盖，chart 紧跟同一节点的正文块。只使用提供的 ID 和可用块类型。", {
+          schema: SEC_PRESENTATION_SCHEMA,
+          nodes: usableNodes.map((node) => ({
+            nodeId: node.id, title: node.title, summary: node.narrative.slice(0, 500),
+            allowedBlocks: [...(node.narrative ? ["narrative", "callout"] : []), ...(node.findings.length ? ["findings"] : []), ...(node.evidence.length ? ["evidence"] : [])],
+          })),
+          availableMetrics: report.keyMetrics.filter((metric) => metric.status === "verified" || metric.status === "derived").map((metric) => metric.metricKey),
+          availableCharts: trends.map((trend) => ({ metricKey: trend.metricKey, unit: trend.unit, periodScope: trend.periodScope })),
+        });
+        await putArtifact(env.SEC_FILINGS, reference, "presentation/candidate", candidate);
+        const presentation = composeSecPresentation(candidate.presentation ?? candidate, usableNodes, report.keyMetrics, trends);
+        if (!presentation) throw new Error("Presentation references or coverage failed validation");
+        await putArtifact(env.SEC_FILINGS, reference, "presentation/resolved", presentation);
+        return { ...report, presentation, dataQuality: { ...report.dataQuality, warnings: report.dataQuality.warnings.filter((warning) => warning !== "模型报告编排未通过校验，已保留完整标准报告。") } };
+      } catch (error) {
+        if (!execution?.finalAttempt) throw error;
+        return { ...report, dataQuality: { ...report.dataQuality, warnings: [...new Set([...report.dataQuality.warnings, "报告编排重试未完成，已保留完整标准报告。"])] } };
+      }
     },
     publish: async (artifact, summary) => {
       const reference = { key: preparedKey(artifact.filing.ticker, artifact.filing.accessionNumber), filing: artifact.filing };

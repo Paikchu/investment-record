@@ -459,3 +459,17 @@ test("retries an empty manager plan inside the durable step before publishing", 
   assert.deepEqual(result.failed, []);
   assert.deepEqual(result.analyzed, [filing.accessionNumber]);
 });
+
+test('repairs missing presentation in its own durable step before publication', async () => {
+  const steps: string[] = [];
+  const ops = operations({
+    async composePresentation(_filing, _prepared, report, nodes) {
+      return { ...report, presentation: { version: 'sec-presentation.v1', density: 'comfortable', sections: nodes.map((node, i) => ({ id: `section-${i}`, title: node.title, layout: 'flow', blocks: [{ id: node.id, type: 'prose', text: node.narrative }] })) } };
+    },
+    async publish(artifact) { assert.equal(artifact.report.presentation?.sections.length, 2); },
+  });
+  const result = await executeSecAnalysisWorkflow({ ticker: 'TESTCO', requestedBy: 'manual' }, 'presentation-retry', stepRecorder(steps), ops);
+  assert.equal(result.failed.length, 0);
+  assert.ok(steps.indexOf(`synthesis:${filing.accessionNumber}`) < steps.indexOf(`presentation:${filing.accessionNumber}`));
+  assert.ok(steps.indexOf(`presentation:${filing.accessionNumber}`) < steps.indexOf(`publish:${filing.accessionNumber}`));
+});

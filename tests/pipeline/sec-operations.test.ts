@@ -573,3 +573,24 @@ test("recovers once on the primary model when the fallback is rate limited", asy
     }
   }
 });
+
+test('rebuilds presentation from allowed references and preserves facts on exhausted invalid output', async () => {
+  const stored = new Map<string, string>();
+  const env = { ...modelEnv, SEC_FILINGS: { async get() { return null; }, async put(key: string, value: string) { stored.set(key, value); return {}; } } } as unknown as SecPipelineEnv;
+  const report = { ticker: 'MSFT', periodId: 'annual', reportVersion: 'v3', headline: '增长', keyMetrics: [], changes: { qoq: [], yoy: [], guidance: [], risks: [] }, dataQuality: { coverage: 1, verificationStatus: 'verified', warnings: ['模型报告编排未通过校验，已保留完整标准报告。'] } } as SecAnalysisArtifact['report'];
+  const nodes = [{ id: 'growth', title: '增长', narrative: '已核验的业务分析', findings: [], evidence: [], status: 'complete' as const }];
+  const brief = { periodScope: 'annual', history: { series: [] } } as import('../../workers/pipeline/src/sec/analysis.ts').SecAnalysisBrief;
+  let valid = true;
+  const ops = createSecPipelineOperations(env, async () => Response.json({ choices: [{ message: { content: JSON.stringify({ sections: [{ title: '业务增长', blocks: [{ type: 'narrative', nodeId: valid ? 'growth' : 'invented' }] }] }) } }] }));
+  const result = await ops.composePresentation!(filing, { key: 'filings/MSFT/annual', filing }, report, nodes, brief, modelExecutionForAttempt(1));
+  assert.equal(result.presentation?.sections[0].blocks[0].type, 'prose');
+  assert.equal(result.dataQuality.warnings.length, 0);
+  assert.deepEqual(result.keyMetrics, report.keyMetrics);
+  assert.ok([...stored.keys()].some((key) => key.endsWith('/presentation/candidate.json')));
+  valid = false;
+  await assert.rejects(ops.composePresentation!(filing, { key: 'filings/MSFT/annual', filing }, report, nodes, brief, modelExecutionForAttempt(2)), /validation/);
+  const fallback = await ops.composePresentation!(filing, { key: 'filings/MSFT/annual', filing }, report, nodes, brief, modelExecutionForAttempt(4));
+  assert.equal(fallback.presentation, undefined);
+  assert.deepEqual(fallback.keyMetrics, report.keyMetrics);
+  assert.ok(fallback.dataQuality.warnings.some((warning) => warning.includes('重试未完成')));
+});

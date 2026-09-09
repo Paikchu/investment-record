@@ -324,7 +324,7 @@ export async function reviewPreparedSecAnalysis(
   model: SecModelCall,
 ): Promise<ManagerReview> {
   const value = await model(`manager-review:${round}`, managerReviewSystemPrompt(), {
-    brief,
+    brief: briefForAnalysis(brief),
     plan,
     round,
     nodes: nodes.map(({ id, title, status, findings, narrative, error }) => ({ id, title, status, findings, narrative, error })),

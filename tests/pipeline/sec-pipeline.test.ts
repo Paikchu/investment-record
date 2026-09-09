@@ -8,6 +8,7 @@ import {
   discoverSecTicker,
   planPreparedSecFiling,
   prepareSecFiling,
+  reviewPreparedSecAnalysis,
   selectWorkflowFilings,
   summarizePreparedSecEvent,
   summarizePreparedSecFiling,
@@ -599,7 +600,12 @@ test("keeps Company Memory out of every analysis payload while the brief still r
     brief,
   );
 
-  assert.equal(payloads.length, 3);
+  await reviewPreparedSecAnalysis(prepared, brief, normalizePlan(prepared.outline[0].id), [], 0, async (_stage, _system, payload) => {
+    payloads.push(JSON.stringify(payload));
+    return { status: "complete", questions: [{ questionId: "revenue-growth", status: "answered", explanation: "Current filing reviewed" }], repairTasks: [], unresolvedQuestions: [], coverageScore: 1, stopReason: "complete" };
+  });
+
+  assert.equal(payloads.length, 4);
   for (const payload of payloads) {
     assert.doesNotMatch(payload, /MEMORY-STATEMENT-MARKER|MEMORY-SUMMARY-MARKER|memory:margin/);
     assert.doesNotMatch(payload, /memoryItems|companyMemorySummary/);
