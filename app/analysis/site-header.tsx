@@ -11,7 +11,7 @@ import type { SecurityType } from "@/lib/earning-report/web/symbol-directory.ts"
 
 type SearchResult = { symbol: string; name: string; exchange: string; type: SecurityType };
 
-export function SiteHeader({ initialQuery = "", compact = false }: { initialQuery?: string; compact?: boolean }) {
+export function SiteHeader({ initialQuery = "", compact = true }: { initialQuery?: string; compact?: boolean }) {
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<SearchResult[]>([]);
