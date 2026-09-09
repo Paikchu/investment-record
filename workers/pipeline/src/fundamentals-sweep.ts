@@ -22,6 +22,7 @@ import { requireDb, trackedTickersFor, type SecCronEnv } from "./core.ts";
  * untouched.
  */
 export const FUNDAMENTALS_SWEEP_MAX_PER_RUN = 2;
+export const FUNDAMENTALS_RETRY_AFTER_MS = 30 * 60_000;
 
 export type FundamentalsSweepResult = {
   candidates: number;
@@ -48,18 +49,32 @@ export async function runFundamentalsStalenessSweep(
   const now = options.now ?? Date.now();
   const staleAfterMs = options.staleAfterMs ?? FUNDAMENTALS_STALE_AFTER_MS;
   const maxPerRun = Math.max(1, options.maxPerRun ?? FUNDAMENTALS_SWEEP_MAX_PER_RUN);
-  const freshness = await new D1FundamentalsRepository(database).listFundamentalsFreshness(tickers);
+  const repository = new D1FundamentalsRepository(database);
+  const [freshness, attempts] = await Promise.all([
+    repository.listFundamentalsFreshness(tickers),
+    repository.listFundamentalsAttempts(tickers),
+  ]);
+  const attemptByTicker = new Map(attempts.map(entry => [entry.ticker, entry]));
 
   const stale = freshness
-    .filter((entry) => isStale(entry.fetchedAt, now, staleAfterMs))
-    // Oldest first, and never-fetched before anything else, so the sweep works down the backlog
-    // deterministically instead of starving whichever ticker sorts last.
-    .sort((left, right) => (left.fetchedAt ?? "").localeCompare(right.fetchedAt ?? ""));
+    .filter((entry) => isStale(entry.fetchedAt, now, staleAfterMs));
+  const eligible = stale.filter(entry => {
+    const attempt = attemptByTicker.get(entry.ticker);
+    return !attempt || (!(Date.parse(attempt.leaseUntil ?? "") > now)
+      && !(now - Date.parse(attempt.lastAttemptAt) < FUNDAMENTALS_RETRY_AFTER_MS));
+  }).sort((left, right) => {
+    // Failed attempts also advance priority. A persistently broken ticker cannot
+    // monopolize the first slots after its cooldown expires.
+    const leftAttempt = attemptByTicker.get(left.ticker)?.lastAttemptAt ?? "";
+    const rightAttempt = attemptByTicker.get(right.ticker)?.lastAttemptAt ?? "";
+    return leftAttempt.localeCompare(rightAttempt)
+      || (left.fetchedAt ?? "").localeCompare(right.fetchedAt ?? "");
+  });
 
   const synced: string[] = [];
   const failed: string[] = [];
   const sync = options.sync ?? ((ticker: string) => syncFundamentals(database, ticker));
-  for (const entry of stale.slice(0, maxPerRun)) {
+  for (const entry of eligible.slice(0, maxPerRun)) {
     try {
       await sync(entry.ticker);
       synced.push(entry.ticker);

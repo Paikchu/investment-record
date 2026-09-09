@@ -18,6 +18,8 @@ export interface PortfolioPosition {
   contractDescription: string;
   assetClass: AssetClass;
   quantity: number;
+  multiplier?: number;
+  currency?: string;
   averagePrice: number;
   marketPrice: number;
   marketValue: number;
@@ -80,6 +82,8 @@ export interface IbkrPosition {
   contract_description?: string;
   contract_id?: number;
   currency?: string;
+  multiplier?: number;
+  cost_basis?: number;
   market_price?: number;
   market_value?: number;
   position?: number;
@@ -129,7 +133,8 @@ export function normalizeIbkrPosition(position: IbkrPosition): PortfolioPosition
   const symbol = canonicalUnderlying(position.symbol || description.split(/\s+/)[0]);
   const quantity = position.position ?? 0;
   const averagePrice = position.average_price ?? 0;
-  const multiplier = assetClass === "OPT" ? 100 : 1;
+  const multiplier = position.multiplier ?? (assetClass === "OPT" ? 100 : 1);
+  if (!Number.isFinite(multiplier) || multiplier <= 0) throw new Error("Position multiplier must be positive");
 
   return {
     positionKey: `${assetClass}:${position.contract_id ?? description}`,
@@ -140,7 +145,9 @@ export function normalizeIbkrPosition(position: IbkrPosition): PortfolioPosition
     averagePrice,
     marketPrice: position.market_price ?? 0,
     marketValue: position.market_value ?? 0,
-    costBasis: averagePrice * quantity * multiplier,
+    multiplier,
+    currency: position.currency ?? "USD",
+    costBasis: position.cost_basis ?? averagePrice * quantity * multiplier,
     unrealizedPnl: position.unrealized_pnl ?? 0,
   };
 }
@@ -196,8 +203,8 @@ export function buildPortfolioSnapshot(previous: PortfolioSnapshotV1, input: Sna
   if (!Number.isFinite(input.account.cashBalance)) {
     throw new Error("Cash balance must be a finite number");
   }
-  if (previous.positions.length > 0 && input.positions.length === 0) {
-    throw new Error("Positions cannot become empty during an automated sync");
+  if (input.positions.length === 0 && Math.abs(input.account.netLiquidation - input.account.cashBalance) > 0.02) {
+    throw new Error("Empty positions must reconcile cash balance to net liquidation");
   }
   const positionsAreValid = input.positions.every((position) =>
     position.quantity !== 0 && [

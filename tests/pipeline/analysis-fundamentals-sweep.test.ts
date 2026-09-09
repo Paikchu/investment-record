@@ -104,3 +104,34 @@ test("a deployment with no database says so rather than sweeping nothing quietly
     /D1 binding is not configured/,
   );
 });
+
+test("persistent failures cool down and cannot starve the rest of the watchlist across rounds", async () => {
+  const database = await createAnalysisDatabase();
+  try {
+    let now = NOW;
+    let sequence = 0;
+    const attempts: string[] = [];
+    const sync = async (ticker: string) => {
+      attempts.push(ticker);
+      const startedAt = new Date(now).toISOString();
+      // The real sync service records every claimed run, including failed fetches.
+      database.raw.prepare(`INSERT INTO fundamental_fetch_runs
+        (run_id, ticker, status, request_hash, parser_version, catalog_version, started_at, completed_at)
+        VALUES (?, ?, 'failed', 'request', 'parser', 'catalog', ?, ?)`)
+        .run(`failed-${sequence++}`, ticker, startedAt, startedAt);
+      throw new Error("upstream unavailable");
+    };
+    const settings = env(database, "AAPL,AMZN,MSFT,NVDA");
+    await runFundamentalsStalenessSweep(settings, { now, sync });
+    assert.deepEqual(attempts, ["AAPL", "AMZN"]);
+    now += 10 * 60_000;
+    await runFundamentalsStalenessSweep(settings, { now, sync });
+    assert.deepEqual(attempts, ["AAPL", "AMZN", "MSFT", "NVDA"]);
+    now += 10 * 60_000;
+    await runFundamentalsStalenessSweep(settings, { now, sync });
+    assert.equal(attempts.length, 4, "all recent failures are cooling down");
+    now += 10 * 60_000;
+    await runFundamentalsStalenessSweep(settings, { now, sync });
+    assert.deepEqual(attempts.slice(4), ["AAPL", "AMZN"], "failures become eligible again after cooldown");
+  } finally { database.close(); }
+});

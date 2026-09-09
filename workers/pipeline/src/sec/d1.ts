@@ -1,3 +1,10 @@
+import { SecAnalysisJobRepository } from "./d1-jobs.ts";
+import { SecMemoryRepository } from "./d1-memory.ts";
+import { parseJson, hashJson, type D1Like } from "./d1-support.ts";
+export { SEC_ANALYSIS_JOB_LEASE_MS } from "./d1-jobs.ts";
+export type { SecAnalysisJobUpdate, SecAnalysisJobStatus } from "./d1-jobs.ts";
+export type { SecMemoryJobClaim, SecMemoryExtractionPayload, SecMemoryCommitResult } from "./d1-memory.ts";
+
 import type { SecFiling, SecFilingSummary, SecFilingWithSummary } from "./sec.ts";
 import {
   buildPeriodIdentity,
@@ -8,22 +15,9 @@ import {
   type PublishedSecReport,
   type SecHistorySnapshot,
 } from "./analysis.ts";
-import { buildCompanyMemorySummary, consolidateMemoryCandidates, type MemoryCandidateV2 } from "./memory.ts";
+import { buildCompanyMemorySummary } from "./memory.ts";
 import type { SecAnalysisArtifact, SecAnalysisContext, SecCacheRecord, SecRepository } from "./types.ts";
 import { decodePageCursor, encodePageCursor } from "./config.ts";
-
-type D1ResultStatement = {
-  first<T>(): Promise<T | null>;
-  all<T>(): Promise<{ results: T[] }>;
-  run(): Promise<unknown>;
-};
-
-type D1Like = {
-  prepare(sql: string): {
-    bind(...values: unknown[]): D1ResultStatement;
-  };
-  batch?(statements: D1ResultStatement[]): Promise<unknown[]>;
-};
 
 export type PublicFilingPage = {
   filings: SecFilingWithSummary[];
@@ -43,74 +37,15 @@ type PublicFilingRow = {
   companyName?: string | null;
 };
 
-export type SecAnalysisJobUpdate = {
-  jobId: string;
-  ticker: string;
-  accessionNumber: string;
-  analysisVersion: string;
-  status: "queued" | "running" | "complete" | "failed";
-  currentStage: string;
-  attempt: number;
-  errorCode?: string;
-  errorDetail?: string;
-  requestedBy: "scheduled" | "manual";
-  workflowInstanceId: string;
-  updatedAt: string;
-  completedAt?: string;
-};
-
-export type SecAnalysisJobStatus = SecAnalysisJobUpdate["status"];
-
-/**
- * How long a job may sit in a non-terminal state before another run is allowed to take it over.
- *
- * A job row is only rewritten when the filing starts and when it reaches a terminal state, so a
- * workflow that dies in between — the model provider rate-limiting a whole batch does exactly this
- * — leaves `running` as the newest row for that filing forever. `shouldAnalyze` only proceeds on a
- * missing or `failed` status, so without a lease that filing is skipped by every later scheduled
- * run and silently stops being re-analysed.
- *
- * Set well above the slowest single-filing analysis observed in production (~50 minutes, a large
- * 10-K whose steps each retried) so a run is never taken over from itself.
- */
-export const SEC_ANALYSIS_JOB_LEASE_MS = 2 * 60 * 60 * 1_000;
-
-export type SecMemoryJobClaim = {
-  jobId: string;
-  ticker: string;
-  filingId: string;
-  periodId: string;
-  sourceR2Key: string;
-  ownerToken: string;
-  leaseUntil: string;
-};
-
-export type SecMemoryExtractionPayload = {
-  candidates: MemoryCandidateV2[];
-};
-
-export type SecMemoryCommitResult = {
-  noOp: boolean;
-  itemCount: number;
-  memoryVersion: number;
-};
-
-/**
- * Job error codes are published; job error details are not. A stored value that does not look like
- * a machine code is reduced to a generic one rather than echoed to a reader.
- */
-function safeJobErrorCode(status: SecAnalysisJobStatus | null, errorCode: string | null): string | null {
-  if (status !== "failed") return null;
-  const code = (errorCode ?? "").trim();
-  if (!code) return null;
-  return /^[A-Za-z0-9_.:-]{1,64}$/.test(code) ? code : "ANALYSIS_FAILED";
-}
-
 export class D1SecRepository implements SecRepository {
   private readonly database: D1Like;
+  private readonly jobs: SecAnalysisJobRepository;
+  private readonly memory: SecMemoryRepository;
 
   constructor(database: D1Like) {
     this.database = database;
+    this.jobs = new SecAnalysisJobRepository(database);
+    this.memory = new SecMemoryRepository(database);
   }
 
   async getCache<T>(key: string): Promise<SecCacheRecord<T> | null> {
@@ -183,86 +118,20 @@ export class D1SecRepository implements SecRepository {
     ).run();
   }
 
-  async upsertAnalysisJob(job: SecAnalysisJobUpdate): Promise<void> {
-    await this.database.prepare(`
-      INSERT INTO sec_analysis_jobs (
-        job_id, ticker, accession_number, analysis_version, status, current_stage,
-        attempt, error_code, error_detail, requested_by, workflow_instance_id,
-        updated_at, completed_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(job_id) DO UPDATE SET
-        status = excluded.status,
-        current_stage = excluded.current_stage,
-        attempt = excluded.attempt,
-        error_code = excluded.error_code,
-        error_detail = excluded.error_detail,
-        requested_by = excluded.requested_by,
-        workflow_instance_id = excluded.workflow_instance_id,
-        updated_at = excluded.updated_at,
-        completed_at = excluded.completed_at
-    `).bind(
-      job.jobId,
-      job.ticker,
-      job.accessionNumber,
-      job.analysisVersion,
-      job.status,
-      job.currentStage,
-      job.attempt,
-      job.errorCode ?? null,
-      job.errorDetail ?? null,
-      job.requestedBy,
-      job.workflowInstanceId,
-      job.updatedAt,
-      job.completedAt ?? null,
-    ).run();
+  upsertAnalysisJob(...args: Parameters<SecAnalysisJobRepository["upsertAnalysisJob"]>) {
+    return this.jobs.upsertAnalysisJob(...args);
   }
 
-  async getAnalysisJobStatus(
-    ticker: string,
-    accessionNumber: string,
-    analysisVersion: string,
-    now = Date.now(),
-  ): Promise<SecAnalysisJobStatus | null> {
-    const row = await this.database.prepare(`
-      SELECT status, updated_at AS updatedAt
-      FROM sec_analysis_jobs
-      WHERE ticker = ? AND accession_number = ? AND analysis_version = ?
-      ORDER BY updated_at DESC
-      LIMIT 1
-    `).bind(ticker, accessionNumber, analysisVersion).first<{ status: SecAnalysisJobStatus; updatedAt: string }>();
-    if (!row) return null;
-    // Reported as failed rather than dropped to null so the caller keeps treating it as a job that
-    // ran and did not finish, which is what an expired lease means.
-    return isExpiredJobLease(row.status, row.updatedAt, now) ? "failed" : row.status;
+  getAnalysisJobStatus(...args: Parameters<SecAnalysisJobRepository["getAnalysisJobStatus"]>) {
+    return this.jobs.getAnalysisJobStatus(...args);
   }
 
-  async getLatestAnalysisJobStatus(ticker: string, accessionNumber: string): Promise<SecAnalysisJobStatus | null> {
-    return (await this.getLatestAnalysisJobSummary(ticker, accessionNumber)).status;
+  getLatestAnalysisJobStatus(...args: Parameters<SecAnalysisJobRepository["getLatestAnalysisJobStatus"]>) {
+    return this.jobs.getLatestAnalysisJobStatus(...args);
   }
 
-  /**
-   * The newest analysis job for a filing, with the two extra columns a reader needs to tell a
-   * failed run from a filing nothing ever ran against. `getLatestAnalysisJobStatus` keeps its
-   * signature and delegates here, so the same single query serves both and paging a filing list
-   * still costs exactly one job lookup per filing.
-   *
-   * `error_detail` is deliberately not selected: it can hold a provider message, and nothing
-   * outside this Worker has any business seeing one.
-   */
-  async getLatestAnalysisJobSummary(ticker: string, accessionNumber: string): Promise<{
-    status: SecAnalysisJobStatus | null;
-    updatedAt: string | null;
-    errorCode: string | null;
-  }> {
-    const row = await this.database.prepare(`
-      SELECT status, updated_at AS updatedAt, error_code AS errorCode
-      FROM sec_analysis_jobs
-      WHERE ticker = ? AND accession_number = ?
-      ORDER BY updated_at DESC
-      LIMIT 1
-    `).bind(ticker, accessionNumber).first<{ status: SecAnalysisJobStatus; updatedAt: string | null; errorCode: string | null }>();
-    if (!row) return { status: null, updatedAt: null, errorCode: null };
-    return { status: row.status, updatedAt: row.updatedAt ?? null, errorCode: safeJobErrorCode(row.status, row.errorCode) };
+  getLatestAnalysisJobSummary(...args: Parameters<SecAnalysisJobRepository["getLatestAnalysisJobSummary"]>) {
+    return this.jobs.getLatestAnalysisJobSummary(...args);
   }
 
   /**
@@ -637,175 +506,12 @@ export class D1SecRepository implements SecRepository {
     return memoryJobId;
   }
 
-  async claimMemoryJob(jobId: string | null, ownerToken: string, now: Date, leaseMilliseconds = 5 * 60_000, allowedTickers?: string[]): Promise<SecMemoryJobClaim | null> {
-    if (!this.database.batch) throw new Error("D1 batch is required for memory lease claims");
-    if (allowedTickers && !allowedTickers.length) return null;
-    const tickerClause = allowedTickers ? ` AND ticker IN (${allowedTickers.map(() => "?").join(",")})` : "";
-    const tickerValues = allowedTickers ?? [];
-    const candidate = jobId
-      ? await this.database.prepare(`
-        SELECT job_id AS jobId, ticker, filing_id AS filingId, period_id AS periodId, source_r2_key AS sourceR2Key, status
-        FROM sec_memory_jobs WHERE job_id = ?${tickerClause}
-      `).bind(jobId, ...tickerValues).first<{ jobId: string; ticker: string; filingId: string; periodId: string; sourceR2Key: string; status: string }>()
-      : await this.database.prepare(`
-        SELECT job_id AS jobId, ticker, filing_id AS filingId, period_id AS periodId, source_r2_key AS sourceR2Key, status
-        FROM sec_memory_jobs
-        WHERE (status = 'pending' OR (status = 'running' AND lease_until < ?))${tickerClause}
-        ORDER BY created_at ASC LIMIT 1
-      `).bind(now.toISOString(), ...tickerValues).first<{ jobId: string; ticker: string; filingId: string; periodId: string; sourceR2Key: string; status: string }>();
-    if (!candidate || candidate.status === "complete") return null;
-    const leaseUntil = new Date(now.getTime() + leaseMilliseconds).toISOString();
-    await this.database.batch([
-      this.database.prepare(`
-        INSERT INTO sec_company_memory_threads (ticker, summary, version, lease_owner, lease_until, updated_at)
-        VALUES (?, '', 0, ?, ?, ?)
-        ON CONFLICT(ticker) DO UPDATE SET lease_owner = excluded.lease_owner, lease_until = excluded.lease_until, updated_at = excluded.updated_at
-        WHERE sec_company_memory_threads.lease_until IS NULL OR sec_company_memory_threads.lease_until < ? OR sec_company_memory_threads.lease_owner = ?
-      `).bind(candidate.ticker, ownerToken, leaseUntil, now.toISOString(), now.toISOString(), ownerToken),
-      this.database.prepare(`
-        UPDATE sec_memory_jobs
-        SET status = 'running', owner_token = ?, lease_until = ?, attempt = attempt + 1, updated_at = ?
-        WHERE job_id = ?
-          AND (status = 'pending' OR lease_until < ? OR owner_token = ?)
-          AND EXISTS (
-            SELECT 1 FROM sec_company_memory_threads
-            WHERE ticker = ? AND lease_owner = ? AND lease_until = ?
-          )
-      `).bind(ownerToken, leaseUntil, now.toISOString(), candidate.jobId, now.toISOString(), ownerToken, candidate.ticker, ownerToken, leaseUntil),
-    ]);
-    const claimed = await this.database.prepare(`
-      SELECT j.job_id AS jobId, j.ticker, j.filing_id AS filingId, j.period_id AS periodId,
-        j.source_r2_key AS sourceR2Key, j.owner_token AS ownerToken, j.lease_until AS leaseUntil
-      FROM sec_memory_jobs j
-      JOIN sec_company_memory_threads t ON t.ticker = j.ticker
-      WHERE j.job_id = ? AND j.owner_token = ? AND t.lease_owner = ?
-    `).bind(candidate.jobId, ownerToken, ownerToken).first<SecMemoryJobClaim>();
-    return claimed ?? null;
+  claimMemoryJob(...args: Parameters<SecMemoryRepository["claimMemoryJob"]>) {
+    return this.memory.claimMemoryJob(...args);
   }
 
-  async commitMemoryJob(claim: SecMemoryJobClaim, extraction: SecMemoryExtractionPayload): Promise<SecMemoryCommitResult> {
-    if (!this.database.batch) throw new Error("D1 batch is required for memory commit");
-    const ownership = await this.database.prepare(`
-      SELECT j.status, j.owner_token AS ownerToken, t.lease_owner AS threadOwner,
-        t.version AS memoryVersion
-      FROM sec_memory_jobs j
-      JOIN sec_company_memory_threads t ON t.ticker = j.ticker
-      WHERE j.job_id = ?
-    `).bind(claim.jobId).first<{
-      status: string;
-      ownerToken: string | null;
-      threadOwner: string | null;
-      memoryVersion: number;
-    }>();
-    if (ownership?.status === "complete") return {
-      noOp: true,
-      itemCount: 0,
-      memoryVersion: ownership.memoryVersion,
-    };
-    if (!ownership || ownership.ownerToken !== claim.ownerToken || ownership.threadOwner !== claim.ownerToken) throw new Error("Memory lease ownership changed");
-    const rows = await this.database.prepare(`
-      SELECT memory_id AS memoryId, ticker, kind, topic_key AS topicKey, statement, status,
-        materiality_score AS materialityScore, confidence, evidence_ids AS evidenceIds,
-        first_seen_period AS firstSeenPeriod, last_confirmed_period AS lastConfirmedPeriod,
-        horizon, next_test AS nextTest, falsifier, due_period AS duePeriod, source_job_ids AS sourceJobIds
-      FROM sec_memory_items WHERE ticker = ?
-    `).bind(claim.ticker).all<{
-      memoryId: string; ticker: string; kind: "fact" | "judgment"; topicKey: string; statement: string; status: CompanyMemoryItem["status"];
-      materialityScore: number; confidence: CompanyMemoryItem["confidence"]; evidenceIds: string; firstSeenPeriod: string; lastConfirmedPeriod: string;
-      horizon: string | null; nextTest: string | null; falsifier: string | null; duePeriod: string | null; sourceJobIds: string;
-    }>();
-    const currentItems: CompanyMemoryItem[] = rows.results.map((row) => ({
-      ...row,
-      evidenceIds: parseJson<string[]>(row.evidenceIds) ?? [],
-      sourceJobIds: parseJson<string[]>(row.sourceJobIds) ?? [],
-      horizon: row.horizon ?? undefined,
-      nextTest: row.nextTest ?? undefined,
-      falsifier: row.falsifier ?? undefined,
-      duePeriod: row.duePeriod ?? undefined,
-    }));
-    const consolidated = consolidateMemoryCandidates({ ticker: claim.ticker, periodId: claim.periodId, items: currentItems }, extraction.candidates, claim.jobId);
-    const now = new Date().toISOString();
-    const ownershipGuard = `
-      SELECT 1
-      FROM sec_memory_jobs j
-      JOIN sec_company_memory_threads t ON t.ticker = j.ticker
-      WHERE j.job_id = ? AND j.status = 'running' AND j.owner_token = ? AND t.lease_owner = ?
-    `;
-    const statements: D1ResultStatement[] = [
-      this.database.prepare(`
-        INSERT INTO sec_memory_extractions (extraction_id, job_id, ticker, period_id, payload, input_hash, schema_version)
-        SELECT ?, ?, ?, ?, ?, ?, 'sec-memory-extraction.v1'
-        WHERE EXISTS (${ownershipGuard})
-        ON CONFLICT(job_id) DO NOTHING
-      `).bind(
-        `extraction:${hashJson(claim.jobId)}`, claim.jobId, claim.ticker, claim.periodId, JSON.stringify(extraction), hashJson(extraction),
-        claim.jobId, claim.ownerToken, claim.ownerToken,
-      ),
-    ];
-    for (const item of consolidated.items) statements.push(this.database.prepare(`
-      INSERT INTO sec_memory_items (
-        memory_id, ticker, module_key, topic_key, memory_type, statement, normalized_value,
-        first_seen_period, last_confirmed_period, expected_resolution_period, status,
-        materiality_score, confidence, evidence_ids, kind, horizon, next_test, falsifier,
-        due_period, source_job_ids, normalized_key, version, updated_at
-      ) SELECT ?, ?, 'cross_module', ?, ?, ?, '{}', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?
-      WHERE EXISTS (${ownershipGuard})
-      ON CONFLICT(memory_id) DO UPDATE SET
-        statement = excluded.statement, last_confirmed_period = excluded.last_confirmed_period,
-        status = excluded.status, materiality_score = excluded.materiality_score,
-        confidence = excluded.confidence, evidence_ids = excluded.evidence_ids,
-        kind = excluded.kind, horizon = excluded.horizon, next_test = excluded.next_test,
-        falsifier = excluded.falsifier, due_period = excluded.due_period,
-        source_job_ids = excluded.source_job_ids, normalized_key = excluded.normalized_key,
-        version = sec_memory_items.version + 1, updated_at = excluded.updated_at
-      WHERE EXISTS (${ownershipGuard})
-    `).bind(
-      item.memoryId, item.ticker, item.topicKey, item.kind, item.statement,
-      item.firstSeenPeriod, item.lastConfirmedPeriod, item.horizon ?? null, item.status,
-      item.materialityScore, item.confidence, JSON.stringify(item.evidenceIds), item.kind,
-      item.horizon ?? null, item.nextTest ?? null, item.falsifier ?? null, item.duePeriod ?? null,
-      JSON.stringify(item.sourceJobIds ?? []), `${item.kind}:${item.topicKey.toLowerCase()}`, now,
-      claim.jobId, claim.ownerToken, claim.ownerToken,
-      claim.jobId, claim.ownerToken, claim.ownerToken,
-    ));
-    for (const event of consolidated.events) statements.push(this.database.prepare(`
-      INSERT OR IGNORE INTO sec_memory_events (
-        event_id, memory_id, ticker, period_id, event_type, current_statement, prior_statement, evidence_ids, job_id
-      ) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?
-      WHERE EXISTS (${ownershipGuard})
-    `).bind(
-      event.eventId, event.memoryId, claim.ticker, claim.periodId, event.eventType, event.currentStatement, event.priorStatement ?? null, JSON.stringify(event.evidenceIds), claim.jobId,
-      claim.jobId, claim.ownerToken, claim.ownerToken,
-    ));
-    const summary = buildCompanyMemorySummary(consolidated.items);
-    statements.push(this.database.prepare(`
-      UPDATE sec_company_memory_threads
-      SET summary = ?, version = version + 1, lease_owner = NULL, lease_until = NULL, updated_at = ?
-      WHERE ticker = ? AND lease_owner = ?
-    `).bind(summary, now, claim.ticker, claim.ownerToken));
-    statements.push(this.database.prepare(`
-      UPDATE sec_memory_jobs
-      SET status = 'complete', completed_at = ?, updated_at = ?, lease_until = NULL, error = NULL
-      WHERE job_id = ? AND owner_token = ?
-        AND EXISTS (SELECT 1 FROM sec_company_memory_threads WHERE ticker = ? AND lease_owner IS NULL)
-    `).bind(now, now, claim.jobId, claim.ownerToken, claim.ticker));
-    await this.database.batch(statements);
-    const completion = await this.database.prepare(`
-      SELECT j.status, j.owner_token AS ownerToken, t.version AS memoryVersion
-      FROM sec_memory_jobs j
-      JOIN sec_company_memory_threads t ON t.ticker = j.ticker
-      WHERE j.job_id = ?
-    `).bind(claim.jobId).first<{
-      status: string;
-      ownerToken: string | null;
-      memoryVersion: number;
-    }>();
-    if (completion?.status !== "complete") throw new Error("Memory lease ownership changed before commit");
-    return {
-      noOp: consolidated.noOp,
-      itemCount: consolidated.items.length,
-      memoryVersion: completion.memoryVersion,
-    };
+  commitMemoryJob(...args: Parameters<SecMemoryRepository["commitMemoryJob"]>) {
+    return this.memory.commitMemoryJob(...args);
   }
 
   private async saveHistoricalObservation(filing: SecFiling, observation: HistoricalObservation): Promise<void> {
@@ -888,35 +594,6 @@ export class D1SecRepository implements SecRepository {
     `).bind(ticker, reportDate, reportDate).first<{ periodId: string }>())?.periodId ?? null;
   }
 
-}
-
-/**
- * A `queued` or `running` row older than the lease belongs to a workflow that never wrote its
- * terminal state. An unparseable timestamp keeps the stored status: a row that cannot be dated
- * must not be handed to a second workflow on a guess.
- */
-function isExpiredJobLease(status: SecAnalysisJobStatus, updatedAt: string, now: number): boolean {
-  if (status !== "queued" && status !== "running") return false;
-  const updated = Date.parse(updatedAt);
-  return Number.isFinite(updated) && now - updated > SEC_ANALYSIS_JOB_LEASE_MS;
-}
-
-function parseJson<T>(value: string): T | null {
-  try {
-    return JSON.parse(value) as T;
-  } catch {
-    return null;
-  }
-}
-
-function hashJson(value: unknown): string {
-  const text = JSON.stringify(value);
-  let hash = 2166136261;
-  for (let index = 0; index < text.length; index += 1) {
-    hash ^= text.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
 function historyFromRows(rows: Array<{

@@ -97,4 +97,4 @@ export type FundamentalTransform =
   | "yoy_change";
 
 export type FundamentalDisplaySign = "as_reported" | "outflow_magnitude";
-export type FundamentalMetricKey = "total_revenue" | "gross_profit" | "operating_income" | "net_income" | "diluted_eps" | "operating_cash_flow" | "capital_expenditure" | "free_cash_flow" | "stock_based_compensation" | "depreciation_and_amortization" | "research_and_development" | "cash_and_cash_equivalents" | "long_term_debt" | "total_assets" | "total_liabilities" | "stockholders_equity" | "inventory" | "accounts_receivable" | "ordinary_shares" | "market_cap" | "enterprise_value" | "pe_ratio" | "forward_pe_ratio" | "peg_ratio" | "price_to_sales" | "price_to_book" | "ev_to_revenue" | "ev_to_ebitda" | "gross_margin" | "operating_margin";
+export type FundamentalMetricKey = keyof typeof import("./fundamental-metric-catalog.ts").FUNDAMENTAL_METRIC_CATALOG;

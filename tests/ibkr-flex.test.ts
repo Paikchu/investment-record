@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { createPortfolioDatabase } from "./helpers/portfolio-database.ts";
+import { normalizeIbkrPosition } from "../lib/portfolio-snapshot.ts";
 
 import { extractCapitalFlows, fetchFlexStatement, normalizeFlexStatement, parseCsv, parseFlexDateTime } from "../lib/ibkr-flex.ts";
 import { publishFlexSnapshot, readPortfolioSnapshot, type PortfolioDatabase } from "../lib/portfolio-store.ts";
@@ -99,7 +101,7 @@ test("publishes a validated Flex snapshot and history in one D1 batch", async ()
       };
       return statement;
     },
-    async batch(statements) { batches.push(statements); return []; },
+    async batch(statements) { batches.push(statements); return [{ meta: { changes: 1 } }]; },
   };
   const raw = normalizeFlexStatement(fixture, {
     generatedAt: "2027-01-01T14:00:00.000Z",
@@ -256,12 +258,12 @@ test("manual portfolio trigger requires POST and a matching secret before fetchi
 
 test("backfills same-date net deposits atomically, then skips an identical report", async () => {
   const raw = normalizeFlexStatement(fixture, { generatedAt: "2027-01-01T14:00:00.000Z", queryPeriod: "DAYS_7", queryId: "1628251" });
-  const initialDb: PortfolioDatabase = { prepare() { return { bind() { return this; }, async first<T>() { return null as T | null; } }; }, async batch() { return []; } };
+  const initialDb: PortfolioDatabase = { prepare() { return { bind() { return this; }, async first<T>() { return null as T | null; } }; }, async batch() { return [{ meta: { changes: 1 } }]; } };
   let stored = (await publishFlexSnapshot(initialDb, raw)).snapshot;
   let writes = 0;
   const database: PortfolioDatabase = {
     prepare() { return { bind() { return this; }, async first<T>() { return { payload: JSON.stringify(stored) } as T; } }; },
-    async batch(statements) { assert.equal(statements.length, 2); writes++; return []; },
+    async batch(statements) { assert.equal(statements.length, 2); writes++; return [{ meta: { changes: 1 } }]; },
   };
   raw.capitalFlows = extractCapitalFlows(fixture);
   const result = await publishFlexSnapshot(database, raw);
@@ -271,4 +273,100 @@ test("backfills same-date net deposits atomically, then skips an identical repor
   stored = result.snapshot;
   assert.equal((await publishFlexSnapshot(database, raw)).status, "unchanged");
   assert.equal(writes, 1);
+});
+
+test("retains actual option multipliers and reported cost through normalization", () => {
+  for (const multiplier of [10, 100, 150]) {
+    const csv = fixture.replace(
+      '"STK","ACME","ACME, INC","123","","1","20261231","10","20","200","15","150","50","SUMMARY"',
+      `"OPT","ACME","ACME CALL","123","ACME","${multiplier}","20261231","1","20","200","15","150","50","SUMMARY"`,
+    );
+    const raw = normalizeFlexStatement(csv, { generatedAt: "2027-01-01T00:00:00Z", queryPeriod: "DAYS_7", queryId: "1" });
+    const position = normalizeIbkrPosition(raw.positions.positions[0]);
+    assert.equal(position.multiplier, multiplier);
+    assert.equal(position.costBasis, 150);
+    assert.equal(position.currency, "USD");
+  }
+});
+
+test("publishes a reconciled cash-only account but rejects missing or inconsistent position data", async () => {
+  const { database, sqlite } = createPortfolioDatabase();
+  try {
+    const options = { generatedAt: "2027-01-01T00:00:00Z", queryPeriod: "DAYS_7" as const, queryId: "1" };
+    await publishFlexSnapshot(database, normalizeFlexStatement(fixture, options));
+    const empty = fixture.split("\n").filter(line => !line.startsWith('"DATA","POST"')).join("\n");
+    assert.throws(() => normalizeFlexStatement(empty, options), /reconcile/);
+    const reconciled = empty.replace('"70000.50"', '"12000.25"');
+    assert.throws(() => normalizeFlexStatement(reconciled.split("\n").filter(line => !line.startsWith('"HEADER","POST"')).join("\n"), options), /missing the positions/);
+    const result = await publishFlexSnapshot(database, normalizeFlexStatement(reconciled, { ...options, generatedAt: "2027-01-01T01:00:00Z" }));
+    assert.equal(result.snapshot.positions.length, 0);
+    assert.equal(result.snapshot.account.netLiquidation, 12000.25);
+    assert.ok(result.snapshot.trades.some(trade => trade.tradeId === "trade-1"));
+    assert.equal((await readPortfolioSnapshot(database)).positions.length, 0);
+  } finally { sqlite.close(); }
+});
+
+test("same-date corrections publish while identical later fetches and older corrections do not", async () => {
+  const { database, sqlite } = createPortfolioDatabase();
+  try {
+    const raw = normalizeFlexStatement(fixture, { generatedAt: "2027-01-01T00:00:00Z", queryPeriod: "DAYS_7", queryId: "1" });
+    raw.capitalFlows = extractCapitalFlows(fixture);
+    await publishFlexSnapshot(database, raw);
+    const correction = structuredClone(raw);
+    correction.generatedAt = "2027-01-01T01:00:00Z";
+    correction.summary.net_liquidation = 71000;
+    correction.trades.trades[0].realized_pnl = 9;
+    assert.equal((await publishFlexSnapshot(database, correction)).status, "published");
+    assert.equal((await publishFlexSnapshot(database, { ...correction, generatedAt: "2027-01-02T01:00:00Z" })).status, "unchanged");
+    assert.equal((await publishFlexSnapshot(database, raw)).status, "unchanged");
+    assert.equal((await readPortfolioSnapshot(database)).account.netLiquidation, 71000);
+    assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM portfolio_history").get()?.n, 1);
+    assert.equal(sqlite.prepare("SELECT net_liquidation AS nav FROM portfolio_history").get()?.nav, "71000");
+  } finally { sqlite.close(); }
+});
+
+test("a concurrent older report cannot overwrite the latest snapshot or its history", async () => {
+  const { database, sqlite } = createPortfolioDatabase();
+  try {
+    const older = normalizeFlexStatement(fixture, { generatedAt: "2027-01-01T00:00:00Z", queryPeriod: "DAYS_7", queryId: "1" });
+    const newer = structuredClone(older);
+    newer.source.reportDate = "2027-01-01";
+    newer.generatedAt = "2027-01-02T00:00:00Z";
+    newer.summary.net_liquidation = 72000;
+    let interleave = true;
+    const racing: PortfolioDatabase = {
+      prepare: database.prepare,
+      async batch(statements) {
+        if (interleave) { interleave = false; await publishFlexSnapshot(database, newer); }
+        return database.batch(statements);
+      },
+    };
+    assert.equal((await publishFlexSnapshot(racing, older)).status, "unchanged");
+    assert.equal((await readPortfolioSnapshot(database)).source?.reportDate, "2027-01-01");
+    assert.deepEqual(sqlite.prepare("SELECT date, net_liquidation FROM portfolio_history").all().map(row => ({ ...row })), [
+      { date: "2027-01-02", net_liquidation: "72000" },
+    ]);
+  } finally { sqlite.close(); }
+});
+
+test("a losing newer writer rereads and retains the concurrent writer's trade history", async () => {
+  const { database, sqlite } = createPortfolioDatabase();
+  try {
+    const older = normalizeFlexStatement(fixture, { generatedAt: "2027-01-01T00:00:00Z", queryPeriod: "DAYS_7", queryId: "1" });
+    const newer = structuredClone(older);
+    newer.generatedAt = "2027-01-01T01:00:00Z";
+    newer.trades.trades[0].trade_id = "trade-newer";
+    let interleave = true;
+    const racing: PortfolioDatabase = {
+      prepare: database.prepare,
+      async batch(statements) {
+        if (interleave) { interleave = false; await publishFlexSnapshot(database, older); }
+        return database.batch(statements);
+      },
+    };
+    assert.equal((await publishFlexSnapshot(racing, newer)).status, "published");
+    const snapshot = await readPortfolioSnapshot(database);
+    assert.ok(snapshot.trades.some(trade => trade.tradeId === "trade-1"));
+    assert.ok(snapshot.trades.some(trade => trade.tradeId === "trade-newer"));
+  } finally { sqlite.close(); }
 });

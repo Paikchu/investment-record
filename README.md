@@ -49,13 +49,14 @@ GitHub 是当前维护与自动部署的主仓库。旧 Sites 的部分兼容数
 
 ```text
 app/                         页面、API 与交互组件
+  portfolio/                 组合概览、分布图与持仓账本组件
   positions/[ticker]/        个股详情、业务前瞻、财务指标和持仓计划
   analysis/                  财报搜索、报告页面和分析组件
   api/analysis/v1/           面向浏览器的分析读取代理
 worker/                      主应用 Cloudflare 入口
 lib/                         投资账本、IBKR、行情与服务端逻辑
   earning-report/            分析前端客户端与展示工具
-shared/analysis-contract/    前端与 Pipeline 共用的分析契约
+shared/analysis-contract/    前端与 Pipeline 共用的分析契约、指标展示元数据
 workers/
   sec-cron/                  IBKR 与财报日历定时 Worker
   pipeline/                  财报分析 Worker、数据库 schema 与 migrations
@@ -177,9 +178,9 @@ npx wrangler d1 migrations apply earning-report-analysis-sec-web --remote --conf
 | `sec-cron` | `15 * * * *` | 每小时第 15 分钟，财报日历刷新 |
 | Pipeline | `*/10 * * * *` | 全天每 10 分钟检查 SEC、Memory、公司分析及基本面 |
 
-Pipeline 的高频计划在源码中标记为临时诊断调度，迁移时原样保留；恢复交易时段计划属于后续独立调整。
+Pipeline 的高频计划在源码中标记为临时诊断调度，迁移时原样保留；恢复交易时段计划属于后续独立调整。基本面刷新每轮最多处理两只股票，复用抓取记录安排优先级；最近 30 分钟内已尝试的股票暂缓重试，让后续股票继续得到处理。
 
-IBKR 同步使用只读 Flex 数据，校验后写入投资账本。同一份报告可返回 `unchanged`；无效数据不会覆盖上一次有效快照。累计净入金必须覆盖首次入金，不能用最近一年的净入金代替累计本金。
+IBKR 同步使用只读 Flex 数据，校验后写入投资账本。相同内容返回 `unchanged`，同日更正可重新发布；并发写入会校验快照版本，冲突后重新读取并合并成交历史。持仓成本保留 Flex 的实际合约乘数和成本金额；空持仓只有在持仓报表章节存在且现金与净值对账通过时才接受。无效数据不会覆盖上一次有效快照。累计净入金必须覆盖首次入金，不能用最近一年的净入金代替累计本金。
 
 财报日历保留来源与更新时间，区分确认日期和估计日期；刷新失败保留已有数据。实现说明见 [财报日历](docs/earnings-calendar-live.md)。
 

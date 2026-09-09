@@ -4,6 +4,13 @@ import test from "node:test";
 
 const projectRoot = new URL("../", import.meta.url);
 
+// Source-level assertions follow the dashboard's component boundary after extraction.
+async function readDashboardSource() {
+  const paths = ["portfolio-dashboard.tsx", "portfolio/overview.tsx", "portfolio/allocation.tsx", "portfolio/ledger.tsx", "portfolio/pnl.tsx"];
+  return (await Promise.all(paths.map(path => readFile(new URL(`../app/${path}`, import.meta.url), "utf8")))).join("\n");
+}
+
+
 async function render(path = "/", options = {}) {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
@@ -44,7 +51,7 @@ test("starts directly with the portfolio without a header or retired sections", 
 test("shows backend net deposits without manual settings", async () => {
   const response = await render();
   const html = await response.text();
-  const dashboard = await readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8");
+  const dashboard = await readDashboardSource();
   assert.match(html, /净入金/);
   assert.doesNotMatch(html, /调整净入金/);
   assert.doesNotMatch(dashboard, /localStorage|InvestmentSettingsDialog|onOpenSettings/);
@@ -101,7 +108,7 @@ test("allows anonymous company browsing and reports unavailable plan storage", a
 test("removes the disposable starter preview", async () => {
   const [page, dashboard, layout, packageJson, viewModel] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
+    readDashboardSource(),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("../lib/portfolio-view-model.ts", import.meta.url), "utf8"),
@@ -166,7 +173,7 @@ test("uses the approved ledger-dominant hierarchy without horizontal scrolling",
 
 test("uses an uncolored generic reminder slot beside the ticker", async () => {
   const [dashboard, css] = await Promise.all([
-    readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
+    readDashboardSource(),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
   const mobileCss = css.match(/@media \(max-width: 620px\) \{([\s\S]*)\}\s*$/)?.[1] ?? "";
@@ -192,7 +199,7 @@ test("uses an uncolored generic reminder slot beside the ticker", async () => {
 test("removes the portfolio history chart while keeping supporting metrics", async () => {
   const [response, dashboard, snapshot] = await Promise.all([
     render(),
-    readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
+    readDashboardSource(),
     readFile(new URL("../data/portfolio-snapshot.json", import.meta.url), "utf8").then(JSON.parse),
   ]);
   const html = await response.text();
@@ -251,7 +258,7 @@ test("renders the stock-only investment theme heatmap", async () => {
 test("renders holding and sector allocation charts together", async () => {
   const [response, dashboard, css] = await Promise.all([
     render(),
-    readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
+    readDashboardSource(),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
   const html = await response.text();
@@ -305,7 +312,7 @@ test("uses an in-plot floating window for holding details", async () => {
 
 test("keeps the heatmap responsive and keyboard reachable", async () => {
   const [dashboard, component, css] = await Promise.all([
-    readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
+    readDashboardSource(),
     readFile(new URL("../app/portfolio-heatmap.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
@@ -336,14 +343,14 @@ test("groups stock and option positions by ticker", async () => {
   }
   assert.match(html, /净市值/);
   assert.match(html, /已实现/);
-  assert.match(await readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"), /年内净盈亏/);
+  assert.match(await readDashboardSource(), /年内净盈亏/);
   assert.doesNotMatch(html, /持仓拆分|>拆分</);
   assert.doesNotMatch(html, /期权覆盖/);
 });
 
 test("uses semantic color tokens, stable holding marks, and a filled plan button", async () => {
   const [dashboard, heatmap, css] = await Promise.all([
-    readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
+    readDashboardSource(),
     readFile(new URL("../app/portfolio-heatmap.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
@@ -365,7 +372,7 @@ test("uses semantic color tokens, stable holding marks, and a filled plan button
 
 test("uses investment theme colors for heatmap headers and holding marks", async () => {
   const [dashboard, heatmap, css] = await Promise.all([
-    readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
+    readDashboardSource(),
     readFile(new URL("../app/portfolio-heatmap.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
@@ -389,7 +396,7 @@ test("keeps small text high-contrast and visibly weighted", async () => {
 
 test("keeps ledger labels and values above the minimum readable sizes", async () => {
   const [dashboard, css] = await Promise.all([
-    readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
+    readDashboardSource(),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
 
@@ -421,7 +428,7 @@ test("renders a single-line shadcn ledger with sorting in every header", async (
 
 test("adds resilient company logos to current and historical ledger rows", async () => {
   const [dashboard, logo, css] = await Promise.all([
-    readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
+    readDashboardSource(),
     readFile(new URL("../app/company-logo.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
@@ -450,7 +457,7 @@ test("automatically resolves logos for newly planned tickers", async () => {
 
 test("switches between current and Flex-derived historical ticker groups", async () => {
   const [dashboard, viewModel, snapshotSource] = await Promise.all([
-    readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
+    readDashboardSource(),
     readFile(new URL("../lib/portfolio-view-model.ts", import.meta.url), "utf8"),
     readFile(new URL("../lib/portfolio-snapshot.ts", import.meta.url), "utf8"),
   ]);
@@ -485,7 +492,7 @@ test("keeps full ticker symbols visible before heatmap metrics", async () => {
 test("renders option-only submenus below every ticker with options", async () => {
   const snapshot = JSON.parse(await readFile(new URL("../data/portfolio-snapshot.json", import.meta.url), "utf8"));
   const [dashboard, css] = await Promise.all([
-    readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
+    readDashboardSource(),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
   const response = await render();
@@ -521,7 +528,7 @@ test("renders option-only submenus below every ticker with options", async () =>
 
 test("uses independent position routes and removes the workspace dialog", async () => {
   const [dashboard, addPlanDialog, detail] = await Promise.all([
-    readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
+    readDashboardSource(),
     readFile(new URL("../app/AddPlanDialog.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/positions/[ticker]/StockDetail.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
@@ -565,7 +572,7 @@ test("retired review bookmarks render the combined portfolio without review cont
 test("renders the holding summary in the portfolio overview without the market pulse", async () => {
   const [response, dashboard] = await Promise.all([
     render(),
-    readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
+    readDashboardSource(),
   ]);
   const html = await response.text();
 
@@ -611,7 +618,7 @@ test("keeps every page inside a responsive device-safe edge", async () => {
 
 test("keeps both allocation charts visible in a responsive grid", async () => {
   const [dashboard, css] = await Promise.all([
-    readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
+    readDashboardSource(),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
 
@@ -625,7 +632,7 @@ test("keeps both allocation charts visible in a responsive grid", async () => {
 
 test("collapses portfolio analysis before the ledger on narrow screens", async () => {
   const [dashboard, heatmap, css] = await Promise.all([
-    readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
+    readDashboardSource(),
     readFile(new URL("../app/portfolio-heatmap.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
@@ -645,7 +652,7 @@ test("collapses portfolio analysis before the ledger on narrow screens", async (
 
 test("fetches homepage and independent detail quotes without modal state", async () => {
   const [dashboard, detail] = await Promise.all([
-    readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
+    readDashboardSource(),
     readFile(new URL("../app/positions/[ticker]/StockDetail.tsx", import.meta.url), "utf8"),
   ]);
 

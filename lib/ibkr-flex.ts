@@ -207,6 +207,8 @@ export function normalizeFlexStatement(
       return {
         asset_class: record.AssetClass,
         average_price: averagePrice,
+        multiplier,
+        ...(Number.isFinite(costBasisMoney) ? { cost_basis: costBasisMoney } : {}),
         contract_description: record.AssetClass === "OPT" && !description.toUpperCase().startsWith(underlying.toUpperCase())
           ? `${underlying} ${description}`
           : description,
@@ -220,7 +222,12 @@ export function normalizeFlexStatement(
       };
     });
 
-  if (positions.length === 0) throw new Error("IBKR Flex report has no nonzero STK/OPT summary positions");
+  if (!parseCsv(csv).some(row => row[0] === "HEADER" && row[1] === "POST")) {
+    throw new Error("IBKR Flex report is missing the positions section (POST)");
+  }
+  if (positions.length === 0 && Math.abs(numberField(nav, "Total") - numberField(cash, "EndingCash")) > 0.02) {
+    throw new Error("Empty positions must reconcile cash balance to NAV");
+  }
 
   const trades = (sections.get("TRNT") ?? [])
     .filter((record) => record.LevelOfDetail === "EXECUTION")
