@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 export type ReportSectionLink = {
   id: string;
@@ -20,13 +20,14 @@ export function SecReportNavigator({ initialSections }: { initialSections: Repor
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const reduceMotion = useReducedMotion();
+  const mobileMenuId = useId();
   const railRef = useRef<HTMLUListElement>(null);
   const mobileRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const railLinks = useRef(new Map<string, HTMLAnchorElement>());
 
   useEffect(() => {
-    const container = document.querySelector<HTMLElement>("[data-report-sections]");
+    const container = mobileRef.current?.closest(".sec-report-shell")?.querySelector<HTMLElement>("[data-report-sections]");
     if (!container) return;
 
     const scan = () => {
@@ -55,7 +56,8 @@ export function SecReportNavigator({ initialSections }: { initialSections: Repor
   }, []);
 
   useEffect(() => {
-    const elements = sections.map((section) => document.getElementById(section.id)).filter((section): section is HTMLElement => Boolean(section));
+    const report = mobileRef.current?.closest(".sec-report-shell");
+    const elements = sections.map((section) => report?.querySelector<HTMLElement>(`#${CSS.escape(section.id)}`)).filter((section): section is HTMLElement => Boolean(section));
     if (!elements.length) return;
 
     const observer = new IntersectionObserver((entries) => {
@@ -128,7 +130,7 @@ export function SecReportNavigator({ initialSections }: { initialSections: Repor
     setActiveId(id);
     setPreviewId(null);
     setMenuOpen(false);
-    const target = document.getElementById(id);
+    const target = mobileRef.current?.closest(".sec-report-shell")?.querySelector<HTMLElement>(`#${CSS.escape(id)}`);
     if (target instanceof HTMLDetailsElement) target.open = true;
     window.requestAnimationFrame(() => {
       target?.scrollIntoView({ behavior: reduceMotion ? "instant" : "smooth", block: "start" });
@@ -153,7 +155,7 @@ export function SecReportNavigator({ initialSections }: { initialSections: Repor
         <motion.button
           ref={menuButtonRef}
           type="button"
-          aria-controls="sec-report-mobile-menu"
+          aria-controls={mobileMenuId}
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen((open) => !open)}
           whileTap={reduceMotion ? undefined : { scale: 0.985 }}
@@ -174,7 +176,8 @@ export function SecReportNavigator({ initialSections }: { initialSections: Repor
         <AnimatePresence initial={false}>
           {menuOpen && (
             <motion.div
-              id="sec-report-mobile-menu"
+              id={mobileMenuId}
+              data-report-mobile-menu
               initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.985 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -5, scale: 0.99 }}

@@ -3,6 +3,7 @@ import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { SecReportDocument } from "../app/analysis/stocks/[ticker]/sec/[accession]/SecReportDocument";
+import { SecReportNavigator } from "../app/analysis/stocks/[ticker]/sec/[accession]/SecReportNavigator";
 import type { SecFilingWithSummary } from "../shared/analysis-contract/report";
 
 test("renders the complete report and dynamic evidence using the shared renderer", () => {
@@ -74,4 +75,12 @@ test("renders the complete report and dynamic evidence using the shared renderer
   assert.match(composed, /未解析/);
   assert.doesNotMatch(composed, /data-report-title="完整正文"/);
 
+});
+
+test("cached report navigators keep distinct accessible menu targets", () => {
+  const sections = [{ id: "sec-report-quality", title: "数据质量", description: "来源与校验" }];
+  const html = renderToStaticMarkup(<><SecReportNavigator initialSections={sections} /><SecReportNavigator initialSections={sections} /></>);
+  const controls = [...html.matchAll(/aria-controls="([^"]+)"/g)].map((match) => match[1]);
+  assert.equal(controls.length, 2);
+  assert.equal(new Set(controls).size, 2);
 });
