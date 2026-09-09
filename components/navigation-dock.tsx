@@ -3,7 +3,7 @@
 import { useLanguage } from "@/app/language-provider";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useAppNavigation } from "@/app/app-navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BookOpen, ChartNoAxesCombined, Globe2, Settings2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -17,8 +17,17 @@ const items = [
 
 export function NavigationDock() {
   const { t } = useLanguage();
-  const pathname = usePathname();
+  const { path } = useAppNavigation();
+  const pathname = path.split("#")[0];
   const [expanded, setExpanded] = useState(false);
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1024px)");
+    const update = () => setMobile(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
   const navigation = useRef<HTMLElement>(null);
   const lastNavigation = useRef(0);
   useEffect(() => {
@@ -68,7 +77,7 @@ export function NavigationDock() {
         aria-expanded={expanded} aria-controls="navigation-dock-menu" onClick={() => setExpanded(true)}>
         {items.map((item, index) => <span key={item.href} aria-hidden="true" data-active={index === activeIndex} />)}
       </button>
-      <div className="navigation-dock-panel" inert={!expanded}>
+      <div className="navigation-dock-panel" inert={!expanded && !mobile}>
       <span ref={droplet} aria-hidden="true" className="navigation-dock-droplet"
         style={{ transform: `translateY(${Math.max(0, activeIndex) * 50}px)`, opacity: activeIndex < 0 ? 0 : 1 }} />
       <TooltipProvider delayDuration={150}>

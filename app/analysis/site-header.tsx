@@ -5,14 +5,14 @@ import { Search, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { InputGroup, InputGroupInput, InputGroupAddon, InputGroupButton } from "@/components/ui/input-group";
-import { useRouter } from "next/navigation";
+import { useAppNavigation } from "@/app/app-navigation";
 
 import type { SecurityType } from "@/lib/earning-report/web/symbol-directory.ts";
 
 type SearchResult = { symbol: string; name: string; exchange: string; type: SecurityType };
 
 export function SiteHeader({ initialQuery = "", compact = true, onSelect }: { initialQuery?: string; compact?: boolean; onSelect?: (ticker: string) => void }) {
-  const router = useRouter();
+  const { navigate } = useAppNavigation();
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searchActive, setSearchActive] = useState(false);
@@ -41,7 +41,7 @@ export function SiteHeader({ initialQuery = "", compact = true, onSelect }: { in
       setResults([]);
       setSearchActive(false);
       if (onSelect) onSelect(ticker);
-      else router.push(`/positions/${encodeURIComponent(ticker)}`);
+      else navigate(`/positions/${encodeURIComponent(ticker)}`);
     }
   }
 
@@ -73,7 +73,7 @@ export function SiteHeader({ initialQuery = "", compact = true, onSelect }: { in
                 setResults([]);
                 setSearchActive(false);
                 if (onSelect) onSelect(result.symbol);
-                else router.push(`/positions/${encodeURIComponent(result.symbol)}`);
+                else navigate(`/positions/${encodeURIComponent(result.symbol)}`);
               }}>
                 <strong>{result.symbol}</strong><span className="truncate">{result.name}</span>
               </Button>

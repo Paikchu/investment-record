@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAppNavigation } from "@/app/app-navigation";
 import { CompanyLogo } from "@/app/company-logo";
 import { useMarketQuotes } from "@/app/use-market-quotes";
 import { SiteHeader } from "@/app/analysis/site-header";
@@ -26,8 +27,8 @@ const sections = [
   ["holdings", "持仓构成"], ["plan", "持仓计划"], ["sec-filings", "披露时间线"],
 ] as const;
 
-function tabFromHash() {
-  const hash = window.location.hash.slice(1);
+function tabFromHash(path: string) {
+  const hash = path.split("#")[1] ?? "";
   if (hash === "position-structure") return "holdings";
   if (hash === "plan-editor") return "plan";
   return sections.some(([key]) => key === hash) ? hash : "outlook";
@@ -37,6 +38,7 @@ export function StockDetail({ ticker, companyName, exchange, position, trades, p
   ticker: string; companyName: string; exchange: string; position?: PositionGroupView; embedded?: boolean;
   trades: PortfolioTrade[]; plan: HoldingPlanRecord | null; planStatus: PositionPlanStatus;
 }) {
+  const { path, navigate } = useAppNavigation();
   const [activeTab, setActiveTab] = useState("outlook");
   const [visited, setVisited] = useState(() => new Set(["outlook"]));
   const { quotes, status } = useMarketQuotes(ticker);
@@ -48,19 +50,19 @@ export function StockDetail({ ticker, companyName, exchange, position, trades, p
   useEffect(() => {
     if (embedded) return;
     const restore = () => {
-      const value = tabFromHash();
+      const value = tabFromHash(path);
       setActiveTab(value);
       setVisited((current) => new Set([...current, value]));
     };
     restore();
     window.addEventListener("hashchange", restore);
     return () => window.removeEventListener("hashchange", restore);
-  }, [embedded]);
+  }, [embedded, path]);
 
   function selectTab(value: string) {
     setActiveTab(value);
     setVisited((current) => new Set([...current, value]));
-    if (!embedded) window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}#${value}`);
+    if (!embedded) navigate(`#${value}`);
   }
 
   return (

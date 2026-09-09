@@ -1,0 +1,22 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { StockDetail } from "./[ticker]/StockDetail";
+import type { HoldingPlanRecord } from "@/lib/holding-plan-store";
+import type { loadStock } from "@/app/analysis/load-stock";
+
+export function StockWorkspace({ stock }: { stock: Awaited<ReturnType<typeof loadStock>> }) {
+  const [plan, setPlan] = useState<HoldingPlanRecord | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "unavailable">("loading");
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`/api/plans/${encodeURIComponent(stock.ticker)}`, { cache: "no-store", signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Plan unavailable");
+        const payload = await response.json();
+        if (!controller.signal.aborted) { setPlan(payload.plan); setStatus("ready"); }
+      }).catch(() => { if (!controller.signal.aborted) setStatus("unavailable"); });
+    return () => controller.abort();
+  }, [stock.ticker]);
+  return <StockDetail {...stock} plan={plan} planStatus={status} />;
+}

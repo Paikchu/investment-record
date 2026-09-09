@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import "./globals.css";
+import "./analysis/earning-report.css";
+import { AppNavigation } from "./app-navigation";
 import { LanguageProvider } from "./language-provider";
 import { ThemeProvider } from "./theme-control";
 import { themeScript } from "@/lib/theme-script";
@@ -50,7 +52,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: themeScript }} /></head>
-      <body><ThemeProvider><LanguageProvider><NavigationDock />{children}</LanguageProvider></ThemeProvider></body>
+      <body><ThemeProvider><LanguageProvider><AppNavigation dock={<NavigationDock />}>{children}</AppNavigation></LanguageProvider></ThemeProvider></body>
     </html>
   );
 }

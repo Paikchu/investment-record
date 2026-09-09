@@ -2421,3 +2421,13 @@ html[lang="en"] .summary-support { flex-wrap: wrap; }
 .earnings-calendar-panel p { margin: 0; }
 .earnings-calendar-events { display: flex; flex-direction: column; gap: 10px; list-style: none; padding: 0; margin: 0; }
 .earnings-calendar-events li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: 13px; }
+
+@media (max-width: 1024px) {
+  body { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+  .navigation-dock { display: block; position: fixed; bottom: calc(12px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); z-index: 40; }
+  .navigation-dock-compact, .navigation-dock-droplet { display: none; }
+  .navigation-dock-list { display: flex; gap: 6px; margin: 0; padding: 6px; list-style: none; border: 1px solid var(--border); border-radius: 16px; background: var(--card); box-shadow: 0 2px 8px rgb(0 0 0 / 4%); }
+  .navigation-dock-link { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; color: var(--foreground); }
+  .navigation-dock-link[aria-current="page"] { background: var(--accent); }
+  .navigation-dock-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+}

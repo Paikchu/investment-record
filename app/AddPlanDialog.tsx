@@ -3,7 +3,7 @@
 import { useLanguage } from "@/app/language-provider";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useAppNavigation } from "@/app/app-navigation";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
@@ -17,7 +17,7 @@ type SearchResult = { symbol: string; name: string; exchange: string; type: "sto
 
 export function AddPlanDialog() {
   const { t } = useLanguage();
-  const router = useRouter();
+  const { navigate } = useAppNavigation();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -74,7 +74,7 @@ export function AddPlanDialog() {
             {!loading && results.length > 0 && <CommandGroup heading={t("搜索结果")}>
               {results.map((result) => <CommandItem key={result.symbol} value={result.symbol} onSelect={() => {
                 setIsOpen(false);
-                router.push(`/positions/${encodeURIComponent(result.symbol)}`);
+                navigate(`/positions/${encodeURIComponent(result.symbol)}`);
               }}>
                 <CompanyLogo symbol={result.symbol} />
                 <span className="flex min-w-0 flex-1 flex-col"><strong>{result.symbol}</strong><span className="truncate text-muted-foreground">{result.name}</span></span>
