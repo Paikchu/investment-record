@@ -219,6 +219,18 @@ npm run db:generate
 
 净入金由 Flex Cash Transactions 的 Deposits/Withdrawals，加 Transfers 的现金及证券转移市值自动计算。首次必须覆盖 DateFunded；缺失字段、时间断档或账户变化会中止更新，不能把最近一年净入金误当累计本金。
 
+## 现行 Cloudflare Worker 分工
+
+三个 Worker 的源码都在本仓库：
+
+| Worker | 当前职责 | 源码 | 自动发布 |
+| --- | --- | --- | --- |
+| `investment-record` | 页面、投资账本 API、分析读取代理 | `worker/`、`app/`、`lib/` | main 的前端构建 |
+| `max-investment-record-sec-cron` | IBKR 定时同步、财报日历刷新 | [`workers/sec-cron/`](workers/sec-cron/README.md) | 前端部署命令的最后一步 |
+| `earning-report-analysis-sec-pipeline` | SEC / 公司分析、Memory、基本面及分析读取 API | [`workers/pipeline/`](workers/pipeline/README.md) | main 的独立 Pipeline 构建 |
+
+历史 Sites 章节用于解释旧路径；现行资源归属和构建关系以上表及各 Worker 配置为准。
+
 ## 财报分析 Pipeline
 
 财报分析后端代码位于 [`workers/pipeline`](workers/pipeline/README.md)，与投资看板共用仓库、独立部署。
