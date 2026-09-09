@@ -14,6 +14,7 @@ import { money, number, percent } from "@/lib/portfolio-format";
 import { heatmapThemeColor } from "@/lib/portfolio-heatmap";
 import type { HistoricalPositionGroupView, PositionGroupView } from "@/lib/portfolio-view-model";
 import { CompanyLogo } from "../company-logo";
+import { OptionContractLabel } from "./option-contract-label";
 import { type QuoteLoadStatus } from "../use-market-quotes";
 import type { MarketQuoteMap } from "@/lib/yahoo-quotes";
 
@@ -67,6 +68,7 @@ export function PositionLedger({
   earningsUpdatedAt: string;
 }) {
   const { t } = useLanguage();
+  const [collapsedOptions, setCollapsedOptions] = useState<ReadonlySet<string>>(() => new Set());
   const [sortKey, setSortKey] = useState<LedgerSortKey>("weight");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const sortedGroups = useMemo(() => {
@@ -125,6 +127,19 @@ export function PositionLedger({
                     {earningsBySymbol.has(group.symbol) && <TooltipProvider><Tooltip><TooltipTrigger asChild>
                       <Button variant="ghost" size="icon-sm" aria-label={`${group.symbol} 财报提醒`}><CalendarDays /></Button>
                     </TooltipTrigger><TooltipContent><PositionReminder event={earningsBySymbol.get(group.symbol)} asOf={earningsUpdatedAt} /></TooltipContent></Tooltip></TooltipProvider>}
+                    {group.options.length > 0 && (
+                      <Button variant="ghost" size="sm" type="button" className="ledger-option-toggle"
+                        aria-expanded={!collapsedOptions.has(group.symbol)}
+                        aria-controls={group.options.map((_, index) => `ledger-option-${group.symbol}-${index}`).join(" ")}
+                        aria-label={`${collapsedOptions.has(group.symbol) ? t("展开") : t("收起")} ${group.symbol} ${t("期权")}`}
+                        onClick={() => setCollapsedOptions((current) => {
+                          const next = new Set(current);
+                          if (!next.delete(group.symbol)) next.add(group.symbol);
+                          return next;
+                        })}>
+                        <ChevronDown aria-hidden="true" /><small>{group.options.length}</small>
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>{quotes[group.symbol] ? money(quotes[group.symbol].price) : <span className="quote-muted">{quoteStatus === "loading" ? t("读取中") : "—"}</span>}</TableCell>
@@ -137,20 +152,28 @@ export function PositionLedger({
                 <TableCell><Pnl value={group.realized} /></TableCell>
                 <TableCell><Pnl value={group.netPnl} /></TableCell>
               </TableRow>
-              {group.options.length > 0 && (
-                <TableRow className="ledger-options-row"><TableCell colSpan={ledgerColumns.length}>
-                  <div className="position-submenu" aria-label={`${group.symbol} 期权持仓`}>
-                    {group.options.map((option) => (
-                      <div className="position-submenu-row" key={option.contract}>
-                        <span className="submenu-type">{t("期权")}</span>
-                        <strong>{option.contract}</strong>
-                        <span className="submenu-quantity">{number(option.quantity, 0, 4)}{t(" 张")}</span>
-                        <i className="submenu-value">{money(option.marketValue)}</i>
-                      </div>
-                    ))}
-                  </div>
-                </TableCell></TableRow>
-              )}
+              {!collapsedOptions.has(group.symbol) && group.options.map((option, index) => (
+                <TableRow className="ledger-option-row" key={option.contract}
+                  id={`ledger-option-${group.symbol}-${index}`}
+                  aria-label={`${group.symbol} ${t("期权")}`}
+                  data-state={activeSymbol === group.symbol ? "selected" : undefined}
+                  onMouseEnter={() => onActiveSymbolChange(group.symbol)}
+                  onMouseLeave={() => onActiveSymbolChange(null)}>
+                  <TableCell>
+                    <OptionContractLabel contract={option.contract} quantity={option.quantity}
+                      underlyingPrice={quotes[group.symbol]?.price} asOf={earningsUpdatedAt} />
+                  </TableCell>
+                  <TableCell>{money(option.price)}</TableCell>
+                  <TableCell><span className="quote-muted">—</span></TableCell>
+                  <TableCell>{money(option.marketValue)}</TableCell>
+                  <TableCell>{percent(option.weight)}</TableCell>
+                  <TableCell title={t("平均权利金")}>{money(option.averageCost)}</TableCell>
+                  <TableCell>{money(option.cost)}</TableCell>
+                  <TableCell><Pnl value={option.unrealized} /></TableCell>
+                  <TableCell><span className="quote-muted">—</span></TableCell>
+                  <TableCell><span className="quote-muted">—</span></TableCell>
+                </TableRow>
+              ))}
             </Fragment>
           ))}
           {sortedGroups.length === 0 && <TableRow><TableCell colSpan={ledgerColumns.length}><Empty><EmptyHeader><EmptyDescription>{t("当前快照没有持仓。")}</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}

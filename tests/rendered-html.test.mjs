@@ -6,7 +6,7 @@ const projectRoot = new URL("../", import.meta.url);
 
 // Source-level assertions follow the dashboard's component boundary after extraction.
 async function readDashboardSource() {
-  const paths = ["portfolio-dashboard.tsx", "portfolio/overview.tsx", "portfolio/allocation.tsx", "portfolio/ledger.tsx", "portfolio/pnl.tsx"];
+  const paths = ["portfolio-dashboard.tsx", "portfolio/overview.tsx", "portfolio/allocation.tsx", "portfolio/ledger.tsx", "portfolio/pnl.tsx", "portfolio/option-contract-label.tsx"];
   return (await Promise.all(paths.map(path => readFile(new URL(`../app/${path}`, import.meta.url), "utf8")))).join("\n");
 }
 
@@ -489,7 +489,7 @@ test("keeps full ticker symbols visible before heatmap metrics", async () => {
   assert.match(css, /\.heatmap-tile-symbol-only strong\s*\{[^}]*font-size:\s*12px;/s);
 });
 
-test("renders option-only submenus below every ticker with options", async () => {
+test("renders each option contract as an aligned child row of its ticker", async () => {
   const snapshot = JSON.parse(await readFile(new URL("../data/portfolio-snapshot.json", import.meta.url), "utf8"));
   const [dashboard, css] = await Promise.all([
     readDashboardSource(),
@@ -497,33 +497,54 @@ test("renders option-only submenus below every ticker with options", async () =>
   ]);
   const response = await render();
   const html = await response.text();
-  const optionSymbols = new Set(
-    snapshot.positions.filter((position) => position.assetClass === "OPT").map((position) => position.symbol),
-  );
-  const renderedSubmenuCount = html.match(/class="position-submenu"/g)?.length ?? 0;
+  const money = (value, sign = false) =>
+    `${value < 0 ? "\u2212" : sign && value > 0 ? "+" : ""}$${new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(value))}`;
+  const optionPositions = snapshot.positions.filter((position) => position.assetClass === "OPT");
+  const optionRows = html.match(/<tr[^>]*class="[^"]*ledger-option-row[^"]*"[^>]*>[\s\S]*?<\/tr>/g) ?? [];
+  const columnCount = (dashboard.match(/\{ key: "[a-zA-Z]+", label: "[^"]+" \}/g) ?? []).length;
 
   assert.match(dashboard, /setSortKey/);
   assert.match(dashboard, /sortDirection/);
-  assert.equal(renderedSubmenuCount, optionSymbols.size);
+  assert.equal(optionRows.length, optionPositions.length);
+
+  // The whole point of the child row is that its numbers land under the ticker's own headers.
+  for (const row of optionRows) {
+    assert.equal((row.match(/<td/g) ?? []).length, 10);
+  }
+  for (const position of optionPositions) {
+    const row = optionRows.find((candidate) => candidate.includes(money(position.marketValue)));
+    assert.ok(row, `no child row rendered ${position.contractDescription}`);
+    // Per-contract unrealised P&L was dropped by the old submenu; it is the reason to read the row.
+    assert.ok(row.includes(money(position.unrealizedPnl, true)), `${position.contractDescription} hides its unrealised P&L`);
+    // The broker label stays in the hydration payload but never reaches the cell.
+    assert.ok(!/@AMEX|&#x27;2\d/.test(row), `${position.contractDescription} still prints the raw broker label`);
+  }
+  assert.ok(columnCount >= 10);
+  assert.match(html, /PUT<\/span>/);
+  assert.match(html, /\$180<\/strong>/);
+  assert.match(html, /2027-01-15/);
+
   assert.match(dashboard, /group\.options\.length > 0/);
   assert.doesNotMatch(dashboard, /group\.stock && group\.options\.length > 0/);
-  assert.match(dashboard, /className="position-submenu"/);
-  assert.match(dashboard, /className="position-submenu-row"/);
-  assert.match(dashboard, /option\.contract/);
-  assert.match(dashboard, /option\.marketValue/);
-  assert.doesNotMatch(dashboard, /className="submenu-type">正股/);
+  assert.match(dashboard, /className="ledger-option-row"/);
+  assert.match(dashboard, /<OptionContractLabel/);
+  assert.match(dashboard, /option\.unrealized/);
+  assert.match(dashboard, /aria-expanded=\{!collapsedOptions\.has\(group\.symbol\)\}/);
+  assert.doesNotMatch(dashboard, /position-submenu|submenu-type|submenu-quantity|submenu-value/);
   assert.doesNotMatch(dashboard, /data-label="构成"|label: "构成"|className="position-kinds"/);
   assert.doesNotMatch(dashboard, /onOpenPosition/);
   assert.match(dashboard, /href=\{`\/positions\/\$\{encodeURIComponent\(group\.symbol\)\}`\}/);
   assert.doesNotMatch(dashboard, /breakdownSymbol|breakdown-trigger|position-breakdown|持仓拆分/);
-  assert.match(css, /\.position-submenu \{[^]*?display: grid;/);
-  assert.match(css, /\.position-submenu-row \{[^]*?grid-template-columns:/);
+
+  // Child rows stay a step quieter than their ticker and share one divider with it.
+  assert.match(css, /\.ledger-table \.ledger-option-row td \{[^}]*height: 38px;[^}]*font-size: 13px;/);
+  assert.doesNotMatch(css, /\.ledger-option-row td:first-child::before/);
+  assert.match(css, /\.ledger-table \.ledger-data-row:has\(\+ \.ledger-option-row\)/);
+  assert.match(css, /\.ledger-option-row \.option-contract \{ margin-inline-start: 24px; \}/);
+  assert.doesNotMatch(css, /\.position-submenu|\.submenu-type|\.submenu-quantity|\.submenu-value/);
   assert.doesNotMatch(css, /\.position-kinds/);
   const mobileCss = css.match(/@media \(max-width: 620px\) \{([\s\S]*)\}\s*$/)?.[1] ?? "";
-  assert.match(mobileCss, /\.position-submenu \{[^}]*width: min\(calc\(100% - 8px\), 620px\);[^}]*margin: 0 auto 10px;/);
-  assert.match(mobileCss, /\.position-submenu-row \{[^}]*min-height: 44px;[^}]*grid-template-columns: 32px minmax\(0, 1fr\) auto 76px;[^}]*font-size: 12px;[^}]*text-align: center;/);
-  assert.match(mobileCss, /\.position-submenu-row \.submenu-value \{ text-align: center; \}/);
-  assert.doesNotMatch(mobileCss, /\.position-submenu-row \.(?:submenu-type|submenu-quantity|submenu-value) \{[^}]*grid-row:/);
+  assert.match(mobileCss, /\.ledger-option-row \.option-contract \{ margin-inline-start: 18px; \}/);
 });
 
 test("uses independent position routes and removes the workspace dialog", async () => {

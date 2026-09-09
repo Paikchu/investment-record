@@ -1190,7 +1190,25 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .ledger-sort-arrows { display: flex; flex-direction: column; }
 .ledger-sort-arrows svg { margin-block: -3px; color: var(--muted-foreground); opacity: .35; }
 .ledger-sort-arrows svg[data-active="true"] { color: var(--foreground); opacity: 1; }
-.ledger-table .ledger-options-row td { height: auto; padding: 0 8px; position: static; }
+
+/* Option contracts are child rows of their ticker: same ten columns, one step quieter. */
+.ledger-table .ledger-option-row td { height: 38px; padding: 4px 8px; color: var(--ink-muted); font-size: 13px; }
+.ledger-table .ledger-option-row td:first-child { padding-left: 8px; }
+.ledger-table .ledger-data-row:has(+ .ledger-option-row) td,
+.ledger-table .ledger-option-row:has(+ .ledger-option-row) td { border-bottom: 0; }
+.ledger-table .ledger-data-row:has(+ .ledger-option-row),
+.ledger-table .ledger-option-row:has(+ .ledger-option-row) { border-bottom-color: transparent; }
+.ledger-option-toggle {
+  min-width: 0;
+  padding-inline: 5px;
+  gap: 3px;
+  color: var(--ink-muted);
+}
+.ledger-option-toggle small { font-size: 11px; font-weight: 650; font-variant-numeric: tabular-nums lining-nums; }
+.ledger-option-toggle svg { transition: transform 160ms ease; }
+.ledger-option-toggle[aria-expanded="false"] svg { transform: rotate(-90deg); }
+/* Expanding a group must not repaint the parent row; hover and selection still own that. */
+.ledger-table .ledger-data-row:has([aria-expanded="true"]):not(:hover):not([data-state="selected"]) { background: transparent; }
 
 .position-columns,
 .position-list { min-width: 0; }
@@ -1324,31 +1342,56 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .stock-pill,
 .option-pill { color: var(--ink-soft); background: var(--muted); }
 
-.position-submenu {
-  margin: 0 24px 8px 18px;
-  padding: 3px 0;
-  display: grid;
-  border-left: 3px solid var(--holding-color);
-  background: var(--muted);
-}
-
-.position-submenu-row {
-  min-height: 44px;
-  padding: 0 9px;
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto 76px;
+/* One contract reads as instrument, obligation and clock; colour stays reserved for P&L. */
+.option-contract {
+  min-width: 0;
+  display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--ink);
-  font-size: 14px;
   font-variant-numeric: tabular-nums lining-nums;
 }
 
-.position-submenu-row + .position-submenu-row { border-top: 1px solid var(--border); }
-.position-submenu-row strong { overflow: hidden; font-weight: 550; text-overflow: ellipsis; white-space: nowrap; }
-.position-submenu-row .submenu-type { color: var(--ink-muted); font-size: 12px; font-weight: 650; }
-.submenu-quantity { color: var(--ink-soft); white-space: nowrap; }
-.submenu-value { font-style: normal; font-weight: 650; text-align: right; white-space: nowrap; }
+/* Only the ledger indents the chip, where it hangs off the ticker's spine. */
+.ledger-option-row .option-contract { margin-inline-start: 24px; }
+
+.option-contract .option-right {
+  height: 18px;
+  padding-inline: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.option-strike { color: var(--ink); font-size: 14px; font-weight: 650; }
+
+.option-expiry {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.option-expiry small { font-size: 11px; opacity: .92; }
+.option-expiry[data-near="true"] { color: var(--daily-loss); font-weight: 650; }
+.option-expiry[data-near="true"] small { opacity: 1; }
+
+.option-contract .option-moneyness {
+  height: 18px;
+  padding-inline: 6px;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.option-size {
+  margin-inline-start: auto;
+  padding-inline-start: 14px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.option-size b { margin-inline-end: 5px; color: var(--ink-soft); font-weight: 650; }
 
 .symbol {
   flex: 0 0 auto;
@@ -1896,20 +1939,11 @@ td { font-size: 14px; }
   }
   .position-reminder strong,
   .position-reminder small { font-size: 12px; }
-  .position-submenu {
-    width: min(calc(100% - 8px), 620px);
-    margin: 0 auto 10px;
-    padding: 2px 0;
-  }
-  .position-submenu-row {
-    min-height: 44px;
-    padding: 4px 6px;
-    grid-template-columns: 32px minmax(0, 1fr) auto 76px;
-    gap: 6px;
-    font-size: 12px;
-    text-align: center;
-  }
-  .position-submenu-row .submenu-value { text-align: center; }
+  .option-contract { gap: 6px; }
+  .ledger-option-row .option-contract { margin-inline-start: 18px; }
+  .option-strike { font-size: 13px; }
+  .option-expiry small { display: none; }
+  .option-size { padding-inline-start: 10px; }
   .position-row > span[data-label]::before {
     content: attr(data-label);
     display: block;
