@@ -98,7 +98,6 @@ function PortfolioOverview({
           <article className="header-next-earnings">
             <span title={t("即将到来的事件")}><CalendarDays className="size-4" aria-hidden="true" /><span className="sr-only">{t("即将到来的事件")}</span></span>
             <strong>{(nextEarnings as CalendarEvent).confidence === "confirmed" ? "" : "预计 "}{nextEarnings.symbol} {nextEarningsReminder.releaseDateLabel} · {nextEarningsReminder.sessionLabel}</strong>
-            <i>{nextEarnings.session === "unknown" ? "北京时间待确认" : `北京 ${nextEarningsReminder.viewDateLabel}${nextEarningsReminder.viewTimeLabel}`} · {(nextEarnings as CalendarEvent).confidence === "confirmed" ? "公司已确认" : "日期未确认"}</i>
           </article>
         )}
       </section>
