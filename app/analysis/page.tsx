@@ -1,9 +1,8 @@
-import { SiteHeader } from "@/app/analysis/site-header.tsx";
+import { AnalysisWorkspace } from "./analysis-workspace";
 
 export default function HomePage() {
   return (
-    <div className="sec-app-shell">
-      <SiteHeader />
+    <AnalysisWorkspace>
       <main className="sec-home">
         <div className="sec-home-copy">
           <p className="sec-home-kicker">SEC / AI</p>
@@ -16,6 +15,6 @@ export default function HomePage() {
           <span>03</span><strong>AI 解析</strong><small>仅展示已生成报告</small>
         </div>
       </main>
-    </div>
+    </AnalysisWorkspace>
   );
 }

@@ -33,8 +33,8 @@ function tabFromHash() {
   return sections.some(([key]) => key === hash) ? hash : "outlook";
 }
 
-export function StockDetail({ ticker, companyName, exchange, position, trades, plan, planStatus }: {
-  ticker: string; companyName: string; exchange: string; position?: PositionGroupView;
+export function StockDetail({ ticker, companyName, exchange, position, trades, plan, planStatus, embedded = false }: {
+  ticker: string; companyName: string; exchange: string; position?: PositionGroupView; embedded?: boolean;
   trades: PortfolioTrade[]; plan: HoldingPlanRecord | null; planStatus: PositionPlanStatus;
 }) {
   const [activeTab, setActiveTab] = useState("outlook");
@@ -46,6 +46,7 @@ export function StockDetail({ ticker, companyName, exchange, position, trades, p
   const rsiLabel = rsi == null ? "" : rsi >= 70 ? "超买" : rsi <= 30 ? "超卖" : rsi >= 60 ? "偏强" : "中性";
 
   useEffect(() => {
+    if (embedded) return;
     const restore = () => {
       const value = tabFromHash();
       setActiveTab(value);
@@ -54,17 +55,17 @@ export function StockDetail({ ticker, companyName, exchange, position, trades, p
     restore();
     window.addEventListener("hashchange", restore);
     return () => window.removeEventListener("hashchange", restore);
-  }, []);
+  }, [embedded]);
 
   function selectTab(value: string) {
     setActiveTab(value);
     setVisited((current) => new Set([...current, value]));
-    window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}#${value}`);
+    if (!embedded) window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}#${value}`);
   }
 
   return (
     <main className="earning-report unified-stock">
-      <div className="stock-detail-search"><SiteHeader compact /></div>
+      {!embedded && <div className="stock-detail-search"><SiteHeader compact /></div>}
       <header className="stock-detail-identity">
         <div className="stock-detail-company">
           <CompanyLogo symbol={ticker} size="lg" />

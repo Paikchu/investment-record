@@ -11,7 +11,7 @@ import type { SecurityType } from "@/lib/earning-report/web/symbol-directory.ts"
 
 type SearchResult = { symbol: string; name: string; exchange: string; type: SecurityType };
 
-export function SiteHeader({ initialQuery = "", compact = true }: { initialQuery?: string; compact?: boolean }) {
+export function SiteHeader({ initialQuery = "", compact = true, onSelect }: { initialQuery?: string; compact?: boolean; onSelect?: (ticker: string) => void }) {
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -35,12 +35,13 @@ export function SiteHeader({ initialQuery = "", compact = true }: { initialQuery
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const match = results[0];
+    const match = results.find((result) => result.symbol === query.trim().toUpperCase()) ?? results[0];
     const ticker = (match?.symbol ?? query.trim()).toUpperCase().replace(/[^A-Z0-9.-]/g, "");
     if (ticker) {
       setResults([]);
       setSearchActive(false);
-      router.push(`/positions/${encodeURIComponent(ticker)}`);
+      if (onSelect) onSelect(ticker);
+      else router.push(`/positions/${encodeURIComponent(ticker)}`);
     }
   }
 
@@ -57,7 +58,7 @@ export function SiteHeader({ initialQuery = "", compact = true }: { initialQuery
             const nextQuery = event.target.value;
             setQuery(nextQuery);
             setSearchActive(true);
-            if (!nextQuery.trim()) setResults([]);
+            setResults([]);
           }}
           placeholder="搜索股票代码或公司名称"
         />
@@ -71,7 +72,8 @@ export function SiteHeader({ initialQuery = "", compact = true }: { initialQuery
                 setQuery(result.symbol);
                 setResults([]);
                 setSearchActive(false);
-                router.push(`/positions/${encodeURIComponent(result.symbol)}`);
+                if (onSelect) onSelect(result.symbol);
+                else router.push(`/positions/${encodeURIComponent(result.symbol)}`);
               }}>
                 <strong>{result.symbol}</strong><span className="truncate">{result.name}</span>
               </Button>
