@@ -54,4 +54,24 @@ test("renders the complete report and dynamic evidence using the shared renderer
   assert.match(html, /class="fixed left-0 top-1\/2/);
   assert.equal((html.match(/data-report-nav-depth="section"/g) ?? []).length, 5);
   assert.equal((html.match(/data-report-nav-depth="subsection"/g) ?? []).length, 2);
+  filing.analysis!.presentation = {
+    version: "sec-presentation.v1", density: "compact", sections: [{
+      id: "sec-composed-1", title: "增长引擎与投入回报", layout: "grid", blocks: [
+        { id: "business-text", type: "prose", text: "需求扩张推动云业务增长。" },
+        { id: "revenue-trend", type: "sec_chart", title: "收入趋势", mark: "bar", trend: { metricKey: "revenue", unit: "USD", basis: "gaap", periodScope: "annual", points: [{ date: "2025-06-30", value: 100, accession: "old" }, { date: "2026-06-30", value: 120, accession: "current" }] } },
+      ],
+    }],
+  };
+  filing.analysis!.sourceMaterials = [{ type: "EX-99.2", filename: "deck.pdf", url: "https://www.sec.gov/deck.pdf", status: "unsupported" }];
+  const composed = renderToStaticMarkup(<SecReportDocument companyName="Microsoft Corp" filing={filing} />);
+  assert.match(composed, /href="#sec-composed-1"/);
+  assert.match(composed, /增长引擎与投入回报/);
+  assert.match(composed, /data-layout="grid"/);
+  assert.match(composed, /role="img"/);
+  assert.match(composed, /查看数据与来源/);
+  assert.match(composed, /数据质量/);
+  assert.match(composed, /分析底稿与证据/);
+  assert.match(composed, /未解析/);
+  assert.doesNotMatch(composed, /data-report-title="完整正文"/);
+
 });

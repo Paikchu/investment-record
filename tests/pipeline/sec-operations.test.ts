@@ -194,8 +194,8 @@ test("plans and runs dynamic nodes from the prepared R2 filing", async () => {
       return new Response("<h1>Item 7. Management Discussion</h1><p>Revenue increased 12% to $120 million due to cloud demand.</p>");
     }
     const body = JSON.parse(String(init?.body ?? "{}")) as { messages?: Array<{ content?: string }> };
-    const system = body.messages?.[0]?.content ?? "";
-    if (system.includes("编排分析任务")) {
+    const payload = JSON.parse(body.messages?.[1]?.content ?? "{}");
+    if (Array.isArray(payload.sections) && !payload.sections.some((section: { text?: string }) => section.text)) {
       const prepared = JSON.parse(objects.get("filings/MSFT/annual/meta.json") ?? "{}") as { outline?: Array<{ id: string }> };
       return Response.json({ choices: [{ message: { content: JSON.stringify({ nodes: [{ id: "growth", title: "增长质量", question: "增长由什么驱动？", sectionIds: [prepared.outline?.[0]?.id], keywords: ["revenue", "cloud"] }] }) } }] });
     }

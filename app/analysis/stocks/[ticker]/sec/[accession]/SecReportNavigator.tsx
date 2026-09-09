@@ -139,7 +139,7 @@ export function SecReportNavigator({ initialSections }: { initialSections: Repor
         <div
           data-report-progress-fill="true"
           style={{ width: `${Math.round(progress * 1000) / 10}%` }}
-          className="h-full bg-[var(--color-loss)]"
+          className="h-full bg-primary"
         />
       </div>
       <nav
@@ -157,7 +157,7 @@ export function SecReportNavigator({ initialSections }: { initialSections: Repor
           className="flex min-h-12 w-full items-center justify-between gap-4 border-y border-[var(--paper-deep)] bg-[var(--paper)] px-1 py-3 text-left text-[var(--ink)]"
         >
           <span className="min-w-0">
-            <small className="mr-3 text-[10px] font-bold tracking-[.1em] text-[var(--color-loss)]">目录</small>
+            <small className="mr-3 text-[10px] font-bold tracking-[.1em] text-primary">目录</small>
             <strong className="font-[family-name:var(--serif)] text-sm font-semibold">{activeSection?.title}</strong>
           </span>
           <motion.span
@@ -188,7 +188,7 @@ export function SecReportNavigator({ initialSections }: { initialSections: Repor
                   onClick={() => navigate(section.id)}
                   className={`grid grid-cols-[36px_minmax(0,1fr)] gap-3 border-b border-[var(--paper-deep)] pr-4 text-[var(--ink)] no-underline last:border-b-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[var(--ink)] ${nested ? "min-h-12 py-2 pl-8" : "min-h-14 px-4 py-3"}`}
                 >
-                  <span className="pt-1 text-[10px] font-bold tracking-[.08em] text-[var(--color-loss)]">{displayIndex(section, index)}</span>
+                  <span className="pt-1 text-[10px] font-bold tracking-[.08em] text-primary">{displayIndex(section, index)}</span>
                   <span className="min-w-0">
                     {nested && <small className="mb-0.5 block text-[9px] tracking-[.08em] text-[var(--ink-muted)]">{section.parentTitle}</small>}
                     <strong className={`block font-[family-name:var(--serif)] font-semibold leading-5 ${nested ? "text-sm" : "text-[15px]"}`}>{section.title}</strong>
@@ -221,7 +221,7 @@ export function SecReportNavigator({ initialSections }: { initialSections: Repor
             const barScale = previewed || segmentState === "active" ? 1 : segmentState === "passed" ? 0.6 : 0.35;
             const barOpacity = previewed ? 0.9 : segmentState === "active" ? 1 : segmentState === "passed" ? 0.65 : 0.4;
             const barColor = previewed || segmentState === "active"
-              ? "bg-[var(--color-loss)]"
+              ? "bg-primary"
               : segmentState === "passed" ? "bg-[var(--ink-soft)]" : "bg-[var(--ink-muted)]";
             return (
               <li
@@ -269,7 +269,7 @@ export function SecReportNavigator({ initialSections }: { initialSections: Repor
                 transition={{ duration: reduceMotion ? 0.01 : 0.22, ease: easeOutExpo }}
                 className="w-[320px] border border-[var(--paper-deep)] bg-[var(--paper)] px-6 py-5 text-[var(--ink)] shadow-[0_18px_48px_rgb(23_40_59/0.16)]"
               >
-                <span className="text-[10px] font-bold tracking-[.1em] text-[var(--color-loss)]">
+                <span className="text-[10px] font-bold tracking-[.1em] text-primary">
                   {previewSection.parentTitle ? `${previewSection.parentTitle} · ` : ""}{displayIndex(previewSection, sections.findIndex((section) => section.id === previewSection.id))}
                 </span>
                 <strong className="mt-2 block font-[family-name:var(--serif)] text-xl font-semibold leading-tight">{previewSection.title}</strong>

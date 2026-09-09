@@ -1,3 +1,4 @@
+import type { SecPresentation, SecSourceMaterial } from "./sec-presentation.ts";
 export type SecComparisonType = "qoq" | "yoy" | "guidance_revision" | "disclosure_change";
 
 export type AnalysisFact = {
@@ -53,6 +54,8 @@ export type ComparisonResult = {
 };
 
 export type PublishedSecReport = {
+  presentation?: SecPresentation;
+  sourceMaterials?: SecSourceMaterial[];
   ticker: string;
   periodId: string;
   reportVersion: string;

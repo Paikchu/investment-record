@@ -280,6 +280,7 @@ test("synthesizes one full report from node outputs and verified structured data
         bullets: completeBullets(),
         analystView: "增长质量取决于需求能否延续。",
         report: completeReport(),
+        presentation: { sections: [{ title: "增长驱动", blocks: [{ type: "narrative", nodeId: "revenue-growth" }, { type: "chart", nodeId: "revenue-growth", metricKey: "revenue", mark: "line" }] }] },
         keyMetrics: [
           { metricKey: "Total Revenues", currentValue: "120", evidenceIds: ["xbrl:revenue:2026-06-30"] },
           { metricKey: "segment_revenue", currentValue: "60", evidenceIds: [`ev:${prepared.blocks[0].blockId}`] },
@@ -294,6 +295,9 @@ test("synthesizes one full report from node outputs and verified structured data
     nodes,
   );
 
+  assert.equal(result.artifact.report.presentation?.sections[0].title, "增长驱动");
+  assert.equal(result.artifact.report.presentation?.sections[0].blocks[1].type, "sec_chart");
+  assert.ok(result.artifact.report.sourceMaterials?.length);
   assert.equal(result.summary.version, SEC_SUMMARY_VERSION);
   assert.match(result.summary.report ?? "", /核心业务需求/);
   assert.equal(result.summary.nodes?.length, 1);

@@ -243,14 +243,14 @@ export type SecSubmissionPart = {
 };
 
 /** Submission TYPE values worth parsing: the filing body plus real exhibits (XBRL exhibits excluded). */
-const SEC_SUBMISSION_KEEP_TYPES = /^(8-K|6-K|8-K\/A|6-K\/A|EX-(?!101)\S+)$/i;
+const SEC_SUBMISSION_KEEP_TYPES = /^(?:(?:10-K|10-Q|20-F|8-K|6-K)(?:\/A)?|EX-(?!101)\S+)$/i;
 /** Noise types that dominate submission size (GRAPHIC is base64 images) and must not enter memory. */
 const SEC_SUBMISSION_DROP_TYPES = /^(GRAPHIC|XML|JSON|ZIP|EX-101\S*)$/i;
 
 /**
  * Streams `<accession>.txt` (the SEC full-submission envelope) and returns only the text documents
- * that matter: the filing body and real exhibits like EX-99.1. Streaming is required because the
- * envelope routinely exceeds 5 MB due to embedded base64 graphics; dropped blocks are never buffered.
+ * that matter: the filing body and real exhibits like EX-99.1. The full envelope has a bounded
+ * read budget; graphics are discarded once their document boundary is received.
  * The `<TYPE>` marker is authoritative and company-independent — file names are not (NVIDIA's press
  * release exhibits carry no "ex"/"99" hint at all).
  */
@@ -274,6 +274,7 @@ export async function streamSecSubmissionParts(
   const decoder = new TextDecoder();
   let buffer = "";
   const parts: SecSubmissionPart[] = [];
+  let receivedBytes = 0;
 
   const handleDocument = (document: string) => {
     const type = (document.match(/<TYPE>[^\n<]*/) ?? [""])[0]?.replace(/<TYPE>/, "").trim() ?? "";
@@ -288,6 +289,11 @@ export async function streamSecSubmissionParts(
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
+    receivedBytes += value.byteLength;
+    if (receivedBytes > 32 * 1024 * 1024) {
+      await reader.cancel();
+      throw new Error("SEC submission exceeds 32 MiB text extraction budget");
+    }
     buffer += decoder.decode(value, { stream: true });
     let boundary = buffer.indexOf("</DOCUMENT>");
     while (boundary !== -1) {

@@ -3217,3 +3217,69 @@
 .unified-stock .instrument-table tr { display: table-row; }
 .unified-stock .instrument-table td { display: table-cell; padding: 12px 16px; white-space: nowrap; }
 .unified-stock .instrument-table td::before { display: none; }
+
+/* Model composition controls structure only. The host theme owns every visual token.
+   Scoped to SEC documents so the company dashboard retains its existing layout. */
+.earning-report:has(.sec-report-shell) { background: var(--background); }
+.earning-report .sec-report-shell {
+  width: 100%;
+  max-width: 72rem;
+  color: var(--foreground);
+  font-family: var(--sans);
+}
+.earning-report .sec-report-header {
+  min-height: auto;
+  padding: 24px 0;
+  gap: 24px;
+  border-color: var(--border);
+}
+.earning-report .sec-report-header h1 { font: 600 clamp(28px, 3vw, 40px)/1.2 var(--sans); letter-spacing: -.025em; }
+.earning-report .sec-report-header > div > p { font: 500 16px/1.6 var(--sans); }
+.earning-report .sec-report-shell .sec-report-kicker,
+.earning-report .sec-report-shell .sec-report-section-heading > span,
+.earning-report .sec-report-shell .sec-report-conclusion-list strong,
+.earning-report .sec-report-shell .sec-report-investment-view > span { color: var(--primary); }
+.earning-report .sec-report-shell .sec-report-section { padding: 28px 0; border-color: var(--border); }
+.earning-report .sec-report-shell .sec-report-section-heading { gap: 12px; margin-bottom: 20px; grid-template-columns: 28px minmax(0, 1fr); }
+.earning-report .sec-report-shell .sec-report-section-heading h2 { font: 600 22px/1.35 var(--sans); }
+.earning-report .sec-report-shell .sec-report-body p,
+.earning-report .sec-report-shell .rich-text-list { font: 400 15px/1.8 var(--sans); color: var(--foreground); }
+.earning-report .sec-report-shell .sec-report-body p:first-child { font-size: 15px; font-weight: 400; }
+.earning-report .sec-report-shell .sec-report-metrics,
+.earning-report .sec-report-shell .sec-report-node-list { border-color: var(--border); }
+.earning-report .sec-report-shell .sec-report-metrics { grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)); gap: 12px; border-top: 0; }
+.earning-report .sec-report-shell .sec-report-metrics article { padding: 16px; min-height: 112px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); color: var(--card-foreground); }
+.earning-report .sec-report-shell .report-block-callout,
+.earning-report .sec-report-shell .sec-report-investment-view { border: 1px solid var(--border); border-radius: var(--radius); background: var(--muted); color: var(--foreground); }
+.earning-report .sec-report-shell .report-block-callout { border-inline-start: 3px solid var(--primary); }
+.earning-report .sec-report-shell .report-block-callout[data-tone="positive"] { border-inline-start-color: var(--color-profit); }
+.earning-report .sec-report-shell .report-block-callout[data-tone="negative"] { border-inline-start-color: var(--destructive); }
+.earning-report .sec-report-shell .sec-report-evidence blockquote { border-color: var(--border); border-radius: var(--radius); background: var(--muted); }
+.earning-report .sec-report-shell :is(summary, a):focus-visible { outline: 2px solid var(--ring); outline-offset: 4px; border-radius: calc(var(--radius) - 4px); }
+.earning-report .sec-report-shell .sec-report-source a,
+.earning-report .sec-report-shell .sec-materials a { color: var(--primary); }
+.earning-report .sec-composed-content { display: grid; gap: 24px; min-width: 0; }
+.earning-report .sec-composed-content[data-layout="grid"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.earning-report .sec-composed-content[data-density="compact"] { gap: 16px; }
+.earning-report .sec-composed-content > .report-block { min-width: 0; margin: 0; }
+.earning-report .sec-trend-chart { padding: 16px; color: var(--card-foreground); background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
+.earning-report .sec-trend-chart figcaption { display: grid; gap: 6px; font-size: 14px; }
+.earning-report .sec-trend-chart figcaption small { color: var(--muted-foreground); font-size: 12px; }
+.earning-report .sec-trend-chart svg { width: 100%; height: auto; margin-top: 16px; font-family: var(--sans); }
+.earning-report .sec-trend-zero { stroke: var(--border); }
+.earning-report .sec-trend-line { stroke: var(--primary); }
+.earning-report .sec-trend-mark { fill: var(--primary); }
+.earning-report .sec-trend-label { fill: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+.earning-report .sec-chart-data { min-width: 0; font-size: 12px; }
+.earning-report .sec-chart-data > summary { width: fit-content; padding-block: 8px; cursor: pointer; color: var(--muted-foreground); }
+.earning-report .sec-chart-data [data-slot="table-container"] { margin-top: 8px; }
+.earning-report .sec-chart-data [data-slot="table"] { font-size: 12px; font-variant-numeric: tabular-nums; }
+.earning-report .sec-materials h2 { font-size: 18px; font-weight: 600; }
+.earning-report .sec-materials ul { list-style: none; padding: 0; }
+.earning-report .sec-materials li { display: flex; justify-content: space-between; gap: 16px; padding-block: 10px; border-bottom: 1px solid var(--border); font-size: 13px; overflow-wrap: anywhere; }
+.earning-report .sec-materials li span { white-space: nowrap; color: var(--muted-foreground); }
+@media (max-width: 700px) {
+  .earning-report .sec-report-shell { padding-inline: 12px; }
+  .earning-report .sec-report-header { grid-template-columns: minmax(0, 1fr); }
+  .earning-report .sec-composed-content[data-layout="grid"] { grid-template-columns: minmax(0, 1fr); }
+}

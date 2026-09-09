@@ -1,5 +1,6 @@
+import type { SecPresentation, SecSourceMaterial } from "../../../../shared/analysis-contract/sec-presentation.ts";
 export const SEC_ANALYSIS_SCHEMA_VERSION = "sec-analysis.v3";
-export const SEC_ANALYSIS_PROMPT_VERSION = "sec-analysis-prompt.v3";
+export const SEC_ANALYSIS_PROMPT_VERSION = "sec-analysis-prompt.v4-business";
 // One round, matching what the Manager Review prompt tells the model it gets. Raising this without
 // also rewriting that prompt makes the Manager hoard every repairTask into the first round.
 export const MAX_REPAIR_ROUNDS = 1;
@@ -221,6 +222,8 @@ export type ComparisonResult = {
 };
 
 export type PublishedSecReport = {
+  presentation?: SecPresentation;
+  sourceMaterials?: SecSourceMaterial[];
   ticker: string;
   periodId: string;
   reportVersion: string;

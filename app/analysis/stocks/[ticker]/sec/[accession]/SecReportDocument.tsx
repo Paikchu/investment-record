@@ -1,3 +1,4 @@
+import { SecComposedSection } from "@/components/earning-report/report-blocks/SecComposedSection.tsx";
 import type { PublishedSecReport } from "@/shared/analysis-contract/report.ts";
 import type { SecFilingWithSummary, SecNodeResult } from "@/shared/analysis-contract/report.ts";
 import type { ReactNode } from "react";
@@ -14,13 +15,16 @@ export function SecReportDocument({ companyName, filing }: { companyName: string
   const summary = filing.summary;
   const report = filing.analysis;
   const reportReady = Boolean(summary?.report);
+  const composed = report?.presentation?.version === "sec-presentation.v1" && report.presentation.sections.length > 0;
+  const nodeSectionIndex = composed ? String(report!.presentation!.sections.length + 1).padStart(2, "0") : "04";
+  const nodeSectionTitle = composed ? "分析底稿与证据" : "动态分段分析";
   const nodeLinks: ReportSectionLink[] = (summary?.nodes ?? []).map((node, index) => ({
     id: `sec-report-node-${index + 1}`,
-    index: `04.${String(index + 1).padStart(2, "0")}`,
+    index: `${nodeSectionIndex}.${String(index + 1).padStart(2, "0")}`,
     title: node.title,
     description: node.narrative || node.findings[0]?.detail || "展开查看该主题的分析发现与原文证据。",
     depth: 1,
-    parentTitle: "动态分段分析",
+    parentTitle: nodeSectionTitle,
   }));
   const reportSections: ReportSectionDefinition[] = reportReady ? [
     {
@@ -67,7 +71,7 @@ export function SecReportDocument({ companyName, filing }: { companyName: string
               data-report-title={nodeLinks[index].title}
               data-report-description={nodeLinks[index].description}
               data-report-depth="1"
-              data-report-parent-title="动态分段分析"
+              data-report-parent-title={nodeSectionTitle}
               className="sec-report-node scroll-mt-24"
               key={node.id}
             >
@@ -100,6 +104,15 @@ export function SecReportDocument({ companyName, filing }: { companyName: string
       content: <DataQuality report={report} />,
     },
   ] : [];
+  if (reportReady && report?.presentation?.version === "sec-presentation.v1" && report.presentation.sections.length) {
+    const evidenceSection = reportSections.find((section) => section.id === "sec-report-nodes")!;
+    const qualitySection = reportSections.find((section) => section.id === "sec-report-quality")!;
+    reportSections.splice(0, reportSections.length,
+      ...report.presentation.sections.map((section) => ({ id: section.id, title: section.title, description: "围绕公司业务展开分析与证据。", content: <SecComposedSection section={section} report={report} /> })),
+      { ...evidenceSection, title: "分析底稿与证据", description: "保留全部分析节点、未完成状态与原文摘录，供核查。" },
+      qualitySection,
+    );
+  }
   const navigationSections: ReportSectionLink[] = reportSections.flatMap((section, index) => {
     const sectionLink = { id: section.id, index: String(index + 1).padStart(2, "0"), title: section.title, description: section.description, depth: 0 as const };
     return section.id === "sec-report-nodes" ? [sectionLink, ...nodeLinks] : [sectionLink];
@@ -154,6 +167,13 @@ export function SecReportDocument({ companyName, filing }: { companyName: string
         </>
       )}
 
+      {report?.sourceMaterials?.length ? <section className="sec-report-section sec-materials" aria-label="分析材料">
+        <h2>分析材料</h2>
+        <ul>{report.sourceMaterials.map((material, index) => <li key={`${material.filename}-${index}`}>
+          <a href={material.url} target="_blank" rel="noopener noreferrer">{material.type} · {material.filename}</a>
+          <span>{material.status === "read" ? "已读取文本" : "未解析"}</span>
+        </li>)}</ul>
+      </section> : null}
       <footer className="sec-report-source">
         <div><span>SEC 原文</span><strong>{filing.form} · {filing.accessionNumber}</strong></div>
         <a href={filing.indexUrl} rel="noopener noreferrer" target="_blank">在 EDGAR 阅读原始申报 ↗</a>
