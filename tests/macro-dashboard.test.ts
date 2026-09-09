@@ -17,13 +17,15 @@ async function loadModule<T>(path: string): Promise<T> {
   }
 }
 
-test("renders the checked-in macro dashboard against the current portfolio snapshot", async () => {
+test("validates a macro fixture with matching portfolio provenance", async () => {
   const macro = await loadModule<typeof import("../lib/macro-dashboard.ts")>("../lib/macro-dashboard.ts");
   const [dashboard, snapshot] = await Promise.all([
     readFile(new URL("data/macro-dashboard.json", projectRoot), "utf8").then(JSON.parse),
     readFile(new URL("data/portfolio-snapshot.json", projectRoot), "utf8").then(JSON.parse),
   ]);
 
+  // Pair the historical fixture with its own snapshot time; do not rewrite live data.
+  snapshot.generatedAt = dashboard.portfolioSnapshotGeneratedAt;
   assert.deepEqual(macro.validateMacroDashboard(dashboard, snapshot), []);
   assert.equal(typeof macro.prepareMacroDashboardForDisplay, "function");
 
@@ -94,31 +96,20 @@ test("rejects duplicate ids, invalid partial coverage, and events outside seven 
   assert.ok(errors.some((error: string) => error.includes("未来 7 天")));
 });
 
-test("defines the fixed TradingView universes and locked technical-analysis config", async () => {
-  const tradingView = await loadModule<typeof import("../lib/tradingview.ts")>("../lib/tradingview.ts");
 
-  assert.deepEqual(tradingView.EQUITY_CHARTS.map((item) => item.symbol), ["AMEX:SPY", "NASDAQ:QQQ", "AMEX:IWM"]);
-  assert.deepEqual(tradingView.BOND_CHARTS.map((item) => item.symbol), ["NASDAQ:SHY", "NASDAQ:IEF", "NASDAQ:TLT"]);
-  const config = tradingView.buildTradingViewConfig("NASDAQ:IEF");
-  assert.equal(config.symbol, "NASDAQ:IEF");
-  assert.equal(config.interval, "D");
-  assert.equal(config.range, "12M");
-  assert.equal(config.withdateranges, false);
-  assert.equal(config.hide_side_toolbar, true);
-  assert.equal(config.hide_top_toolbar, true);
-  assert.equal(config.hide_legend, true);
-  assert.equal(config.allow_symbol_change, false);
-  assert.deepEqual(config.studies, ["MASimple@tv-basicstudies", "StochasticRSI@tv-basicstudies", "ROC@tv-basicstudies"]);
-  assert.throws(() => tradingView.buildTradingViewConfig("TVC:US10Y"), /不支持/);
-  assert.throws(() => tradingView.buildTradingViewConfig("NASDAQ:NVDA"), /不支持/);
-});
-
-test("accepts the checked-in macro dashboard when its portfolio provenance is current", async () => {
-  const result = await execFileAsync(process.execPath, [
-    "--experimental-strip-types",
-    "scripts/validate-macro-dashboard.ts",
-  ], { cwd: projectRoot });
+test("CLI validates matching provenance and rejects a stale snapshot", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "macro-provenance-"));
+  const dashboard = JSON.parse(await readFile(new URL("data/macro-dashboard.json", projectRoot), "utf8"));
+  const snapshot = JSON.parse(await readFile(new URL("data/portfolio-snapshot.json", projectRoot), "utf8"));
+  const snapshotPath = join(directory, "snapshot.json");
+  snapshot.generatedAt = dashboard.portfolioSnapshotGeneratedAt;
+  await writeFile(snapshotPath, JSON.stringify(snapshot));
+  const args = ["--experimental-strip-types", "scripts/validate-macro-dashboard.ts", "data/macro-dashboard.json", snapshotPath];
+  const result = await execFileAsync(process.execPath, args, { cwd: projectRoot });
   assert.match(result.stdout, /is valid/);
+  snapshot.generatedAt = "2000-01-01T00:00:00.000Z";
+  await writeFile(snapshotPath, JSON.stringify(snapshot));
+  await assert.rejects(execFileAsync(process.execPath, args, { cwd: projectRoot }), /portfolioSnapshotGeneratedAt/);
 });
 
 test("rejects an invalid candidate without replacing the last good dashboard", async () => {

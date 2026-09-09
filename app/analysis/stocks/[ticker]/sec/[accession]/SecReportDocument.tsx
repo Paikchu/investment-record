@@ -1,5 +1,5 @@
-import type { PublishedSecReport } from "@/lib/earning-report/shared/analysis-contract/report.ts";
-import type { SecFilingWithSummary, SecNodeResult } from "@/lib/earning-report/shared/analysis-contract/report.ts";
+import type { PublishedSecReport } from "@/shared/analysis-contract/report.ts";
+import type { SecFilingWithSummary, SecNodeResult } from "@/shared/analysis-contract/report.ts";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { RichText } from "@/components/earning-report/rich-text/RichText.tsx";

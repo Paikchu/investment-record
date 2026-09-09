@@ -1,5 +1,5 @@
-import { ANALYSIS_ERROR_STATUS, type AnalysisErrorCode, type AnalysisErrorBody, ANALYSIS_API_SCHEMA_VERSION } from "../shared/analysis-contract/common.ts";
-export { ANALYSIS_ERROR_STATUS, type AnalysisErrorCode, type AnalysisErrorBody } from "../shared/analysis-contract/common.ts";
+import { ANALYSIS_ERROR_STATUS, type AnalysisErrorCode, type AnalysisErrorBody, ANALYSIS_API_SCHEMA_VERSION } from "../../../shared/analysis-contract/common.ts";
+export { ANALYSIS_ERROR_STATUS, type AnalysisErrorCode, type AnalysisErrorBody } from "../../../shared/analysis-contract/common.ts";
 
 /**
  * Every error the backend can return, and the single HTTP status each one maps to. The mapping

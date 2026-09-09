@@ -1,8 +1,9 @@
 import { extractCapitalFlows, fetchFlexStatement, normalizeFlexStatement } from "../../lib/ibkr-flex.ts";
 import { selectTradeQueryPeriod } from "../../lib/portfolio-snapshot.ts";
-import type { SecCronEnv } from "./core.ts";
 
-export type IbkrSyncEnv = SecCronEnv & {
+export type IbkrSyncEnv = {
+  MAX_SITE_ORIGIN: string;
+  MAX_SITE_BYPASS_TOKEN?: string;
   PORTFOLIO_TARGET_PLATFORM?: "cloudflare" | "sites";
   PORTFOLIO_SITE?: { fetch: typeof fetch };
   IBKR_FLEX_TOKEN: string;

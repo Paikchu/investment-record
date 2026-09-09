@@ -17,8 +17,9 @@ import { money, number, percent } from "@/lib/portfolio-format";
 import type { HoldingPlanRecord } from "@/lib/holding-plan-store";
 import type { PositionGroupView } from "@/lib/portfolio-view-model";
 import type { PortfolioTrade } from "@/lib/portfolio-snapshot";
-import type { PublicSecFiling } from "@/lib/earning-report/shared/analysis-contract/filings";
-import { PositionHoldings, type PositionPlanStatus } from "./PositionDetailContent";
+import type { PublicSecFiling } from "@/shared/analysis-contract/filings";
+import { PositionHoldings } from "./PositionHoldings";
+import type { PositionPlanStatus } from "./PlanEditor";
 import { PlanEditor } from "./PlanEditor";
 import { FinancialMetrics } from "./FinancialMetrics";
 
@@ -139,8 +140,7 @@ export function StockDetail({ ticker, companyName, exchange, position, trades, p
           </section>
         </TabsContent>
         <TabsContent value="plan" forceMount hidden={activeTab !== "plan"}>
-          {visited.has("plan") && (planStatus === "anonymous" ? <Empty><EmptyHeader><EmptyTitle>持仓计划暂不可编辑</EmptyTitle><EmptyDescription>当前访问身份未登录，无法读取或保存个人持仓计划。</EmptyDescription></EmptyHeader></Empty>
-            : <PlanEditor ticker={ticker} initialPlan={plan} unavailable={planStatus === "unavailable"} />)}
+          {visited.has("plan") && (planStatus === "loading" ? <Skeleton className="h-36 w-full" aria-label="正在读取计划" /> : <PlanEditor key={ticker} ticker={ticker} initialPlan={plan} unavailable={planStatus === "unavailable"} />)}
         </TabsContent>
         <TabsContent value="sec-filings" forceMount hidden={activeTab !== "sec-filings"}>
           {visited.has("sec-filings") && <div className="stock-analysis-filings stock-detail-timeline"><SecFilingsSection ticker={ticker} title="披露时间线" /></div>}
@@ -156,7 +156,7 @@ function RecentDisclosures({ ticker, onViewAll }: { ticker: string; onViewAll: (
   useEffect(() => {
     const controller = new AbortController();
     fetch(`/api/analysis/v1/companies/${encodeURIComponent(ticker)}/filings?limit=2`, { signal: controller.signal })
-      .then(async (response) => { if (!response.ok) throw new Error("unavailable"); return response.json(); })
+      .then(async (response) => { if (!response.ok) throw new Error("unavailable"); return response.json() as Promise<{ filings: PublicSecFiling[] }>; })
       .then((page: { filings: PublicSecFiling[] }) => { if (!controller.signal.aborted) setFilings(page.filings); })
       .catch(() => { if (!controller.signal.aborted) setFailed(true); });
     return () => controller.abort();

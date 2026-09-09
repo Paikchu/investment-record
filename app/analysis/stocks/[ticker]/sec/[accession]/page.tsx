@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getAnalysisBackendRuntime } from "@/lib/earning-report/web/analysis-backend-runtime.ts";
 import { isAnalysisErrorBody } from "@/lib/earning-report/web/analysis-client.ts";
-import type { PublicFilingDetail } from "@/lib/earning-report/shared/analysis-contract/filings.ts";
+import type { PublicFilingDetail } from "@/shared/analysis-contract/filings.ts";
 import { findSecurity } from "@/lib/earning-report/web/site-data.ts";
 import { normalizeTrackedTicker } from "@/lib/earning-report/web/ticker.ts";
 import { SecReportDocument } from "@/app/analysis/stocks/[ticker]/sec/[accession]/SecReportDocument.tsx";

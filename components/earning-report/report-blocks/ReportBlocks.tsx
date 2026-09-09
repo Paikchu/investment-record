@@ -2,13 +2,13 @@ import { FundamentalChartRenderer } from "@/components/earning-report/fundamenta
 import { ReportBlockBoundary } from "@/components/earning-report/report-blocks/ReportBlockBoundary.tsx";
 import { RichText } from "@/components/earning-report/rich-text/RichText.tsx";
 import { formatSecMetricLabel, formatSecMetricValue } from "@/lib/earning-report/web/sec-metric-format.ts";
-import type { PublicFundamentalsResponse } from "@/lib/earning-report/shared/analysis-contract/fundamentals.ts";
-import type { PublishedSecReport } from "@/lib/earning-report/shared/analysis-contract/report.ts";
+import type { PublicFundamentalsResponse } from "@/shared/analysis-contract/fundamentals.ts";
+import type { PublishedSecReport } from "@/shared/analysis-contract/report.ts";
 import type {
   ReportBlock,
   ReportBlockDocument,
   ReportBlockSection,
-} from "@/lib/earning-report/shared/analysis-contract/report-blocks.ts";
+} from "@/shared/analysis-contract/report-blocks.ts";
 
 /**
  * The renderer for a model-composed report: a registry keyed by block type, over a section list of

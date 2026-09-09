@@ -6,7 +6,6 @@ import Settings from "./settings/page";
 import Macro from "./macro/page";
 import { StockWorkspace } from "./positions/stock-workspace";
 import { loadStock } from "./analysis/load-stock";
-import PositionReport from "./positions/[ticker]/sec/[accession]/page";
 import AnalysisReport from "./analysis/stocks/[ticker]/sec/[accession]/page";
 
 export async function loadAppPage(path: string) {
@@ -19,7 +18,7 @@ export async function loadAppPage(path: string) {
   const report = /^\/(positions|analysis\/stocks)\/([^/]+)\/sec\/([^/]+)$/.exec(path);
   if (report) {
     const params = Promise.resolve({ ticker: decodeURIComponent(report[2]), accession: decodeURIComponent(report[3]) });
-    return report[1] === "positions" ? PositionReport({ params }) : <div className="earning-report">{await AnalysisReport({ params })}</div>;
+    return <div className="earning-report">{await AnalysisReport({ params })}</div>;
   }
   throw new Error("未找到这个页面。");
 }

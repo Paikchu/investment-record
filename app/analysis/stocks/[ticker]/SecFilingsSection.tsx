@@ -9,9 +9,9 @@ import { Empty, EmptyHeader, EmptyDescription } from "@/components/ui/empty";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { SecEventCategory } from "@/lib/earning-report/shared/analysis-contract/report.ts";
+import type { SecEventCategory } from "@/shared/analysis-contract/report.ts";
 import { formatSecMetricLabel, formatSecMetricValue } from "@/lib/earning-report/web/sec-metric-format.ts";
-import type { PublicSecFiling } from "@/lib/earning-report/shared/analysis-contract/filings.ts";
+import type { PublicSecFiling } from "@/shared/analysis-contract/filings.ts";
 
 
 

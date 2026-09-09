@@ -37,7 +37,7 @@ export function AnalysisWorkspace({ children }: { children: ReactNode }) {
         loadStock(ticker),
         fetch(`/api/plans/${encodeURIComponent(ticker)}`, { cache: "no-store" }).catch(() => null),
       ]);
-      const plan = planResponse?.ok ? (await planResponse.json()).plan : null;
+      const plan = planResponse?.ok ? (await planResponse.json() as { plan: HoldingPlanRecord | null }).plan : null;
       if (id === request.current) setStock({ ...detail, plan, planStatus: planResponse?.ok ? "ready" : "unavailable" });
     } catch {
       if (id === request.current) setError("个股详情暂时无法加载，请重新搜索重试。");

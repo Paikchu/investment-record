@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,16 +23,31 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
-    }
+      "@/*": [
+        "./*"
+      ]
+    },
+    "allowImportingTsExtensions": true,
+    "types": [
+      "@cloudflare/workers-types",
+      "node"
+    ]
   },
   "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "components/**/*.tsx",
+    "lib/**/*.ts",
+    "shared/**/*.ts",
+    "db/**/*.ts",
+    "worker/**/*.ts",
+    "scripts/**/*.ts",
+    "workers/sec-cron/**/*.ts",
+    "*.config.ts"
   ],
-  "exclude": ["node_modules", "workers/pipeline", "tests/pipeline"]
+  "exclude": [
+    "node_modules",
+    "workers/pipeline",
+    "tests/pipeline"
+  ]
 }

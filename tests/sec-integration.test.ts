@@ -1,124 +1,29 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
+const source = (path: string) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("declares SEC cache and summary tables in the D1 schema", async () => {
-  const schema = await readFile(new URL("../db/schema.ts", import.meta.url), "utf8");
-
-  assert.match(schema, /sqliteTable\("sec_cache"/);
-  assert.match(schema, /sqliteTable\("sec_filing_summaries"/);
-  assert.match(schema, /primaryKey\(\{ columns: \[table\.ticker, table\.accessionNumber\] \}\)/);
+test("stock details and reports share the current analysis backend", async () => {
+  const stock = await source("app/positions/[ticker]/StockDetail.tsx");
+  assert.match(stock, /@\/app\/analysis\/stocks\/\[ticker\]\/SecFilingsSection/);
+  const report = await source("app/positions/[ticker]/sec/[accession]/page.tsx");
+  assert.match(report, /redirect\(`/);
+  assert.match(report, /\/analysis\/stocks\//);
+  const client = await source("lib/sec-cloudflare-client.ts");
+  assert.match(client, /getAnalysisBackendRuntime/);
+  assert.doesNotMatch(client, /earning-report-analysis-sec-web/);
 });
 
-test("adds the SEC section to the shared position detail flow", async () => {
-  const [detail, section, refreshRoute, css] = await Promise.all([
-    readFile(new URL("../app/positions/[ticker]/PositionDetailContent.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/positions/[ticker]/SecFilingsSection.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/api/sec/[ticker]/filings/refresh/route.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
-  ]);
-
-  assert.match(detail, /<SecFilingsSection ticker=\{ticker\} \/>/);
-  assert.match(detail, /instrument-section[\s\S]*PlanEditor[\s\S]*SecFilingsSection/);
-  assert.match(section, /披露时间线/);
-  assert.match(section, /DisclosureTimeline key=\{ticker\} ticker=\{ticker\}/);
-  const shared = await readFile(new URL("../app/analysis/stocks/[ticker]/SecFilingsSection.tsx", import.meta.url), "utf8");
-  assert.match(shared, /\/api\/analysis\/v1\/companies\/\$\{encodeURIComponent\(ticker\)\}\/filings/);
-  assert.match(refreshRoute, /getChatGPTUser/);
-  assert.match(shared, /<AccordionTrigger>/);
-  assert.match(shared, /target="_blank"/);
-  assert.match(css, /\.sec-filings-section/);
-  assert.match(css, /\.sec-filing-card/);
-  assert.match(shared, /阅读完整报告/);
-  assert.match(shared, /isLatestPeriodic/);
-  assert.match(css, /\.sec-filings-section,\s*\.plan-editor \{ width: 100%; max-width: none; \}/);
-  assert.doesNotMatch(css, /\.position-detail-dialog \.plan-editor \{[^}]*max-width:/);
-});
-
-test("provides a private full-report route with complete report sections", async () => {
-  const [page, document, css] = await Promise.all([
-    readFile(new URL("../app/positions/[ticker]/sec/[accession]/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/positions/[ticker]/sec/[accession]/SecReportDocument.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
-  ]);
-
-  assert.match(page, /requireChatGPTUser/);
-  assert.match(page, /cleanSecAccession/);
-  assert.match(page, /getCloudflareSecFiling/);
-  assert.match(page, /notFound\(\)/);
-  assert.match(document, /核心结论/);
-  assert.match(document, /验证指标/);
-  assert.match(document, /完整正文/);
-  assert.match(document, /动态分段分析/);
-  assert.match(document, /数据质量/);
-  assert.match(document, /Workflow/);
-  assert.match(document, /SEC 原文/);
-  assert.match(document, /<details/);
-  assert.match(css, /\.sec-report-shell/);
-  assert.match(css, /\.sec-report-body/);
-});
-
-test("reads the Cloudflare feed and keeps legacy refresh routes disabled", async () => {
-  await Promise.all([
-    access(new URL("../app/api/sec/[ticker]/filings/route.ts", import.meta.url)),
-    access(new URL("../app/api/sec/[ticker]/filings/refresh/route.ts", import.meta.url)),
-    access(new URL("../app/api/internal/sec/watchlist/route.ts", import.meta.url)),
-    access(new URL("../app/api/internal/sec/refresh/[ticker]/route.ts", import.meta.url)),
-  ]);
-  const [feedRoute, watchlistRoute, refreshRoute, clientRefreshRoute, modelKeyRoute, clientSection] = await Promise.all([
-    readFile(new URL("../app/api/sec/[ticker]/filings/route.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/api/internal/sec/watchlist/route.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/api/internal/sec/refresh/[ticker]/route.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/api/sec/[ticker]/filings/refresh/route.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/api/internal/sec/model-key/route.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/positions/[ticker]/SecFilingsSection.tsx", import.meta.url), "utf8"),
-  ]);
-
-  assert.match(feedRoute, /getChatGPTUser/);
-  assert.match(feedRoute, /getCloudflareSecFeed/);
-  assert.match(watchlistRoute, /status: 410/);
-  assert.match(refreshRoute, /status: 410/);
-  assert.match(clientRefreshRoute, /status: 410/);
-  assert.match(modelKeyRoute, /status: 410/);
-  assert.doesNotMatch(modelKeyRoute, /encryptSecModelKey/);
-  assert.match(clientSection, /@\/app\/analysis\/stocks\/\[ticker\]\/SecFilingsSection/);
-  assert.doesNotMatch(clientSection, /\/api\/sec\//);
-  assert.doesNotMatch(clientSection, /fetch\(`\$\{feedUrl\}\/refresh`/);
-});
-
-test("ships SEC analysis as a durable worker workflow instead of a page request", async () => {
-  const [workerSource, workerConfig] = await Promise.all([
-    readFile(new URL("../workers/sec-cron/index.ts", import.meta.url), "utf8"),
-    readFile(new URL("../workers/sec-cron/wrangler.jsonc", import.meta.url), "utf8"),
-  ]);
-
-  assert.match(workerSource, /WorkflowEntrypoint/);
-  assert.match(workerSource, /class SecAnalysisWorkflow/);
-  assert.match(workerConfig, /"workflows"/);
-  assert.match(workerConfig, /"r2_buckets"/);
-});
-
-test("freezes every legacy SEC worker bridge route", async () => {
-  const routeUrls = [
-    "../app/api/internal/sec/feed/route.ts",
-    "../app/api/internal/sec/context/route.ts",
-    "../app/api/internal/sec/model-key/route.ts",
-    "../app/api/internal/sec/publish/route.ts",
-    "../app/api/internal/sec/jobs/route.ts",
-  ];
-  const sources = await Promise.all(routeUrls.map(async (url) => {
-    await access(new URL(url, import.meta.url));
-    return readFile(new URL(url, import.meta.url), "utf8");
-  }));
-
-  for (const source of sources) assert.match(source, /status: 410/);
-  assert.doesNotMatch(sources.join("\n"), /getD1|encryptSecModelKey|saveAnalysis|refreshSecTicker/);
-});
-
-test("uses the shared AI credential with the supported SEC model", async () => {
-  const runtime = await readFile(new URL("../lib/sec-runtime.ts", import.meta.url), "utf8");
-  assert.match(runtime, /AI_API_KEY/);
-  assert.doesNotMatch(runtime, /DEEPSEEK_API_KEY/);
-  assert.match(runtime, /deepseek-v4-flash/);
-  assert.doesNotMatch(runtime, /"deepseek-chat"/);
+test("retired SEC writes stay disabled and the investment cron has no analysis engine", async () => {
+  for (const path of ["feed", "context", "jobs", "publish", "model-key", "memory/claim", "memory/commit"]) {
+    const route = await source(`app/api/internal/sec/${path}/route.ts`);
+    assert.match(route, /status: 410/);
+    assert.doesNotMatch(route, /getD1|saveAnalysis/);
+  }
+  const config = JSON.parse(await source("workers/sec-cron/wrangler.jsonc"));
+  assert.deepEqual(config.triggers.crons, ["0 6 * * 2-6", "15 * * * *"]);
+  assert.equal(config.workflows, undefined);
+  assert.equal(config.r2_buckets, undefined);
+  const worker = await source("workers/sec-cron/index.ts");
+  assert.doesNotMatch(worker, /WorkflowEntrypoint|runSecRefresh|runSecMemorySweep/);
 });

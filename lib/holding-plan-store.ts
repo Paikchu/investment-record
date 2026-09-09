@@ -23,12 +23,11 @@ export type HoldingPlanRecord = {
   updatedAt: string;
 };
 
-export async function getHoldingPlan(database: ReadDatabase, ownerEmail: string, ticker: string): Promise<HoldingPlanRecord | null> {
-  const normalizedOwner = normalizeOwnerEmail(ownerEmail);
+export async function getHoldingPlan(database: ReadDatabase, ticker: string): Promise<HoldingPlanRecord | null> {
   const plan = await database.prepare(`
     SELECT id, ticker, company_name AS companyName, holding_reason AS holdingReason, updated_at AS updatedAt
-    FROM holding_plans WHERE owner_email = ? AND ticker = ?
-  `).bind(normalizedOwner, ticker).first<Omit<HoldingPlanRecord, "levels">>();
+    FROM holding_plans WHERE ticker = ? ORDER BY updated_at DESC, id DESC LIMIT 1
+  `).bind(ticker).first<Omit<HoldingPlanRecord, "levels">>();
   if (!plan) return null;
   const result = await database.prepare(`
     SELECT id, action, price_cents AS priceCents, size_note AS sizeNote, trigger_note AS triggerNote, sort_order AS sortOrder
@@ -38,24 +37,24 @@ export async function getHoldingPlan(database: ReadDatabase, ownerEmail: string,
 }
 
 export async function saveHoldingPlan(
-  database: BatchDatabase,
-  ownerEmail: string,
+  database: BatchDatabase & ReadDatabase,
   companyName: string,
   input: ValidatedHoldingPlan,
 ): Promise<HoldingPlanRecord> {
-  const normalizedOwner = normalizeOwnerEmail(ownerEmail);
-  const id = await stablePlanId(normalizedOwner, input.ticker);
+  // Reuse the latest legacy record and its levels without a destructive migration.
+  const existing = await getHoldingPlan(database, input.ticker);
+  const id = existing?.id ?? await stablePlanId(input.ticker);
   const updatedAt = new Date().toISOString();
-  const levels = input.levels.map((level) => ({ ...level, id: level.id ?? crypto.randomUUID() }));
+  const levels = input.levels.map((level) => ({ ...level, id: crypto.randomUUID() }));
   const statements: BoundStatement[] = [
     database.prepare(`
       INSERT INTO holding_plans (id, owner_email, ticker, company_name, holding_reason, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(owner_email, ticker) DO UPDATE SET
+      ON CONFLICT DO UPDATE SET
         company_name = excluded.company_name,
         holding_reason = excluded.holding_reason,
         updated_at = excluded.updated_at
-    `).bind(id, normalizedOwner, input.ticker, companyName, input.holdingReason, updatedAt, updatedAt),
+    `).bind(id, "shared", input.ticker, companyName, input.holdingReason, updatedAt, updatedAt),
     database.prepare("DELETE FROM plan_levels WHERE plan_id = ?").bind(id),
     ...levels.map((level) => database.prepare(`
       INSERT INTO plan_levels (id, plan_id, action, price_cents, size_note, trigger_note, sort_order)
@@ -66,22 +65,21 @@ export async function saveHoldingPlan(
   return { id, ticker: input.ticker, companyName, holdingReason: input.holdingReason, levels, updatedAt };
 }
 
-async function stablePlanId(ownerEmail: string, ticker: string): Promise<string> {
-  const bytes = new TextEncoder().encode(`${ownerEmail}\n${ticker}`);
+async function stablePlanId(ticker: string): Promise<string> {
+  const bytes = new TextEncoder().encode(`shared\n${ticker}`);
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return [...new Uint8Array(digest).slice(0, 16)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-function normalizeOwnerEmail(value: string): string {
-  return value.trim().toLowerCase();
-}
-
 export type HoldingPlanSummary = Omit<HoldingPlanRecord, "levels">;
 
-export async function listHoldingPlans(database: ReadDatabase, ownerEmail: string): Promise<HoldingPlanSummary[]> {
+export async function listHoldingPlans(database: ReadDatabase): Promise<HoldingPlanSummary[]> {
   const result = await database.prepare(`
     SELECT id, ticker, company_name AS companyName, holding_reason AS holdingReason, updated_at AS updatedAt
-    FROM holding_plans WHERE owner_email = ? ORDER BY updated_at DESC, ticker
-  `).bind(normalizeOwnerEmail(ownerEmail)).all<HoldingPlanSummary>();
+    FROM (
+      SELECT *, ROW_NUMBER() OVER (PARTITION BY ticker ORDER BY updated_at DESC, id DESC) AS rank
+      FROM holding_plans
+    ) WHERE rank = 1 ORDER BY updated_at DESC, ticker
+  `).bind().all<HoldingPlanSummary>();
   return result.results;
 }

@@ -13,7 +13,7 @@ export function StockWorkspace({ stock }: { stock: Awaited<ReturnType<typeof loa
     fetch(`/api/plans/${encodeURIComponent(stock.ticker)}`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error("Plan unavailable");
-        const payload = await response.json();
+        const payload = await response.json() as { plan: HoldingPlanRecord | null };
         if (!controller.signal.aborted) { setPlan(payload.plan); setStatus("ready"); }
       }).catch(() => { if (!controller.signal.aborted) setStatus("unavailable"); });
     return () => controller.abort();

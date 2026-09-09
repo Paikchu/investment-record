@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { FundamentalChartRenderer } from "@/components/earning-report/fundamentals/FundamentalChart";
-import type { PublicFundamentalsResponse } from "@/lib/earning-report/shared/analysis-contract/fundamentals";
+import type { PublicFundamentalsResponse } from "@/shared/analysis-contract/fundamentals";
 
 import { formatStockFundamentalValue as formatValue } from "@/lib/stock-detail-format";
 
@@ -18,7 +18,7 @@ export function FinancialMetrics({ ticker }: { ticker: string }) {
   useEffect(() => {
     const controller = new AbortController();
     fetch(`/api/analysis/v1/companies/${encodeURIComponent(ticker)}/fundamentals?periodCount=5`, { signal: controller.signal })
-      .then(async (response) => { if (!response.ok) throw new Error("unavailable"); return response.json(); })
+      .then(async (response) => { if (!response.ok) throw new Error("unavailable"); return response.json() as Promise<PublicFundamentalsResponse>; })
       .then((value: PublicFundamentalsResponse) => { if (!controller.signal.aborted) { setData(value); setFailed(false); } })
       .catch(() => { if (!controller.signal.aborted) setFailed(true); });
     return () => controller.abort();

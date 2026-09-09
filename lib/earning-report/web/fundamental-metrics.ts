@@ -1,5 +1,5 @@
-import type { FundamentalMetricKey } from "../shared/analysis-contract/fundamentals.ts";
-export type * from "../shared/analysis-contract/fundamentals.ts";
+import type { FundamentalMetricKey } from "../../../shared/analysis-contract/fundamentals.ts";
+export type * from "../../../shared/analysis-contract/fundamentals.ts";
 export const FUNDAMENTAL_METRIC_CATALOG = {
   "total_revenue": {
     "basis": "reported",

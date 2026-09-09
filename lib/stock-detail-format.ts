@@ -1,4 +1,4 @@
-import type { PublicFundamentalSeries } from "./earning-report/shared/analysis-contract/fundamentals.ts";
+import type { PublicFundamentalSeries } from "../shared/analysis-contract/fundamentals.ts";
 
 /** Fundamentals percentages are already percentage points (68.6), unlike SEC ratios (0.686). */
 export function formatStockFundamentalValue(raw: string | null | undefined, series: Pick<PublicFundamentalSeries, "unitFamily" | "displaySign">): string {

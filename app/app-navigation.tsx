@@ -20,6 +20,7 @@ function normalize(href: string, current: string) {
   if (path === "/ledger") return "/#ledger-title";
   if (path === "/market-close") return "/";
   path = path.replace(/^\/analysis\/stocks\/([^/]+)$/, "/positions/$1");
+  path = path.replace(/^\/positions\/([^/]+)\/sec\/([^/]+)$/, "/analysis/stocks/$1/sec/$2");
   if (!/^\/$|^\/(analysis|macro|settings)$|^\/positions\/[^/]+(?:\/sec\/[^/]+)?$|^\/analysis\/stocks\/[^/]+\/sec\/[^/]+$/.test(path)) return null;
   return path + url.hash;
 }

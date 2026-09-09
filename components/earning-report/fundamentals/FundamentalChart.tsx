@@ -15,7 +15,7 @@ import type { FundamentalMetricKey } from "@/lib/earning-report/web/fundamental-
 import type {
   PublicFundamentalsResponse,
   PublicFundamentalSeries,
-} from "@/lib/earning-report/shared/analysis-contract/fundamentals.ts";
+} from "@/shared/analysis-contract/fundamentals.ts";
 import {
   FUNDAMENTAL_CHART_HEIGHT,
   FUNDAMENTAL_CHART_MAX_SERIES,

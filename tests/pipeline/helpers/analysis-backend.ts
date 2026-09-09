@@ -53,6 +53,7 @@ export class ReadOnlyGuardDatabase {
   }
 
   async batch(_statements: Parameters<SqliteD1Database["batch"]>[0]): Promise<unknown[]> {
+    void _statements;
     this.attemptedWrites.push("BATCH");
     throw new Error("Read path attempted a batch write");
   }

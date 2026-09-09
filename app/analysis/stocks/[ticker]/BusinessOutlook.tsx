@@ -5,9 +5,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useEffect, useState } from "react";
 
-import { COMPANY_ANALYSIS_OVERVIEW_LABEL } from "@/lib/earning-report/shared/analysis-contract/company-analysis.ts";
-import type { PublicCompanyAnalysisResponse } from "@/lib/earning-report/shared/analysis-contract/company-analysis.ts";
-import type { PublicFundamentalsResponse } from "@/lib/earning-report/shared/analysis-contract/fundamentals.ts";
+import { COMPANY_ANALYSIS_OVERVIEW_LABEL } from "@/shared/analysis-contract/company-analysis.ts";
+import type { PublicCompanyAnalysisResponse } from "@/shared/analysis-contract/company-analysis.ts";
+import type { PublicFundamentalsResponse } from "@/shared/analysis-contract/fundamentals.ts";
 import { companyAnalysisNotice, shouldPollCompanyAnalysis } from "@/lib/earning-report/web/company-analysis-display-state.ts";
 import { ReportBlockList } from "@/components/earning-report/report-blocks/ReportBlocks.tsx";
 import { OutlookParagraph } from "@/app/analysis/stocks/[ticker]/OutlookParagraph.tsx";

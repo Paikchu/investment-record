@@ -38,6 +38,8 @@ function canAutoSave(draft: { holdingReason: string; levels: EditableLevel[] }):
   });
 }
 
+export type PositionPlanStatus = "ready" | "loading" | "unavailable";
+
 export function PlanEditor({
   ticker,
   initialPlan,
@@ -178,6 +180,7 @@ export function PlanEditor({
         {message && status !== "error" && !unavailable && <p className="text-sm text-muted-foreground" role="status">{t(message)}</p>}
       </div>
       {(status === "error" || unavailable) && <Alert variant="destructive" className="mt-4"><AlertDescription>{t(message)}</AlertDescription></Alert>}
+      <p className="mt-2 text-sm text-muted-foreground">共享计划保存在服务器，所有访问者均可编辑，以最后一次保存为准。</p>
       <FieldGroup className="mt-5">
         <Field data-disabled={unavailable}>
           <FieldLabel htmlFor="holding-reason">{t("持仓原因")}</FieldLabel>

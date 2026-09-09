@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "tests/**/*.ts",
+    "tests/**/*.tsx",
+    "app/**/*.tsx",
+    "components/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "tests/pipeline"
+  ],
+  "compilerOptions": {
+    "incremental": false
+  }
+}

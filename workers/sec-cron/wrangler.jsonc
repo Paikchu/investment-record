@@ -3,41 +3,34 @@
   "name": "max-investment-record-sec-cron",
   "main": "index.ts",
   "compatibility_date": "2026-08-26",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "vars": {
     "MAX_SITE_ORIGIN": "https://investment-record.max-zhangyuchen.workers.dev",
     "PORTFOLIO_TARGET_PLATFORM": "cloudflare",
-    "IBKR_FLEX_QUERY_ID": "1628251",
-    "SEC_USER_AGENT": "max-investment-record/1.0 max.zhangyuchen@gmail.com",
-    "SEC_ANALYSIS_MODEL": "deepseek-v4-flash"
+    "IBKR_FLEX_QUERY_ID": "1628251"
   },
   "services": [
-    { "binding": "PORTFOLIO_SITE", "service": "investment-record" }
-  ],
-  "workflows": [
     {
-      "name": "max-investment-record-sec-analysis",
-      "binding": "SEC_ANALYSIS_WORKFLOW",
-      "class_name": "SecAnalysisWorkflow"
-    },
-    {
-      "name": "max-investment-record-sec-memory",
-      "binding": "SEC_MEMORY_WORKFLOW",
-      "class_name": "SecMemoryWorkflow"
-    }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "SEC_FILINGS",
-      "bucket_name": "max-investment-record-sec-filings"
+      "binding": "PORTFOLIO_SITE",
+      "service": "investment-record"
     }
   ],
   "triggers": {
-    "crons": ["0 6 * * 2-6", "15 * * * *"]
+    "crons": [
+      "0 6 * * 2-6",
+      "15 * * * *"
+    ]
   },
   "observability": {
     "enabled": true,
-    "logs": { "head_sampling_rate": 1 },
-    "traces": { "enabled": true, "head_sampling_rate": 0.05 }
+    "logs": {
+      "head_sampling_rate": 1
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.05
+    }
   }
 }

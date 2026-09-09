@@ -118,22 +118,6 @@ export function calculateRsi(closes: number[], period = 14): number | null {
   return 100 - (100 / (1 + averageGain / averageLoss));
 }
 
-export async function handleQuoteRequest(
-  request: Request,
-  _user: { email: string } | null,
-  fetcher: typeof fetch = fetch,
-): Promise<Response> {
-  const parsed = parseRequestedSymbols(new URL(request.url).searchParams.get("symbols"));
-  if (!parsed.ok) return Response.json({ error: parsed.error }, { status: 400 });
-
-  try {
-    const quotes = await fetchYahooQuotes(parsed.symbols, fetcher);
-    return Response.json({ quotes }, { headers: { "cache-control": "private, no-store" } });
-  } catch {
-    return Response.json({ error: "行情暂时无法获取。" }, { status: 502 });
-  }
-}
-
 function toYahooSymbol(symbol: string): string {
   return symbol.replaceAll(".", "-");
 }

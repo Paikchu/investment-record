@@ -1,3 +1,4 @@
+import { handleQuoteRequest } from "../lib/quote-request.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 
@@ -5,7 +6,6 @@ import * as yahooQuotes from "../lib/yahoo-quotes.ts";
 
 const {
   fetchYahooQuotes,
-  handleQuoteRequest,
   parseRequestedSymbols,
   parseYahooSparkQuotes,
 } = yahooQuotes;
@@ -167,7 +167,7 @@ test("serves public market quotes without account authentication", async () => {
 test("rejects invalid quote request parameters", async () => {
   const response = await handleQuoteRequest(
     new Request("https://example.com/api/quotes?symbols=MSFT,$BAD"),
-    { email: "owner@example.com" },
+    null,
     async () => Response.json(yahooPayload),
   );
 
@@ -177,10 +177,27 @@ test("rejects invalid quote request parameters", async () => {
 test("returns a controlled error when Yahoo is unavailable", async () => {
   const response = await handleQuoteRequest(
     new Request("https://example.com/api/quotes?symbols=MSFT"),
-    { email: "owner@example.com" },
+    null,
     async () => { throw new DOMException("aborted", "AbortError"); },
   );
 
   assert.equal(response.status, 502);
   assert.deepEqual(await response.json(), { error: "行情暂时无法获取。" });
+});
+
+test("uses fresh cached quotes and keeps stale prices during an upstream outage", async () => {
+  const quote = { price: 123, changePercent: 1, marketTime: "2026-09-09T00:00:00Z", rsi14: 50 };
+  let fetchedAt = Date.now();
+  let calls = 0;
+  const cache = { async match() { return Response.json({ quote, fetchedAt }); }, async put() {} } as unknown as Cache;
+  const fetcher = async () => { calls += 1; throw new Error("upstream down"); };
+  const request = new Request("https://example.test/api/quotes?symbols=MSFT");
+  const fresh = await handleQuoteRequest(request, cache, fetcher);
+  assert.equal(fresh.status, 200);
+  assert.equal(calls, 0);
+  fetchedAt -= 10 * 60_000;
+  const stale = await handleQuoteRequest(request, cache, fetcher);
+  assert.equal(stale.status, 200);
+  assert.equal(calls, 1);
+  assert.deepEqual(await stale.json(), { quotes: { MSFT: quote } });
 });

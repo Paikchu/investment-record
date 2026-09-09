@@ -3,7 +3,6 @@ import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } fr
 import handler from "vinext/server/app-router-entry";
 
 interface Env {
-  HOSTING_PLATFORM?: string;
   ASSETS: Fetcher;
   DB: D1Database;
   IMAGES: {
@@ -28,15 +27,6 @@ interface ExecutionContext {
 
 const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    // Sites supplies trusted identity headers. A standalone Worker has no
-    // Sites gateway, so never trust those headers from an Internet client.
-    if (env.HOSTING_PLATFORM === "cloudflare") {
-      const safeHeaders = new Headers(request.headers);
-      for (const name of [...safeHeaders.keys()]) {
-        if (name.startsWith("oai-authenticated-user-")) safeHeaders.delete(name);
-      }
-      request = new Request(request, { headers: safeHeaders });
-    }
     const url = new URL(request.url);
 
     if (url.pathname === "/_vinext/image") {

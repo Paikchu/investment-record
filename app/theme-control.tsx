@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 
 const key = "max-investment-record:theme";
 type Mode = "system" | "light" | "dark";
@@ -28,32 +28,32 @@ export function useResolvedTheme() {
 
 const ThemeContext = createContext<{ mode: Mode; choose: (value: string) => void } | null>(null);
 
+function savedMode(): Mode {
+  try { const saved = localStorage.getItem(key); return valid(saved) ? saved : "system"; } catch { return "system"; }
+}
+function subscribeMode(notify: () => void) {
+  const onStorage = (event: StorageEvent) => { if (event.key === key || event.key === null) { selectedMode = null; notify(); } };
+  window.addEventListener("storage", onStorage);
+  window.addEventListener("max-theme-choice", notify);
+  return () => { window.removeEventListener("storage", onStorage); window.removeEventListener("max-theme-choice", notify); };
+}
+let selectedMode: Mode | null = null;
+function currentMode() { return selectedMode ?? savedMode(); }
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<Mode>("system");
+  const mode = useSyncExternalStore(subscribeMode, currentMode, () => "system" as Mode);
   useEffect(() => {
-    let current: Mode = "system";
-    try { const saved = localStorage.getItem(key); if (valid(saved)) current = saved; } catch {}
-    setMode(current);
-    apply(current);
+    apply(mode);
     const media = matchMedia("(prefers-color-scheme: dark)");
-    const systemChanged = () => apply(current);
-    const storageChanged = (event: StorageEvent) => {
-      if (event.key !== key && event.key !== null) return;
-      current = valid(event.newValue) ? event.newValue : "system";
-      setMode(current); apply(current);
-    };
-    const chosen = (event: Event) => { current = (event as CustomEvent<Mode>).detail; };
+    const systemChanged = () => apply(mode);
     media.addEventListener("change", systemChanged);
-    window.addEventListener("storage", storageChanged);
-    window.addEventListener("max-theme-choice", chosen);
-    return () => { media.removeEventListener("change", systemChanged); window.removeEventListener("storage", storageChanged); window.removeEventListener("max-theme-choice", chosen); };
-  }, []);
+    return () => media.removeEventListener("change", systemChanged);
+  }, [mode]);
   const choose = (value: string) => {
     if (!valid(value)) return;
-    setMode(value);
+    selectedMode = value;
     try { localStorage.setItem(key, value); } catch {}
-    window.dispatchEvent(new CustomEvent("max-theme-choice", { detail: value }));
-    apply(value);
+    window.dispatchEvent(new Event("max-theme-choice"));
   };
   return <ThemeContext.Provider value={{ mode, choose }}>{children}</ThemeContext.Provider>;
 }

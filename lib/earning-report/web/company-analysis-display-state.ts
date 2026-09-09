@@ -1,4 +1,4 @@
-import type { AnalysisRunSummary } from "../shared/analysis-contract/filings.ts";
+import type { AnalysisRunSummary } from "../../../shared/analysis-contract/filings.ts";
 
 export function companyAnalysisNotice(run: AnalysisRunSummary | undefined, hasOverview = false): string {
   const missingData = run?.errorCode === "yahoo_target_period_missing" || run?.errorCode === "INSUFFICIENT_DATA";

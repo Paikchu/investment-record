@@ -165,11 +165,9 @@ test("runs one Flex request and publishes it through the authenticated site brid
   const env = {
     MAX_SITE_ORIGIN: "https://site.example",
     MAX_SITE_BYPASS_TOKEN: "site-token",
-    SEC_REFRESH_KEY: "sync-key",
     IBKR_FLEX_TOKEN: "1234567890",
     IBKR_FLEX_QUERY_ID: "1628251",
     PORTFOLIO_SYNC_KEY: "portfolio-key",
-    SEC_ANALYSIS_WORKFLOW: { async create() { return { id: "unused" }; } },
   } satisfies IbkrSyncEnv;
   const result = await runIbkrFlexSync(env, (async (input, init) => {
     calls.push(new Request(input, init));
@@ -209,11 +207,9 @@ test("Cloudflare sync omits Sites credentials and rejects redirects", async () =
         return responses.shift()!;
       }) as typeof fetch,
     },
-    SEC_REFRESH_KEY: "",
     IBKR_FLEX_TOKEN: "1234567890",
     IBKR_FLEX_QUERY_ID: "1628251",
     PORTFOLIO_SYNC_KEY: "portfolio-key",
-    SEC_ANALYSIS_WORKFLOW: { async create() { return { id: "unused" }; } },
   } satisfies IbkrSyncEnv;
   await runIbkrFlexSync(env, (async (input, init) => {
     assert.ok(!new Request(input, init).url.startsWith("https://site.example"));
@@ -251,7 +247,7 @@ test("manual portfolio trigger requires POST and a matching secret before fetchi
   const authorized = new Request(url, { method: "POST", headers: { "x-portfolio-sync-key": "test-key" } });
   const response = await handleIbkrSyncRequest(authorized, env, sync);
   assert.equal(response.status, 200);
-  assert.equal((await response.json()).status, "unchanged");
+  assert.equal(((await response.json()) as { status: string }).status, "unchanged");
   assert.equal(calls, 1);
   const failure = await handleIbkrSyncRequest(authorized, env, async () => { throw new Error("private-provider-detail"); });
   assert.equal(failure.status, 502);

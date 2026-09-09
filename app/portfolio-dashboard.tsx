@@ -538,7 +538,7 @@ export function PortfolioDashboard({
       try {
         const response = await fetch('/api/earnings', {signal: controller.signal, cache: 'no-store'});
         if (!response.ok) throw new Error('Calendar unavailable');
-        const fresh = await response.json();
+        const fresh = await response.json() as CalendarState;
         if (!controller.signal.aborted) setCalendar(fresh);
       } catch { if (!controller.signal.aborted) setCalendar(previous => ({...previous, status:'unavailable'})); }
     };

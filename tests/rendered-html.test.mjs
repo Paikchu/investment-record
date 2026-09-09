@@ -84,18 +84,18 @@ test("renders settings with theme and language controls in the shared dock", asy
   assert.doesNotMatch(await (await render()).text(), /切换日间或夜间模式|data-slot="toggle-group"/);
 });
 
-test("allows anonymous company browsing while protecting plan writes", async () => {
+test("allows anonymous company browsing and reports unavailable plan storage", async () => {
   for (const ticker of ["NOK", "MSFT", "SATS"]) {
     const response = await render(`/positions/${ticker}`);
     assert.equal(response.status, 200);
     assert.equal(response.headers.get("location"), null);
     const html = await response.text();
-    assert.match(html, /id="position-detail-title"/);
+    assert.match(html, /stock-detail-identity/);
     assert.doesNotMatch(html, /ownership-structure|股权结构/);
     assert.doesNotMatch(html, /<textarea/);
   }
   const response = await render("/api/plans/NOK");
-  assert.equal(response.status, 401);
+  assert.equal(response.status, 500);
 });
 
 test("removes the disposable starter preview", async () => {
@@ -259,7 +259,7 @@ test("renders holding and sector allocation charts together", async () => {
   assert.match(html, /id="holding-allocation-title">个股</);
   assert.match(html, /id="sector-allocation-title">板块</);
   assert.equal(html.match(/class="allocation-ring"/g)?.length, 2);
-  assert.doesNotMatch(html, /role="tablist"|role="tab"|role="tabpanel"/);
+  assert.doesNotMatch(html, /class="allocation-tablist"/);
   assert.doesNotMatch(dashboard, /AllocationMode|allocationModes|setMode|aria-selected/);
   assert.match(dashboard, /SectorAllocationRing/);
   assert.match(dashboard, /allocationColor\(index\)/);
@@ -359,7 +359,7 @@ test("uses semantic color tokens, stable holding marks, and a filled plan button
   assert.doesNotMatch(heatmap, /data-dimmed/);
   assert.doesNotMatch(css, /\[data-dimmed="true"\]/);
   assert.match(heatmap, /--holding-color/);
-  assert.match(heatmap, /signedPercent\(holding\.unrealizedRate\)/);
+  assert.match(heatmap, /signedPercent\(rate\)/);
   assert.doesNotMatch(css, /\.option-pill \{[^]*?color: #8b3b2b;/);
 });
 
@@ -427,8 +427,8 @@ test("adds resilient company logos to current and historical ledger rows", async
   ]);
 
   assert.equal((dashboard.match(/<CompanyLogo symbol=\{group\.symbol\} \/>/g) ?? []).length, 2);
-  assert.match(logo, /images\.financialmodelingprep\.com\/symbol\/\$\{encodeURIComponent\(symbol\)\}\.png/);
-  assert.match(logo, /onError=\{\(\) => setFailed\(true\)\}/);
+  assert.match(logo, /loadCompanyLogo\(symbol\)/);
+  assert.match(logo, /setAttribute\("data-failed", "true"\)/);
   assert.match(logo, /referrerPolicy="no-referrer"/);
   assert.match(css, /\.company-logo\s*\{[^}]*width:\s*26px;[^}]*height:\s*26px;/s);
   assert.match(css, /\.company-logo img\s*\{[^}]*object-fit:\s*contain;/s);
@@ -437,14 +437,14 @@ test("adds resilient company logos to current and historical ledger rows", async
 test("automatically resolves logos for newly planned tickers", async () => {
   const [dialog, detail, logo, css] = await Promise.all([
     readFile(new URL("../app/AddPlanDialog.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/positions/[ticker]/PositionDetailContent.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/positions/[ticker]/StockDetail.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/company-logo.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
 
   assert.match(dialog, /<CompanyLogo symbol=\{result\.symbol\} \/>/);
   assert.match(detail, /<CompanyLogo symbol=\{ticker\} size="lg" \/>/);
-  assert.match(logo, /src=\{`https:\/\/images\.financialmodelingprep\.com\/symbol\/\$\{encodeURIComponent\(symbol\)\}\.png`\}/);
+  assert.match(logo, /src=\{src\}/);
   assert.match(css, /\.company-logo\[data-size="lg"\]\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;/s);
 });
 
@@ -520,10 +520,10 @@ test("renders option-only submenus below every ticker with options", async () =>
 });
 
 test("uses independent position routes and removes the workspace dialog", async () => {
-  const [dashboard, addPlanDialog, detail, css] = await Promise.all([
+  const [dashboard, addPlanDialog, detail] = await Promise.all([
     readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/AddPlanDialog.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/positions/[ticker]/PositionDetailContent.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/positions/[ticker]/StockDetail.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
 
@@ -531,28 +531,25 @@ test("uses independent position routes and removes the workspace dialog", async 
   assert.doesNotMatch(dashboard, /PositionDetailDialog|selectedPosition/);
   assert.doesNotMatch(dashboard, /aria-label=\{`查看 \$\{group\.symbol\} 持仓详情`\}/);
   assert.match(dashboard, /className="sr-only">\{t\("，查看持仓详情"\)\}/);
-  assert.match(addPlanDialog, /router\.push\(`\/positions\/\$\{encodeURIComponent\(result\.symbol\)\}`\)/);
-  assert.match(detail, /className="detail-section-nav"/);
-  for (const id of ["position-structure", "plan-editor", "sec-filings"]) {
-    assert.match(detail, new RegExp(`href="#${id}"`));
-  }
-  assert.match(css, /\.detail-section-nav \{[^]*?position: sticky;/);
+  assert.match(addPlanDialog, /navigate\(`\/positions\/\$\{encodeURIComponent\(result\.symbol\)\}`\)/);
+  assert.match(detail, /<Tabs value=\{activeTab\}/);
+  for (const label of ["业务前瞻", "财务指标", "持仓构成", "持仓计划", "披露时间线"]) assert.ok(detail.includes(label));
   await assert.rejects(access(new URL("app/PositionDetailDialog.tsx", projectRoot)));
 });
 
 test("renders price and daily change surfaces without source or snapshot labels", async () => {
   const [response, detail] = await Promise.all([
     render(),
-    readFile(new URL("../app/positions/[ticker]/PositionDetailContent.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/positions/[ticker]/StockDetail.tsx", import.meta.url), "utf8"),
   ]);
   const html = await response.text();
 
   assert.match(html, /现价/);
   assert.match(html, /日涨跌/);
-  assert.match(detail, /activeQuote\.changePercent/);
+  assert.match(detail, /quote\.changePercent/);
   assert.match(detail, /RSI 14/);
-  assert.match(detail, /activeQuote\.rsi14/);
-  assert.match(detail, /<span>\{t\("股价"\)\}<\/span>/);
+  assert.match(detail, /quote\?\.rsi14/);
+  assert.match(detail, /stock-detail-price/);
   assert.doesNotMatch(detail, /Yahoo Finance|IBKR 快照|snapshotTime/);
   assert.match(detail, /行情暂不可用/);
   assert.doesNotMatch(detail, /position\.value\s*=\s*quote|position\.unrealized\s*=\s*quote/);
@@ -623,7 +620,7 @@ test("keeps both allocation charts visible in a responsive grid", async () => {
   assert.match(dashboard, /className="allocation-mode-panel" aria-labelledby="sector-allocation-title"/);
   assert.match(css, /\.allocation-comparison \{[^}]*display: grid;[^}]*grid-template-columns: repeat\(auto-fit,/s);
   assert.match(css, /\.allocation-mode-panel \{[^}]*min-width: 0;[^}]*display: grid;[^}]*grid-template-rows: auto 1fr;/s);
-  assert.match(css, /\.allocation-mode-panel > \.allocation-wrap \{[^}]*height: 100%;[^}]*align-items: flex-start;/s);
+  assert.match(css, /\.allocation-mode-panel > \.allocation-wrap \{[^}]*height: 100%;[^}]*align-items: center;/s);
 });
 
 test("collapses portfolio analysis before the ledger on narrow screens", async () => {
@@ -649,43 +646,35 @@ test("collapses portfolio analysis before the ledger on narrow screens", async (
 test("fetches homepage and independent detail quotes without modal state", async () => {
   const [dashboard, detail] = await Promise.all([
     readFile(new URL("../app/portfolio-dashboard.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/positions/[ticker]/PositionDetailContent.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/positions/[ticker]/StockDetail.tsx", import.meta.url), "utf8"),
   ]);
 
   assert.doesNotMatch(dashboard, /selectedPosition|PositionDetailDialog/);
-  assert.match(detail, /useMarketQuotes\(ticker, quoteStatus === undefined\)/);
+  assert.match(detail, /useMarketQuotes\(ticker\)/);
 });
 
-test("protects the Yahoo quote endpoint with ChatGPT authentication", async () => {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("quotes-test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
-  const response = await worker.fetch(
-    new Request("http://localhost/api/quotes?symbols=MSFT"),
-    { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } },
-    { waitUntil() {}, passThroughOnException() {} },
-  );
-
-  assert.equal(response.status, 401);
-  assert.deepEqual(await response.json(), { error: "未登录。" });
+test("public quote endpoint validates input before fetching", async () => {
+  const response = await render("/api/quotes?symbols=$BAD");
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), { error: "Ticker 参数无效。" });
 });
 
-test("exposes authenticated plan reads for the independent detail page", async () => {
+test("exposes uncached shared plan reads for the independent detail page", async () => {
   const route = await readFile(new URL("../app/api/plans/[ticker]/route.ts", import.meta.url), "utf8");
 
   assert.match(route, /export async function GET/);
   assert.match(route, /getHoldingPlan/);
-  assert.match(route, /return Response\.json\(\{ plan \}\)/);
+  assert.match(route, /return Response\.json\(\{ plan \},/);
 });
 
 test("uses page-scrolling cards for mobile position details", async () => {
   const [detailPage, detailContent, css] = await Promise.all([
     readFile(new URL("../app/positions/[ticker]/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/positions/[ticker]/PositionDetailContent.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/positions/[ticker]/PositionHoldings.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
 
-  assert.match(detailPage, /PositionDetailContent/);
+  assert.match(detailPage, /StockDetail/);
   assert.match(detailContent, /id="position-structure"/);
   assert.match(detailContent, /data-label=\{t\("平均成本"\)\}/);
   assert.match(detailContent, /data-label=\{t\("未实现盈亏"\)\}/);

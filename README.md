@@ -21,7 +21,7 @@
 - 当前本地目录：`/Users/max/Investment/investment-record`。
 - 本地 Git remote：`github` 指向上述 GitHub 仓库；`origin` 保留旧 Sites 源仓库地址。当前发布使用 `github`。
 
-GitHub 是当前维护与自动部署的主仓库。旧 Sites 的配置和部分兼容代码仍保留，但旧 Sites 地址、版本号和发布流程不代表当前 Cloudflare 生产状态。`earning-report-analysis` 原仓库保留历史代码与旧 Web 入口，财报 Pipeline 的后续维护在本仓库进行。
+GitHub 是当前维护与自动部署的主仓库。旧 Sites 的部分兼容数据入口仍保留，但旧 Sites 地址、版本号和发布流程不代表当前 Cloudflare 生产状态。`earning-report-analysis` 原仓库保留历史代码与旧 Web 入口，财报 Pipeline 的后续维护在本仓库进行。
 
 ## 三个 Worker，一个仓库
 
@@ -31,17 +31,17 @@ GitHub 是当前维护与自动部署的主仓库。旧 Sites 的配置和部分
 | `max-investment-record-sec-cron` | IBKR 定时同步、财报日历刷新 | [`workers/sec-cron/wrangler.jsonc`](workers/sec-cron/wrangler.jsonc) | 前端部署命令的最后一步 |
 | `earning-report-analysis-sec-pipeline` | SEC 发现与分析、Memory、公司分析、基本面及分析读取 API | [`workers/pipeline/wrangler.jsonc`](workers/pipeline/wrangler.jsonc) | 独立 Pipeline Git 构建 |
 
-`sec-cron` 的代码已经在本仓库。它不需要单独连接 GitHub，Cloudflare Builds 页面显示未独立连接是预期状态。名称中的 `sec` 来自历史用途，现行两条定时计划不会启动其历史 SEC 分析分支。
+`sec-cron` 的代码已经在本仓库。它不需要单独连接 GitHub，Cloudflare Builds 页面显示未独立连接是预期状态。名称中的 `sec` 来自历史用途，历史 SEC 分析执行代码已退役，仅运行投资数据任务。
 
 ### 数据与调用边界
 
 - **投资账本 D1**：`investment-record-db`，由主应用的 `DB` 绑定访问；迁移文件在 `drizzle/`。
 - **财报分析 D1**：`earning-report-analysis-sec-web`，由 Pipeline 的 `DB` 绑定访问；迁移文件在 `workers/pipeline/migrations/`。数据库沿用历史名称，所有权属于 Pipeline。
 - **财报分析 R2**：`earning-report-analysis-sec-filings`，保存 Pipeline 的原文与分析产物。
-- **历史 SEC R2**：`max-investment-record-sec-filings`，仍绑定在 `sec-cron`；与 Pipeline 的 bucket 不同。
+- **历史 SEC R2**：`max-investment-record-sec-filings` 数据保留，已解除 `sec-cron` 绑定；本次清理不删除历史资源。
 - 主应用通过 `EARNING_REPORT_PIPELINE → earning-report-analysis-sec-pipeline` Service Binding 读取分析结果；本地或其他消费者可使用服务端 HTTPS。
 - 定时任务通过 `PORTFOLIO_SITE → investment-record` Service Binding 更新账本和财报日历。
-- Pipeline 拥有四个分析 Workflows；`sec-cron` 仍保留两个历史 SEC Workflows。不要混用名称或资源。
+- Pipeline 拥有四个分析 Workflows；`sec-cron` 不再注册或启动历史 SEC Workflows。
 
 分析读取凭据只在服务端使用。读取已发布报告不启动 SEC/Yahoo 抓取、AI 分析或数据库写入。投资账本与分析数据库的迁移命令必须分别执行。
 
@@ -54,8 +54,8 @@ app/                         页面、API 与交互组件
   api/analysis/v1/           面向浏览器的分析读取代理
 worker/                      主应用 Cloudflare 入口
 lib/                         投资账本、IBKR、行情与服务端逻辑
-  earning-report/            迁入的分析前端客户端、展示工具与契约
-shared/analysis-contract/    Pipeline 的共享分析类型
+  earning-report/            分析前端客户端与展示工具
+shared/analysis-contract/    前端与 Pipeline 共用的分析契约
 workers/
   sec-cron/                  IBKR 与财报日历定时 Worker
   pipeline/                  财报分析 Worker、数据库 schema 与 migrations
@@ -94,7 +94,7 @@ npx wrangler dev --config workers/pipeline/wrangler.jsonc
 
 主应用与 `sec-cron` 的 `PORTFOLIO_SYNC_KEY` 必须一致。前端的读取凭据必须匹配 Pipeline 配置的消费者凭据。生产值保留在对应 Worker 的 Runtime variables / Secrets 中，本地文件不会随部署自动上传。
 
-独立 Cloudflare Worker 不提供 Sites 的 ChatGPT 身份网关。维护持仓计划与其他写接口时，应核对当前分支的认证和数据归属实现，不要假定旧 Sites 身份头在新环境有效，也不要把本地未提交的认证调整当成已上线能力。
+独立 Cloudflare Worker 不提供 Sites 的 ChatGPT 身份网关。当前持仓计划按 ticker 共享，所有访问者均可编辑，最后一次保存生效；保留同源检查和输入校验。历史记录保留，读取最近更新的记录。内部同步接口仍要求同步密钥。
 
 ## 检查命令
 
@@ -104,6 +104,7 @@ npx wrangler dev --config workers/pipeline/wrangler.jsonc
 # 主应用
 npm run build
 npm run lint
+npm run typecheck
 npm test
 
 # 分析前端与 Pipeline 的接入
@@ -118,6 +119,8 @@ npm run worker:pipeline:check
 # 投资定时任务
 npm run sec-cron:check
 ```
+
+`npm test` 自动发现并运行主应用单元测试、Pipeline 测试，再构建并运行页面回归；单独调试可用 `test:unit` 和 `test:rendered`。历史宏观文件使用配对测试快照验证，不要求历史数据始终匹配最新账本。
 
 `worker:pipeline:check` 和 `sec-cron:check` 是部署 dry-run，不代表已发布。需要验证主应用部署产物时，在 `npm run build` 后执行：
 
@@ -206,7 +209,10 @@ npm run market-close:check
 | `/analysis` | 财报搜索入口 |
 | `/analysis/stocks/[ticker]` | 兼容旧链接，重定向到个股详情 |
 | `/analysis/stocks/[ticker]/sec/[accession]` | 完整财报分析 |
-| `/macro`、`/market-close`、`/settings` | 宏观、收盘简报及设置 |
+| `/macro` | 宏观功能占位入口 |
+| `/market-close` | 旧收盘简报链接，重定向首页 |
+| `/settings` | 主题与语言设置 |
+| `/positions/[ticker]/sec/[accession]` | 旧报告链接，重定向统一报告页面 |
 | `/api/analysis/v1/*` | 主应用的分析读取代理，服务端附加读凭据 |
 | `/api/internal/portfolio/sync` | 受同步密钥保护的账本同步接口 |
 | `/api/internal/earnings/refresh` | 受同步密钥保护的财报日历刷新接口 |
