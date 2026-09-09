@@ -575,7 +575,9 @@ test("renders the holding summary in the portfolio overview without the market p
   assert.match(html, /持仓净市值/);
   assert.match(html, /正股/);
   assert.match(html, /期权/);
-  assert.match(html, /即将财报/);
+  // The fixture has no live D1 calendar; the reminder is conditional on an event.
+  assert.match(dashboard, /t\("即将到来的事件"\)/);
+  assert.doesNotMatch(html, /未来一个月财报|earnings-calendar-panel/);
   assert.doesNotMatch(html, /class="market-tape"|aria-label="美股大盘"/);
   assert.doesNotMatch(dashboard, /MARKET_INDEXES|MARKET_INDEX_SYMBOLS|market-tape/);
   assert.match(dashboard, /const quoteSymbols = useMemo\(\(\) => positionGroups\.map/);

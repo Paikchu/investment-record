@@ -1,6 +1,5 @@
 "use client";
 
-import { EarningsCalendarPanel } from "./earnings-calendar-panel";
 import { emptyCalendar, withinReminderWindow, type CalendarEvent, type CalendarState } from "@/lib/earnings-live";
 import { useLanguage } from "@/app/language-provider";
 
@@ -97,7 +96,7 @@ function PortfolioOverview({
         <article><span>{t("剔除期权浮盈亏")}</span><strong>{money(netLiquidationWithoutOptionPnl)}</strong></article>
         {nextEarnings && nextEarningsReminder && (
           <article className="header-next-earnings">
-            <span>{t("即将财报")}</span>
+            <span>{t("即将到来的事件")}</span>
             <strong>{(nextEarnings as CalendarEvent).confidence === "confirmed" ? "" : "预计 "}{nextEarnings.symbol} {nextEarningsReminder.releaseDateLabel} · {nextEarningsReminder.sessionLabel}</strong>
             <i>{nextEarnings.session === "unknown" ? "北京时间待确认" : `北京 ${nextEarningsReminder.viewDateLabel}${nextEarningsReminder.viewTimeLabel}`} · {(nextEarnings as CalendarEvent).confidence === "confirmed" ? "公司已确认" : "日期未确认"}</i>
           </article>
@@ -599,7 +598,6 @@ export function PortfolioDashboard({
         />
       </div>
 
-      <EarningsCalendarPanel calendar={calendar} asOf={earningsAsOf} symbols={positionSymbols} />
       <div className="lower-grid portfolio-workspace">
         <aside className="portfolio-analysis-stack" aria-label={t("仓位分析")} data-expanded={analysisExpanded}>
           <Button
