@@ -218,3 +218,8 @@ npm run db:generate
 - `PUT /api/plans/[ticker]`：认证、同源校验后的计划保存接口。
 
 净入金由 Flex Cash Transactions 的 Deposits/Withdrawals，加 Transfers 的现金及证券转移市值自动计算。首次必须覆盖 DateFunded；缺失字段、时间断档或账户变化会中止更新，不能把最近一年净入金误当累计本金。
+
+## 财报分析 Pipeline
+
+财报分析后端代码位于 [`workers/pipeline`](workers/pipeline/README.md)，与投资看板共用仓库、独立部署。
+现有 Worker 和数据资源保持原标识；构建切换与回滚见 [Pipeline 迁移说明](docs/pipeline-migration.md)。

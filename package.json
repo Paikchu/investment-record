@@ -24,7 +24,17 @@
     "sec-cron:deploy": "env -u WRANGLER_CI_OVERRIDE_NAME -u WRANGLER_CI_MATCH_TAG wrangler deploy --config workers/sec-cron/wrangler.jsonc --name max-investment-record-sec-cron --keep-vars",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote --config wrangler.jsonc",
     "deploy:cloudflare": "npm run db:migrate:remote && wrangler deploy --config dist/server/wrangler.json --keep-vars && npm run sec-cron:deploy",
-    "test:earning-report": "node --experimental-strip-types --test tests/earning-report-integration.test.ts tests/earning-report-rich-text.test.ts"
+    "test:earning-report": "node --experimental-strip-types --test tests/earning-report-integration.test.ts tests/earning-report-rich-text.test.ts",
+    "worker:pipeline:check:migrations": "node --experimental-strip-types workers/pipeline/scripts/check-migrations.ts",
+    "worker:pipeline:check": "wrangler deploy --config workers/pipeline/wrangler.jsonc --env=\"\" --dry-run",
+    "worker:pipeline:deploy": "npm run worker:pipeline:check:migrations && wrangler deploy --config workers/pipeline/wrangler.jsonc --env=\"\" --keep-vars",
+    "worker:pipeline:version": "wrangler versions upload --config workers/pipeline/wrangler.jsonc --env=\"\" --keep-vars",
+    "worker:pipeline:deploy:staging": "wrangler deploy --config workers/pipeline/wrangler.jsonc --env staging --keep-vars",
+    "worker:pipeline:version:staging": "wrangler versions upload --config workers/pipeline/wrangler.jsonc --env staging --keep-vars",
+    "worker:pipeline:db:generate": "drizzle-kit generate --config workers/pipeline/drizzle.config.ts",
+    "typecheck:pipeline": "tsc --noEmit -p workers/pipeline/tsconfig.json",
+    "test:pipeline": "node --experimental-strip-types --test tests/pipeline/*.test.ts",
+    "check:pipeline:boundary": "node --experimental-strip-types scripts/check-pipeline-boundary.ts"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
@@ -56,7 +66,8 @@
     "typescript": "5.9.3",
     "vinext": "0.0.50",
     "vite": "8.0.13",
-    "wrangler": "4.92.0"
+    "wrangler": "4.127.1",
+    "@cloudflare/workers-types": "5.20260830.1"
   },
   "type": "module"
 }
