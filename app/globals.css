@@ -1915,7 +1915,7 @@ td { font-size: 14px; }
     overflow: visible;
     overscroll-behavior: auto;
     scrollbar-gutter: auto;
-    touch-action: pan-y;
+    touch-action: pan-x pan-y;
   }
   .position-list { min-width: 0; }
   .position-row { contain-intrinsic-size: 220px; }
@@ -1949,7 +1949,24 @@ td { font-size: 14px; }
   .position-reminder strong,
   .position-reminder small { font-size: 12px; }
   .option-contract { gap: 6px; }
-  .ledger-option-row .option-contract { margin-inline-start: 18px; }
+  /* Bound contract content so it cannot widen the sticky ticker column. */
+  .ledger-option-row .option-contract {
+    width: 132px;
+    margin-inline-start: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px 6px;
+    white-space: normal;
+    line-height: 1.35;
+  }
+  .ledger-option-row .option-contract > strong { overflow-wrap: anywhere; }
+  .ledger-option-row .option-expiry { flex-basis: auto; }
+  .ledger-option-row .option-size { margin-inline-start: 0; padding-inline-start: 0; }
+  .ledger-table .ledger-option-row td { padding-block: 8px; }
+  .ledger-table .ledger-identity { gap: 4px; }
+  .ledger-table .ledger-symbol { gap: 5px; }
+  .ledger-table .company-logo { width: 20px; height: 20px; flex-basis: 20px; }
+  .ledger-table th:first-child, .ledger-table td:first-child { z-index: 1; }
   .option-strike { font-size: 13px; }
   .option-expiry small { display: none; }
   .option-size { padding-inline-start: 10px; }
