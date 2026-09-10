@@ -278,8 +278,9 @@ function xmlValue(xml: string, tag: string): string | undefined {
 
 function flexError(xml: string): { code: string; message: string } | null {
   const status = xmlValue(xml, "Status");
-  if (status?.toLowerCase() !== "fail") return null;
-  return { code: xmlValue(xml, "ErrorCode") ?? "unknown", message: xmlValue(xml, "ErrorMessage") ?? "Unknown Flex Web Service error" };
+  const code = xmlValue(xml, "ErrorCode");
+  if (!code && !["fail", "warn"].includes(status?.toLowerCase() ?? "")) return null;
+  return { code: code ?? "unknown", message: xmlValue(xml, "ErrorMessage") ?? "Unknown Flex Web Service error" };
 }
 
 export async function fetchFlexStatement(options: {
@@ -321,6 +322,8 @@ export async function fetchFlexStatement(options: {
   statementUrl.searchParams.set("q", referenceCode);
   statementUrl.searchParams.set("v", "3");
 
+  // SendRequest and GetStatement share IBKR's per-token rate limit.
+  await sleep(1_000);
   for (let attempt = 0; attempt <= retryDelays.length; attempt += 1) {
     const response = await fetcher(statementUrl, { headers, signal: AbortSignal.timeout(30_000) });
     const body = await response.text();
@@ -336,6 +339,7 @@ export async function fetchFlexStatement(options: {
     if (!RETRYABLE_CODES.has(error.code) || attempt === retryDelays.length) {
       throw new Error(`IBKR Flex ${error.code}: ${error.message}`);
     }
+    console.log(JSON.stringify({ event: "ibkr-flex-retry", code: error.code, attempt: attempt + 1, delayMs: retryDelays[attempt] }));
     await sleep(retryDelays[attempt]);
   }
 

@@ -53,27 +53,50 @@ test("requires a timezone-qualified Flex execution time", () => {
   assert.throws(() => parseFlexDateTime("20261231;233000"), /timezone-qualified/i);
 });
 
-test("polls the same generated report while IBKR returns 1019", async () => {
-  const calls: string[] = [];
-  const responses = [
-    '<FlexStatementResponse><Status>Success</Status><ReferenceCode>123456</ReferenceCode></FlexStatementResponse>',
-    '<FlexStatementResponse><Status>Fail</Status><ErrorCode>1019</ErrorCode><ErrorMessage>Statement generation in progress.</ErrorMessage></FlexStatementResponse>',
-    fixture,
-  ];
-  const result = await fetchFlexStatement({
-    token: "1234567890",
-    queryId: "1628251",
-    periodDays: 7,
-    retryDelaysMs: [0],
-    sleep: async () => undefined,
-    fetcher: (async (input: string | URL | Request) => {
-      const url = String(input);
-      calls.push(url.includes("SendRequest") ? "send" : "get");
-      return new Response(responses.shift(), { status: 200 });
-    }) as typeof fetch,
+for (const status of ["Fail", "Warn"]) {
+  test(`polls the same generated report while IBKR returns ${status} 1019`, async () => {
+    const calls: string[] = [];
+    const delays: number[] = [];
+    const responses = [
+      '<FlexStatementResponse><Status>Success</Status><ReferenceCode>123456</ReferenceCode></FlexStatementResponse>',
+      `<FlexStatementResponse><Status>${status}</Status><ErrorCode>1019</ErrorCode><ErrorMessage>Statement generation in progress.</ErrorMessage></FlexStatementResponse>`,
+      fixture,
+    ];
+    const result = await fetchFlexStatement({
+      token: "1234567890",
+      queryId: "1628251",
+      periodDays: 7,
+      retryDelaysMs: [0],
+      sleep: async (ms) => { delays.push(ms); },
+      fetcher: (async (input: string | URL | Request) => {
+        const url = String(input);
+        calls.push(url);
+        return new Response(responses.shift(), { status: 200 });
+      }) as typeof fetch,
+    });
+    assert.equal(result, fixture);
+    assert.match(calls[0], /SendRequest/);
+    assert.match(calls[1], /GetStatement/);
+    assert.equal(calls[1], calls[2]);
+    assert.deepEqual(delays, [1000, 0]);
   });
-  assert.equal(result, fixture);
-  assert.deepEqual(calls, ["send", "get", "get"]);
+
+}
+
+test("warning errors stop at the retry limit and permanent errors never retry", async () => {
+  for (const code of ["1019", "1015"]) {
+    let gets = 0;
+    await assert.rejects(fetchFlexStatement({
+      token: "123", queryId: "123", periodDays: 7, retryDelaysMs: [0, 0],
+      sleep: async () => undefined,
+      fetcher: async (url) => {
+        if (String(url).includes("SendRequest")) return new Response('<FlexStatementResponse><Status>Success</Status><ReferenceCode>456</ReferenceCode></FlexStatementResponse>');
+        gets += 1;
+        return new Response(`<FlexStatementResponse><Status>Warn</Status><ErrorCode>${code}</ErrorCode><ErrorMessage>Provider warning</ErrorMessage></FlexStatementResponse>`);
+      },
+    }), new RegExp(code));
+    assert.equal(gets, code === "1019" ? 3 : 1);
+  }
 });
 
 test("does not retry an invalid Flex token", async () => {
