@@ -1,6 +1,6 @@
 import type { AnalysisFact, ManagerReview, PublishedSecReport, SecNodeSpecV2 } from "./analysis.ts";
 
-export const SEC_SUMMARY_VERSION = 6;
+export const SEC_SUMMARY_VERSION = 7;
 
 const MAX_HEADING_CHARACTERS = 120;
 const ITEM_HEADING_LEVEL = 2;

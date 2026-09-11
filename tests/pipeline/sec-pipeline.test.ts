@@ -5,6 +5,7 @@ import {
   analyzePreparedSecNode,
   buildPreparedSecBrief,
   failedSecNode,
+  eventHistoryContext,
   discoverSecTicker,
   planPreparedSecFiling,
   prepareSecFiling,
@@ -97,7 +98,7 @@ test("keeps 8-K and 6-K on the compact event-summary contract", async () => {
       eventCategory: "earnings_update",
       report: "附件披露收入增长 18% 至 1.2 亿美元，主要驱动为云业务放量。",
     };
-  }, new Date("2026-08-10T00:00:00.000Z"));
+  }, new Date("2026-08-10T00:00:00.000Z"), xbrlHistory("120", "100"));
 
   assert.equal(summary.form, "8-K");
   assert.equal(summary.version, SEC_SUMMARY_VERSION);
@@ -105,6 +106,7 @@ test("keeps 8-K and 6-K on the compact event-summary contract", async () => {
   assert.match(summary.report ?? "", /18%/);
   assert.match(JSON.stringify(payload), /Revenue increased 18%/);
   assert.match(JSON.stringify(payload), /eventCategory/);
+  assert.deepEqual((payload as { historicalFinancials: SecHistorySnapshot }).historicalFinancials, xbrlHistory("120", "100"));
 });
 
 test("rejects event summaries that omit the event category", async () => {
@@ -639,4 +641,15 @@ test("publishes manager planning defects as report warnings", async () => {
   );
 
   assert.ok(result.artifact.report.dataQuality.warnings.some((warning) => warning.includes("bookings")));
+});
+
+
+test("event history excludes later disclosures and bounds comparable history without mutating it", () => {
+  const history = xbrlHistory("120", "100");
+  const prior = history.series[0].annual[1];
+  history.series[0].annual.push({ ...prior, value: "999", sourceFiledAt: "2026-09-11" });
+  const result = eventHistoryContext(history, "2026-07-30");
+  assert.deepEqual(result.series[0].annual.map((point) => point.value), ["120", "100"]);
+  assert.equal(history.series[0].annual.length, 3);
+  assert.deepEqual(eventHistoryContext(history, "2024-01-01").series, []);
 });

@@ -365,10 +365,25 @@ function isEventBoilerplateBlock(block: FilingBlock): boolean {
   return block.body.length <= 160 && block.numericDensity < 20;
 }
 
+/** Bound the event context to information available when this filing was published. */
+export function eventHistoryContext(history: SecHistorySnapshot, filingDate: string): SecHistorySnapshot {
+  const recent = (points: SecHistorySnapshot["series"][number]["quarters"], limit: number) => points
+    .filter((point) => point.sourceFiledAt.slice(0, 10) <= filingDate && point.endDate <= filingDate)
+    .sort((a, b) => b.endDate.localeCompare(a.endDate) || b.sourceFiledAt.localeCompare(a.sourceFiledAt))
+    .filter((point, index, all) => all.findIndex((other) => other.endDate === point.endDate && other.startDate === point.startDate && other.unit === point.unit && other.basis === point.basis) === index)
+    .slice(0, limit);
+  return {
+    registryVersion: history.registryVersion,
+    series: history.series.map((series) => ({ ...series, quarters: recent(series.quarters, 8), annual: recent(series.annual, 3) }))
+      .filter((series) => series.quarters.length || series.annual.length),
+  };
+}
+
 export async function summarizePreparedSecEvent(
   prepared: PreparedSecFiling,
   model: SecModelCall,
   now = new Date(),
+  history: SecHistorySnapshot = { registryVersion: "sec-canonical-series.v1", series: [] },
 ): Promise<SecFilingSummary> {
   const value = await model("event-summary", eventSummarySystemPrompt(), {
     ticker: prepared.filing.ticker,
@@ -378,6 +393,7 @@ export async function summarizePreparedSecEvent(
     reportDate: prepared.filing.reportDate,
     accessionNumber: prepared.filing.accessionNumber,
     items: prepared.filing.items,
+    historicalFinancials: eventHistoryContext(history, prepared.filing.filingDate),
     sections: selectEventBlocks(prepared.blocks, 12).map((block) => ({
       heading: block.heading,
       source: block.exhibitType ?? "filing body",
@@ -574,11 +590,14 @@ function eventSummarySystemPrompt() {
     "headline 和 bullets 必须基于附件披露的实质内容：业绩数字、指引、并购条款、人事变动、法律进展等。",
     "严禁把以下元信息写进 headline 或 bullets：签署人、办公地址、Commission File Number、IRS Employer ID、Item 编号、文件形式、报告日期。",
     "eventCategory 必须从以下选项中选择最贴切的一项：earnings_update（业绩与财务结果）、guidance（业绩指引）、m&a（并购、资产处置、合资）、executive（高管与董事变动）、legal（诉讼、监管、和解）、other。",
-    "report 用 300 至 600 字简体中文连贯输出附件的核心披露内容：关键数字及其口径与比较期间、主要驱动因素、已披露的影响与后续安排；按投资者阅读逻辑分段，不使用 Markdown。",
-    "数字必须带口径和比较期间（同比/环比/绝对值），只使用原文已有的数值，不编造、不推算。",
+    "先识别附件实际业绩期间；8-K/6-K 的 reportDate 是事件日期，不一定是财季末。historicalFinancials 是截至披露日已公开的 SEC XBRL 历史值，保留期间、单位、口径和来源；只比较同指标、同口径、同期间长度的数据。季度不得与全年或累计数直接比较。",
+    "业绩类 bullets 每条围绕一个变化：结论 → 本期与可比前期及同比/环比变化 → 业务意义或约束。优先比较增长速度、盈利质量、现金流与资本投入、指引变化，而非罗列各期绝对值。非业绩事件比较此前状态与新变化，不硬套财务指标。",
+    "原文明确给出的同比、环比优先使用；历史仅有绝对值时可说明方向，不自行计算未核验的增长率。没有前期增速证据不能说增长提速，不能用环比金额判断同比增速。缺少可比数据时明确说明，不能编造比较或强行填满要点。",
+    "report 为可选补充分析，最多 200 字：只解释 bullets 未覆盖的驱动机制、盈利质量、风险或下一次验证条件，不重述 headline、bullets 或 analystView，不逐项复述财务数字；没有新增信息时返回空字符串。不使用 Markdown。",
+    "数字必须带口径和比较期间（同比/环比/绝对值），只使用附件或 historicalFinancials 已有的数值，不编造、不推算。",
     "附件中没有具体数字时，如实描述事件性质和已披露的定性信息，不要复述表单结构或监管样板。",
     "说明事件本身、发生原因，以及对盈利、现金流或资产负债表的具体影响；没有证据的维度直接省略。",
-    "headline 是一句有方向性的结论；bullets 输出 3 至 5 条具体事实；analystView 说明投资含义但不给买卖建议。",
+    "headline 是一句有证据支持的方向性结论；bullets 输出 3 至 5 条变化分析；analystView 用一至两句概括最重要的投资含义和后续验证条件，不重复要点、不提供买卖建议。",
     "以 JSON 对象输出 headline、bullets、analystView、eventCategory 和 report，字段严格遵循 outputSchema。",
   ].join("\n");
 }

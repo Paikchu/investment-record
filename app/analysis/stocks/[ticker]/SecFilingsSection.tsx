@@ -161,7 +161,6 @@ function FilingSummary({ filing }: { filing: PublicSecFiling }) {
   if (!summary) return <p className="sec-summary-pending">AI 解读正在后台生成。</p>;
   if (!summary.headline && !summary.bullets.length && !summary.analystView) return <p className="sec-summary-error">AI 解读暂时不可用。</p>;
   const categoryLabel = summary.eventCategory ? EVENT_CATEGORY_LABELS[summary.eventCategory] : null;
-  const reportLabel = summary.eventCategory === "earnings_update" || summary.eventCategory === "guidance" ? "业绩要点" : "事件详情";
   return (
     <div className="sec-summary">
       {categoryLabel && <Badge variant="secondary">{categoryLabel}</Badge>}
@@ -172,7 +171,7 @@ function FilingSummary({ filing }: { filing: PublicSecFiling }) {
           ))}
         </ul>
       )}
-      {summary.report && <p className="sec-event-report"><span>{reportLabel}</span>{summary.report}</p>}
+      {summary.report && <details className="sec-event-report"><summary className="cursor-pointer text-sm text-muted-foreground">补充分析</summary><p className="whitespace-pre-line">{summary.report}</p></details>}
       {summary.analystView && <p className="sec-analyst-view"><span>投资含义</span>{summary.analystView}</p>}
       <small className="sec-ai-note">AI 基于 filing 原文生成 · {formatDateTime(summary.generatedAt)}</small>
     </div>

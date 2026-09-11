@@ -1903,13 +1903,13 @@
 .earning-report .sec-event-category[data-category="guidance"] { color: var(--ink); border-color: color-mix(in srgb, var(--ink-soft) 42%, transparent); }
 .earning-report .sec-event-report {
   margin: 0;
-  display: grid;
-  gap: 6px;
+  display: block;
   color: var(--ink-soft);
   font: 400 14px/1.7 var(--sans);
   white-space: pre-line;
 }
-.earning-report .sec-event-report span { color: var(--ink-muted); font: 650 12px/1 var(--sans); letter-spacing: .06em; }
+.earning-report .sec-event-report > summary { color: var(--ink-muted); font: 650 12px/1 var(--sans); letter-spacing: .06em; }
+.earning-report .sec-event-report > p { margin: 8px 0 0; }
 .earning-report .sec-ai-note { padding-bottom: 3px; color: var(--ink-muted); font-size: 12px; }
 .earning-report .sec-summary-pending,
 .earning-report .sec-summary-error { margin: 0 0 14px; font-size: 14px; }
