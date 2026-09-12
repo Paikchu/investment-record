@@ -145,6 +145,21 @@ function operations(overrides: Partial<SecPipelineOperations> = {}): SecPipeline
   };
 }
 
+test("publication preserves the synthesis historical-review node", async () => {
+  let summary: SecFilingSummary | null = null;
+  const base = operations();
+  const ops = operations({
+    async summarize(...args) {
+      const result = await base.summarize(...args);
+      result.summary!.nodes = [{ id: "historical-judgment-review", title: "历史判断复核", status: "complete", findings: [], narrative: "尚不能验证", evidence: [] }];
+      return result;
+    },
+    async publish(_artifact, value) { summary = value; },
+  });
+  await executeSecAnalysisWorkflow({ ticker: "TESTCO" }, "continuity-test", stepRecorder([]), ops);
+  assert.equal((summary as SecFilingSummary | null)?.nodes?.at(-1)?.id, "historical-judgment-review");
+});
+
 test("runs filing analysis as durable stages and fans analysis nodes out independently", async () => {
   const steps: string[] = [];
   const nodeIds: string[] = [];

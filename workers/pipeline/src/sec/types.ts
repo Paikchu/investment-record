@@ -1,4 +1,5 @@
 import type { SecFiling, SecFilingSummary } from "./sec.ts";
+import type { ReportContinuity } from "./continuity.ts";
 import type {
   ComparisonResult,
   CompanyMemoryItem,
@@ -25,6 +26,7 @@ export type SecRepository = {
 };
 
 export type SecAnalysisContext = {
+  reportContinuity?: ReportContinuity;
   currentPeriodId: string;
   qoqPeriodId: string | null;
   yoyPeriodId: string | null;

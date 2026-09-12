@@ -16,6 +16,7 @@ import {
   type SecModelCall,
 } from "../../workers/pipeline/src/sec/pipeline.ts";
 import type { SecAnalysisContext } from "../../workers/pipeline/src/sec/types.ts";
+import { selectReportContinuity } from "../../workers/pipeline/src/sec/continuity.ts";
 import type { SecHistorySnapshot } from "../../workers/pipeline/src/sec/analysis.ts";
 import { SEC_SUMMARY_VERSION, type SecFiling, type SecNodeSpec } from "../../workers/pipeline/src/sec/sec.ts";
 
@@ -68,6 +69,31 @@ const completeBullets = () => [
   { label: "利润率", detail: "利润率变化已完成验证。", importance: "medium" },
   { label: "现金流", detail: "现金流与资本投入需要联合观察。", importance: "medium" },
 ];
+
+test("selected full reports reach synthesis and a validated historical review survives publication", async () => {
+  const prepared = await prepareSecFiling(filing, { userAgent: "test@example.com", fetcher: async () => new Response("<h1>Business</h1><p>Current operations.</p>") });
+  const quote = "历史判断：增长质量取决于核心业务需求是否持续，并需用现金回款验证。";
+  const context = { ...analysisContext(prepared.periodId, xbrlHistory("120", "100")), reportContinuity: selectReportContinuity(filing, [{
+    accessionNumber: "old", form: "10-K", reportDate: "2025-06-30", filingDate: "2025-07-30", documentUrl: "https://sec.test/old",
+    payload: JSON.stringify({ ticker: filing.ticker, accessionNumber: "old", source: "deepseek", generatedAt: "2025-07-30T12:00:00Z", report: quote }),
+  }]) };
+  const brief = buildPreparedSecBrief(prepared, context);
+  const plan = { nodes: [nodeSpec({ id: "business", title: "Business", question: "Demand?", sectionIds: [prepared.outline[0].id] })], outlineSections: 1 };
+  const result = await summarizePreparedSecFiling(prepared, context, async (stage, system, payload) => {
+    assert.equal(stage, "synthesis", "continuity shares the existing bounded model step");
+    assert.match(JSON.stringify(payload), /历史判断：增长质量/);
+    assert.match(system, /重复出现不构成独立佐证/);
+    return { headline: "分析", bullets: completeBullets(), analystView: "继续观察", report: completeReport(),
+      keyMetrics: [{ metricKey: "revenue", currentValue: "120", evidenceIds: ["xbrl:revenue:2026-06-30"] }],
+      reviews: [{ accessionNumber: "old", priorJudgment: quote, status: "supported", evidenceIds: ["xbrl:revenue:2026-06-30"], explanation: "本期营收提供有限支持，现金回款仍待验证。", nextTest: "检查现金回款。" }],
+    };
+  }, new Date(), plan, [{ id: "business", title: "Business", status: "complete", findings: [], narrative: "本期业务分析", facts: [], evidence: [] }], brief);
+  const review = result.summary.nodes?.at(-1);
+  assert.equal(review?.id, "historical-judgment-review");
+  assert.match(review?.findings[0].label ?? "", /得到支持/);
+  assert.deepEqual(result.artifact.report.publication?.summary.nodes, result.summary.nodes);
+  assert.deepEqual(result.artifact.brief?.reportContinuity, context.reportContinuity);
+});
 
 test("selects the newest periodic filing plus visible event filings", () => {
   const filings: SecFiling[] = [

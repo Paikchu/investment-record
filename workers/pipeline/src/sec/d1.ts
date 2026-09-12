@@ -1,4 +1,5 @@
 import { SecAnalysisJobRepository } from "./d1-jobs.ts";
+import { loadReportContinuity } from "./continuity.ts";
 import { SecMemoryRepository } from "./d1-memory.ts";
 import { parseJson, hashJson, type D1Like } from "./d1-support.ts";
 export { SEC_ANALYSIS_JOB_LEASE_MS } from "./d1-jobs.ts";
@@ -322,6 +323,7 @@ export class D1SecRepository implements SecRepository {
     }));
     return {
       currentPeriodId: periodId,
+      reportContinuity: await loadReportContinuity(this.database, filing),
       qoqPeriodId,
       yoyPeriodId,
       history,

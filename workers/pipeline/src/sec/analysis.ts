@@ -76,6 +76,7 @@ export type CompanyMemoryItem = {
 };
 
 export type SecAnalysisBrief = {
+  reportContinuity?: import("./continuity.ts").ReportContinuity;
   version: "sec-analysis-brief.v2";
   ticker: string;
   filingId: string;

@@ -242,7 +242,7 @@ export async function executeSecAnalysisWorkflow(
       const summary = result.summary ? {
         ...result.summary,
         plan,
-        nodes: loop.nodes,
+        nodes: result.summary.nodes ?? loop.nodes,
         managerReview,
         repairRounds: loop.rounds,
       } : null;
