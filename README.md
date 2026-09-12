@@ -19,7 +19,7 @@
 - GitHub：[Paikchu/investment-record](https://github.com/Paikchu/investment-record)，主分支 `main`。
 - 生产网站：[MAX · 投资记录](https://investment-record.max-zhangyuchen.workers.dev/)。
 - 当前本地目录：`/Users/max/Investment/investment-record`。
-- 本地 Git remote：`github` 指向上述 GitHub 仓库；`origin` 保留旧 Sites 源仓库地址。当前发布使用 `github`。
+- 唯一 Git remote：`origin` 指向 `https://github.com/Paikchu/investment-record.git`，发布统一使用 `git push origin main`。
 
 GitHub 是当前维护与自动部署的主仓库。旧 Sites 的部分兼容数据入口仍保留，但旧 Sites 地址、版本号和发布流程不代表当前 Cloudflare 生产状态。`earning-report-analysis` 原仓库保留历史代码与旧 Web 入口，财报 Pipeline 的后续维护在本仓库进行。
 
@@ -133,7 +133,7 @@ Cloudflare Vite 插件与 Wrangler 应保持兼容。当前分别固定为 `1.54
 
 ## GitHub → Cloudflare 自动部署
 
-推送 GitHub `main` 会触发两条独立构建，根目录均为 `/`：
+唯一上线方式是推送 `origin/main`，禁止本地手动部署。下表 Deploy command 仅由 Cloudflare 自动构建执行，不在本地运行。推送会触发两条独立构建，根目录均为 `/`：
 
 | 构建目标 | Build command | Deploy command |
 | --- | --- | --- |
@@ -143,8 +143,8 @@ Cloudflare Vite 插件与 Wrangler 应保持兼容。当前分别固定为 `1.54
 主应用部署依次执行：投资账本 D1 迁移 → 主应用部署 → `sec-cron` 部署。Pipeline 部署先只读核对分析 D1 的迁移记录，再发布 Worker；**不会自动应用分析数据库迁移**。
 
 ```bash
-# 本地已有 github remote，且要发布的提交在 main 时
-git push github main
+# 完成验证并将本次修改提交到 main 后，通过推送触发自动部署
+git push origin main
 ```
 
 `sec-cron:deploy` 在子进程中移除 Builds 注入的主应用名称覆盖，并显式指定后台 Worker 名称。Pipeline 所有部署命令都显式指定自己的 Wrangler 配置，避免被前端生成的 `.wrangler/deploy/config.json` 引导到错误 Worker。
@@ -223,8 +223,8 @@ Pipeline 自身提供 `/api/v1/companies/:ticker/filings`、`analysis`、`fundam
 ## 在新对话中继续维护
 
 1. 选择本地文件夹 `/Users/max/Investment/investment-record`。
-2. 先检查 `git status`、当前分支及 `github/main`，保留已有未提交修改。
-3. 根据职责进入 `app/`、`workers/sec-cron/` 或 `workers/pipeline/`，避免在旧 `max-investment-record-ui` / Sites 目录中发布当前项目。
+2. 先检查 `git status`、当前分支及 `origin/main`，保留已有未提交修改。
+3. 根据职责进入 `app/`、`workers/sec-cron/` 或 `workers/pipeline/`，当前项目统一从本仓库的 `origin/main` 自动发布。
 4. 修改后台时核对对应 Wrangler 配置、Secrets 和数据库归属；读取凭据不要进入客户端。
 
 相关说明：
