@@ -29,14 +29,21 @@ export function NavigationDock() {
     return () => media.removeEventListener("change", update);
   }, []);
   const navigation = useRef<HTMLElement>(null);
-  const lastNavigation = useRef(0);
   useEffect(() => {
     const collapse = () => {
-      if (Date.now() - lastNavigation.current < 600 || navigation.current?.querySelector(":focus-visible")) return;
+      if (navigation.current?.querySelector(":focus-visible")) return;
       setExpanded(false);
     };
-    window.addEventListener("scroll", collapse, { passive: true });
-    return () => window.removeEventListener("scroll", collapse);
+    // Route changes restore scroll positions; only user scroll gestures hide the dock.
+    const wheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && (event.deltaX !== 0 || event.deltaY !== 0)) collapse();
+    };
+    window.addEventListener("wheel", wheel, { passive: true });
+    window.addEventListener("touchmove", collapse, { passive: true });
+    return () => {
+      window.removeEventListener("wheel", wheel);
+      window.removeEventListener("touchmove", collapse);
+    };
   }, []);
   const activeIndex = items.findIndex(({ href }) => href === "/"
     ? pathname === "/" || pathname === "/ledger"
@@ -91,7 +98,6 @@ export function NavigationDock() {
               "aria-current": active ? "page" as const : undefined,
               onClick: (event: React.MouseEvent<HTMLAnchorElement>) => {
                 if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0) {
-                  lastNavigation.current = Date.now();
                   moveDroplet(index);
                 }
               },

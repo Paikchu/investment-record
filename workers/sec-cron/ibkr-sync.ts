@@ -2,10 +2,7 @@ import { extractCapitalFlows, fetchFlexStatement, normalizeFlexStatement } from 
 import { selectTradeQueryPeriod } from "../../lib/portfolio-snapshot.ts";
 
 export type IbkrSyncEnv = {
-  MAX_SITE_ORIGIN: string;
-  MAX_SITE_BYPASS_TOKEN?: string;
-  PORTFOLIO_TARGET_PLATFORM?: "cloudflare" | "sites";
-  PORTFOLIO_SITE?: { fetch: typeof fetch };
+  PORTFOLIO_SERVICE?: { fetch: typeof fetch };
   IBKR_FLEX_TOKEN: string;
   IBKR_FLEX_QUERY_ID: string;
   PORTFOLIO_SYNC_KEY: string;
@@ -19,21 +16,16 @@ export async function runIbkrFlexSync(env: IbkrSyncEnv, fetcher: typeof fetch = 
   if (!env.IBKR_FLEX_TOKEN || !env.PORTFOLIO_SYNC_KEY || !/^\d+$/.test(env.IBKR_FLEX_QUERY_ID)) {
     throw new Error("IBKR Flex worker environment is incomplete");
   }
-  const origin = env.MAX_SITE_ORIGIN.replace(/\/+$/, "");
-  if (env.PORTFOLIO_TARGET_PLATFORM === "cloudflare" && !env.PORTFOLIO_SITE) {
+  const origin = "https://investment-record.internal";
+  if (!env.PORTFOLIO_SERVICE) {
     throw new Error("Cloudflare portfolio service binding is missing");
   }
-  const siteFetch = env.PORTFOLIO_SITE
-    ? env.PORTFOLIO_SITE.fetch.bind(env.PORTFOLIO_SITE)
-    : fetcher;
+  const portfolioFetch = env.PORTFOLIO_SERVICE.fetch.bind(env.PORTFOLIO_SERVICE);
   const headers = {
     "content-type": "application/json",
-    ...(env.PORTFOLIO_TARGET_PLATFORM !== "cloudflare"
-      ? { "oai-sites-authorization": `Bearer ${env.MAX_SITE_BYPASS_TOKEN}` }
-      : {}),
     "x-portfolio-sync-key": env.PORTFOLIO_SYNC_KEY,
   };
-  const stateResponse = await siteFetch(`${origin}/api/internal/portfolio/sync`, {
+  const stateResponse = await portfolioFetch(`${origin}/api/internal/portfolio/sync`, {
     redirect: "manual",
     headers,
     signal: AbortSignal.timeout(30_000),
@@ -53,7 +45,7 @@ export async function runIbkrFlexSync(env: IbkrSyncEnv, fetcher: typeof fetch = 
     queryId: env.IBKR_FLEX_QUERY_ID,
   });
   input.capitalFlows = extractCapitalFlows(csv);
-  const publishResponse = await siteFetch(`${origin}/api/internal/portfolio/sync`, {
+  const publishResponse = await portfolioFetch(`${origin}/api/internal/portfolio/sync`, {
     redirect: "manual",
     method: "POST",
     headers,
@@ -84,7 +76,7 @@ export async function handleIbkrSyncRequest(
     return Response.json(result, { headers });
   } catch (error) {
     let reason = error instanceof Error ? error.message : "Unknown sync error";
-    for (const secret of [env.IBKR_FLEX_TOKEN, env.PORTFOLIO_SYNC_KEY, env.MAX_SITE_BYPASS_TOKEN]) {
+    for (const secret of [env.IBKR_FLEX_TOKEN, env.PORTFOLIO_SYNC_KEY]) {
       if (secret) reason = reason.replaceAll(secret, "[redacted]");
     }
     reason = reason.replace(/https?:\/\/\S+/g, "[redacted-url]");

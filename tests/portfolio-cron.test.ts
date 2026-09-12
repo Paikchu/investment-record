@@ -7,7 +7,7 @@ test("calendar cron calls the protected portfolio binding once", async () => {
   const requests: Request[] = [];
   const tasks: Promise<unknown>[] = [];
   const env = {
-    PORTFOLIO_SYNC_KEY: "test-only", PORTFOLIO_SITE: { async fetch(input: RequestInfo | URL, init?: RequestInit) {
+    PORTFOLIO_SYNC_KEY: "test-only", PORTFOLIO_SERVICE: { async fetch(input: RequestInfo | URL, init?: RequestInit) {
       requests.push(new Request(input, init)); return Response.json({ status: "unchanged" });
     } },
   } as IbkrSyncEnv;

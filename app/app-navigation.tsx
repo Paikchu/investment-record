@@ -25,12 +25,19 @@ function normalize(href: string, current: string) {
   return path + url.hash;
 }
 
-class PageBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+class PageBoundary extends Component<{ children: ReactNode; onError: () => void; onRetry: () => void }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch() { this.props.onError(); }
+  componentDidUpdate(previous: Readonly<{ children: ReactNode }>) {
+    // A fresh server response must be allowed to render after a failed page.
+    if (this.state.failed && previous.children !== this.props.children) {
+      this.setState({ failed: false });
+    }
+  }
   render() {
     return this.state.failed
-      ? <div role="alert" className="page-shell py-8">页面暂时无法显示，请从左侧导航打开其他页面，或刷新后重试。</div>
+      ? <div role="alert" className="page-shell py-8">页面暂时无法显示。<button type="button" className="ml-2 underline underline-offset-4" onClick={this.props.onRetry}>重新加载页面</button></div>
       : this.props.children;
   }
 }
@@ -135,6 +142,6 @@ export function AppNavigation({ children, dock }: { children: ReactNode; dock: R
     {dock}
     <span role="status" className="sr-only">{pendingPath ? "正在加载页面" : ""}</span>
     {error && <div role="alert" className="fixed right-4 top-4 z-50 rounded-md bg-background px-3 py-2 text-sm text-destructive shadow-sm">{error}</div>}
-    {Object.entries(pages).map(([key, node]) => <div key={key} hidden={key !== path.split("#")[0]} inert={key !== path.split("#")[0]} data-app-page={key}><PageBoundary>{node}</PageBoundary></div>)}
+    {Object.entries(pages).map(([key, node]) => <div key={key} hidden={key !== path.split("#")[0]} inert={key !== path.split("#")[0]} data-app-page={key}><PageBoundary onError={() => { cache.current.delete(key); }} onRetry={() => { void navigate(key); }}>{node}</PageBoundary></div>)}
   </NavigationContext.Provider>;
 }

@@ -179,34 +179,6 @@ test("repairs symbols in the already-published legacy Flex snapshot", async () =
   assert.equal(repaired.positions[0].contractDescription, "MICROSOFT CORP");
 });
 
-test("runs one Flex request and publishes it through the authenticated site bridge", async () => {
-  const calls: Request[] = [];
-  const responses = [
-    Response.json({ lastSuccessfulTradeAt: "2026-12-30T20:00:00.000Z" }),
-    new Response('<FlexStatementResponse><Status>Success</Status><ReferenceCode>123456</ReferenceCode></FlexStatementResponse>'),
-    new Response(fixture),
-    Response.json({ status: "published", reportDate: "2026-12-31", positions: 1, trades: 1 }),
-  ];
-  const env = {
-    MAX_SITE_ORIGIN: "https://site.example",
-    MAX_SITE_BYPASS_TOKEN: "site-token",
-    IBKR_FLEX_TOKEN: "1234567890",
-    IBKR_FLEX_QUERY_ID: "1628251",
-    PORTFOLIO_SYNC_KEY: "portfolio-key",
-  } satisfies IbkrSyncEnv;
-  const result = await runIbkrFlexSync(env, (async (input, init) => {
-    calls.push(new Request(input, init));
-    return responses.shift()!;
-  }) as typeof fetch, new Date("2027-01-01T14:00:00.000Z"));
-
-  assert.equal(result.status, "published");
-  assert.equal(calls.filter((request) => request.url.includes("SendRequest")).length, 1);
-  assert.equal(calls.at(-1)?.method, "POST");
-  assert.equal(calls.at(-1)?.headers.get("x-portfolio-sync-key"), "portfolio-key");
-  assert.equal(calls.at(-1)?.headers.get("oai-sites-authorization"), "Bearer site-token");
-});
-
-
 test("extracts and reconciles capital flows, rejecting incomplete cash data", () => {
   const report = extractCapitalFlows(fixture);
   assert.equal(report.flows[0].amount, 1000);
@@ -214,7 +186,7 @@ test("extracts and reconciles capital flows, rejecting incomplete cash data", ()
   assert.throws(() => extractCapitalFlows(fixture.replace('"1000","deposit1"', '"900","deposit1"')), /reconcile/);
 });
 
-test("Cloudflare sync omits Sites credentials and rejects redirects", async () => {
+test("Flex sync uses the authenticated service binding and disables redirects", async () => {
   const calls: Request[] = [];
   const responses = [
     Response.json({ lastSuccessfulTradeAt: "2026-12-30T20:00:00.000Z" }),
@@ -223,10 +195,7 @@ test("Cloudflare sync omits Sites credentials and rejects redirects", async () =
     Response.json({ status: "published", reportDate: "2026-12-31", positions: 1, trades: 1 }),
   ];
   const env = {
-    MAX_SITE_ORIGIN: "https://site.example",
-    MAX_SITE_BYPASS_TOKEN: "old-sites-secret",
-    PORTFOLIO_TARGET_PLATFORM: "cloudflare",
-    PORTFOLIO_SITE: {
+    PORTFOLIO_SERVICE: {
       fetch: (async (input, init) => {
         calls.push(new Request(input, init));
         return responses.shift()!;
@@ -236,13 +205,17 @@ test("Cloudflare sync omits Sites credentials and rejects redirects", async () =
     IBKR_FLEX_QUERY_ID: "1628251",
     PORTFOLIO_SYNC_KEY: "portfolio-key",
   } satisfies IbkrSyncEnv;
-  await runIbkrFlexSync(env, (async (input, init) => {
-    assert.ok(!new Request(input, init).url.startsWith("https://site.example"));
+  const result = await runIbkrFlexSync(env, (async (input, init) => {
+    assert.ok(new Request(input, init).url.startsWith("https://ndcdyn.interactivebrokers.com/"));
     calls.push(new Request(input, init));
     return responses.shift()!;
   }) as typeof fetch, new Date("2027-01-01T14:00:00.000Z"));
+  assert.equal(result.status, "published");
+  assert.equal(calls.filter((request) => request.url.includes("SendRequest")).length, 1);
+  assert.equal(calls.at(-1)?.method, "POST");
   for (const request of [calls[0], calls.at(-1)!]) {
-    assert.equal(request.headers.get("oai-sites-authorization"), null);
+    assert.equal(request.url, "https://investment-record.internal/api/internal/portfolio/sync");
+    assert.deepEqual([...request.headers.keys()].sort(), ["content-type", "x-portfolio-sync-key"]);
     assert.equal(request.headers.get("x-portfolio-sync-key"), "portfolio-key");
     assert.equal(request.redirect, "manual");
   }
@@ -251,8 +224,7 @@ test("Cloudflare sync omits Sites credentials and rejects redirects", async () =
 test("Cloudflare sync fails closed when the service binding is missing", async () => {
   const env = {
     IBKR_FLEX_TOKEN: "1234567890", IBKR_FLEX_QUERY_ID: "1628251",
-    PORTFOLIO_SYNC_KEY: "key", MAX_SITE_ORIGIN: "https://site.example",
-    PORTFOLIO_TARGET_PLATFORM: "cloudflare",
+    PORTFOLIO_SYNC_KEY: "key",
   } as IbkrSyncEnv;
   await assert.rejects(runIbkrFlexSync(env), /service binding is missing/);
 });

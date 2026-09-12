@@ -6,7 +6,7 @@ const worker = {
       return handleIbkrSyncRequest(request, env);
     }
     if (new URL(request.url).pathname === "/health") {
-      return Response.json({ status: "ok", executor: "portfolio-cron", portfolioConfigured: Boolean(env.PORTFOLIO_SITE && env.PORTFOLIO_SYNC_KEY && env.IBKR_FLEX_TOKEN) }, { headers: { "cache-control": "no-store" } });
+      return Response.json({ status: "ok", executor: "portfolio-cron", portfolioConfigured: Boolean(env.PORTFOLIO_SERVICE && env.PORTFOLIO_SYNC_KEY && env.IBKR_FLEX_TOKEN) }, { headers: { "cache-control": "no-store" } });
     }
     return Response.json({ error: "Legacy SEC execution retired" }, { status: 410 });
   },
@@ -14,8 +14,8 @@ const worker = {
   async scheduled(controller: ScheduledController, env: IbkrSyncEnv, context: ExecutionContext) {
     if (controller.cron === "15 * * * *") {
       context.waitUntil((async () => {
-        if (!env.PORTFOLIO_SITE || !env.PORTFOLIO_SYNC_KEY) throw new Error("Earnings refresh binding or credential missing");
-        const response = await env.PORTFOLIO_SITE.fetch("https://investment-record.internal/api/internal/earnings/refresh", {
+        if (!env.PORTFOLIO_SERVICE || !env.PORTFOLIO_SYNC_KEY) throw new Error("Earnings refresh binding or credential missing");
+        const response = await env.PORTFOLIO_SERVICE.fetch("https://investment-record.internal/api/internal/earnings/refresh", {
           method: "POST", headers: { "x-portfolio-sync-key": env.PORTFOLIO_SYNC_KEY },
         });
         if (!response.ok) throw new Error(`Earnings refresh HTTP ${response.status}`);

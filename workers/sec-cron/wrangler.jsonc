@@ -7,13 +7,11 @@
     "nodejs_compat"
   ],
   "vars": {
-    "MAX_SITE_ORIGIN": "https://investment-record.max-zhangyuchen.workers.dev",
-    "PORTFOLIO_TARGET_PLATFORM": "cloudflare",
     "IBKR_FLEX_QUERY_ID": "1628251"
   },
   "services": [
     {
-      "binding": "PORTFOLIO_SITE",
+      "binding": "PORTFOLIO_SERVICE",
       "service": "investment-record"
     }
   ],

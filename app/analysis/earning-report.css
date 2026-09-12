@@ -3192,8 +3192,8 @@
 .unified-stock .instrument-section { margin-top: 24px; }
 .unified-stock .instrument-table { min-width: 1040px; }
 .unified-stock .position-summary { margin-top: 0; }
-.unified-stock .plan-editor { max-width: 900px; margin-top: 0; padding-top: 0; border-top: 0; }
-.unified-stock .stock-detail-timeline { max-width: 920px; }
+.unified-stock .plan-editor { max-width: 900px; margin-inline: auto; margin-top: 0; padding-top: 0; border-top: 0; }
+.unified-stock .stock-detail-timeline { max-width: 920px; margin-inline: auto; }
 .stock-detail-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-bottom: 32px; }
 .stock-detail-financials td, .stock-detail-trades td { white-space: nowrap; font-variant-numeric: tabular-nums; }
 @media (max-width: 900px) {

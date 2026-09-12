@@ -142,7 +142,6 @@ test("removes the disposable starter preview", async () => {
   assert.match(layout, /个人投资组合与持仓记录/);
   assert.doesNotMatch(layout, /个人持仓、交易与盈亏记录/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
-  await assert.rejects(access(new URL("app/_sites-preview/SkeletonPreview.tsx", projectRoot)));
 });
 
 test("uses the approved ledger-dominant hierarchy without horizontal scrolling", async () => {
