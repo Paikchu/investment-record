@@ -3,6 +3,7 @@
 import { Component, createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { revealContent } from "./content-motion";
+import { NavigationPlaceholder } from "./navigation-placeholder";
 import { loadAppPage } from "./load-app-page";
 
 const NavigationContext = createContext<{ path: string; pendingPath: string | null; navigate: (href: string, source?: HTMLElement) => void } | null>(null);
@@ -61,47 +62,52 @@ export function AppNavigation({ children, dock }: { children: ReactNode; dock: R
     if (cache.current.has(key)) return Promise.resolve(cache.current.get(key));
     let task = inflight.current.get(key);
     if (!task) {
-      task = loadAppPage(key).then((node) => { cache.current.set(key, node); return node; }).finally(() => inflight.current.delete(key));
+      let timeout: ReturnType<typeof setTimeout>;
+      const deadline = new Promise<never>((_, reject) => {
+        timeout = setTimeout(() => reject(new Error("Page request timed out")), 20_000);
+      });
+      task = Promise.race([loadAppPage(key), deadline])
+        .then((node) => { cache.current.set(key, node); return node; })
+        .finally(() => { clearTimeout(timeout); inflight.current.delete(key); });
       inflight.current.set(key, task);
     }
     return task;
   }, []);
 
-  const navigate = useCallback(async (href: string, source?: HTMLElement) => {
+  const navigate = useCallback(async (href: string) => {
     const next = normalize(href, active.current);
     if (!next) return;
     const key = next.split("#")[0];
     const id = ++sequence.current;
+    const previousKey = active.current.split("#")[0];
+    const returning = visited.current.has(key);
+    if (previousKey !== key) scroll.current.set(previousKey, window.scrollY);
+    // Selecting a destination is synchronous; its server content arrives separately.
+    active.current = next;
+    setPath(next);
     setError("");
-    setPendingPath(null);
-    const timer = window.setTimeout(() => {
+    const cached = cache.current.has(key);
+    setPendingPath(cached ? null : key);
+    if (cached) setPages((current) => ({ ...current, [key]: cache.current.get(key) }));
+    if (key !== previousKey) {
+      setTransition({ key, kind: returning ? "return" : key.includes("/sec/") ? "report" : "page" });
+    }
+    const restoreScroll = () => requestAnimationFrame(() => {
       if (id !== sequence.current) return;
-      setPendingPath(key);
-      source?.setAttribute("data-navigation-loading", "true");
-      source?.setAttribute("aria-busy", "true");
-    }, 150);
+      const hash = next.split("#")[1];
+      if (hash) document.querySelector(`[data-app-page="${CSS.escape(key)}"] #${CSS.escape(decodeURIComponent(hash))}`)?.scrollIntoView({ behavior: "instant" });
+      else window.scrollTo({ top: scroll.current.get(key) ?? 0, behavior: "instant" });
+    });
+    restoreScroll();
     try {
       const node = await fetchPage(key);
       if (id !== sequence.current) return;
-      const previousKey = active.current.split("#")[0];
-      const returning = visited.current.has(key);
       visited.current.add(key);
-      scroll.current.set(previousKey, window.scrollY);
-      if (key !== previousKey) setTransition({ key, kind: returning ? "return" : key.includes("/sec/") ? "report" : "page" });
       setPages((current) => ({ ...current, [key]: node }));
-      active.current = next;
-      setPath(next);
-      requestAnimationFrame(() => {
-        const hash = next.split("#")[1];
-        if (hash) document.querySelector(`[data-app-page="${CSS.escape(key)}"] #${CSS.escape(decodeURIComponent(hash))}`)?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
-        else window.scrollTo({ top: scroll.current.get(key) ?? 0, behavior: "instant" });
-      });
+      restoreScroll();
     } catch {
-      if (id === sequence.current) setError("页面暂时无法加载，请再次点击重试。");
+      if (id === sequence.current) setError("页面暂时无法加载，请重试。");
     } finally {
-      window.clearTimeout(timer);
-      source?.removeAttribute("data-navigation-loading");
-      source?.removeAttribute("aria-busy");
       if (id === sequence.current) setPendingPath(null);
     }
   }, [fetchPage]);
@@ -117,7 +123,7 @@ export function AppNavigation({ children, dock }: { children: ReactNode; dock: R
       if (!normalize(href, active.current)) return;
       event.preventDefault();
       event.stopPropagation();
-      void navigate(href, anchor);
+      void navigate(href);
     }
     function warm(event: Event) {
       const anchor = (event.target as Element).closest?.("a[href]") as HTMLAnchorElement | null;
@@ -141,7 +147,8 @@ export function AppNavigation({ children, dock }: { children: ReactNode; dock: R
   return <NavigationContext.Provider value={{ path, navigate, pendingPath }}>
     {dock}
     <span role="status" className="sr-only">{pendingPath ? "正在加载页面" : ""}</span>
-    {error && <div role="alert" className="fixed right-4 top-4 z-50 rounded-md bg-background px-3 py-2 text-sm text-destructive shadow-sm">{error}</div>}
+    {!(path.split("#")[0] in pages) && <NavigationPlaceholder path={path} error={error} onRetry={() => { void navigate(path); }} />}
+    {error && path.split("#")[0] in pages && <div role="alert" className="page-shell py-4">{error}<button className="ml-2 underline" onClick={() => { void navigate(path); }}>重新加载</button></div>}
     {Object.entries(pages).map(([key, node]) => <div key={key} hidden={key !== path.split("#")[0]} inert={key !== path.split("#")[0]} data-app-page={key}><PageBoundary onError={() => { cache.current.delete(key); }} onRetry={() => { void navigate(key); }}>{node}</PageBoundary></div>)}
   </NavigationContext.Provider>;
 }

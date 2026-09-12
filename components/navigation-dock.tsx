@@ -111,7 +111,7 @@ export function NavigationDock() {
                       ? <a href={href} {...props}>{content}</a>
                       : <Link href={href} {...props}>{content}</Link>}
                   </TooltipTrigger>
-                  <TooltipContent side="right" sideOffset={18}>{t(label)}</TooltipContent>
+                  <TooltipContent side={mobile ? "top" : "right"} sideOffset={18} className="pointer-events-none">{t(label)}</TooltipContent>
                 </Tooltip>
               </li>
             );

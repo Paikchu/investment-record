@@ -2288,3 +2288,9 @@ a[data-navigation-loading="true"]::after { content: ""; position: absolute; righ
   .stock-tab-indicator { transition: none; }
   .stock-loading-placeholder [data-slot="skeleton"] { animation: none; }
 }
+
+.navigation-placeholder { min-height: 85svh; padding-block: 40px; }
+@media (prefers-reduced-motion: no-preference) {
+  .navigation-skeleton { animation: navigation-pulse 1.8s ease-in-out infinite; }
+}
+@keyframes navigation-pulse { 50% { opacity: .55; } }
