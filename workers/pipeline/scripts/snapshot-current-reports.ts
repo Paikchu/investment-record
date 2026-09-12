@@ -34,19 +34,22 @@ for (const row of rows) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error(`Invalid financial date for ${row.ticker}`);
   const schema = report.reportVersion.slice(0, report.reportVersion.lastIndexOf(":"));
   report.reportVersion = `${schema}:${date}-${randomUUID()}`;
-  report.publication = { filing: {
-    ticker: row.ticker, cik: row.cik, cikNumber: Number(row.cik), companyName: row.ticker,
-    form: row.form, filingDate: row.filingDate, reportDate: row.reportDate,
-    accessionNumber: row.accessionNumber, primaryDocument: row.documentUrl.split("/").at(-1) ?? "",
-    description: row.form, items: "", documentUrl: row.documentUrl, indexUrl: row.indexUrl,
-  }, summary };
   if (!apply) { console.log(`${row.ticker}: ready ${date} ${row.accessionNumber}`); continue; }
-  // Compare source content and summary in the write itself. A concurrent generation must not be
-  // overwritten with an older snapshot. Original rows and their generation timestamps survive.
+  // Build the snapshot inside one SQL statement, keeping large article text out of the SQL
+  // command. Only the selected current version may be snapshotted; a newer generation wins.
   const result = query(`INSERT INTO sec_published_reports (ticker, period_id, report_version, payload, verification_status, generated_at)
-    SELECT ticker, period_id, ${quote(report.reportVersion)}, ${quote(JSON.stringify(report))}, verification_status, generated_at
-    FROM sec_published_reports r WHERE r.rowid = ${Number(row.sourceRow)} AND r.payload = ${quote(row.payload)}
-      AND EXISTS (SELECT 1 FROM sec_filing_summaries s WHERE s.ticker = r.ticker AND s.accession_number = ${quote(row.accessionNumber)} AND s.payload = ${quote(row.summary)})
+    SELECT r.ticker, r.period_id, ${quote(report.reportVersion)},
+      json_set(r.payload, '$.reportVersion', ${quote(report.reportVersion)}, '$.publication', json_object(
+        'filing', json_object('ticker', f.ticker, 'cik', f.cik, 'cikNumber', CAST(f.cik AS INTEGER),
+          'companyName', f.ticker, 'form', f.form, 'filingDate', f.filing_date, 'reportDate', f.report_date,
+          'accessionNumber', f.accession_number, 'primaryDocument', '', 'description', f.form,
+          'items', '', 'documentUrl', f.document_url, 'indexUrl', f.index_url),
+        'summary', json(s.payload))), r.verification_status, r.generated_at
+    FROM sec_published_reports r
+    JOIN sec_filings f ON f.ticker = r.ticker AND f.accession_number = ${quote(row.accessionNumber)}
+    JOIN sec_filing_summaries s ON s.ticker = f.ticker AND s.accession_number = f.accession_number
+    WHERE r.rowid = ${Number(row.sourceRow)} AND r.report_version = ${quote(JSON.parse(row.payload).reportVersion)}
+      AND json_extract(s.payload, '$.generatedAt') = ${quote(summary.generatedAt)}
       AND NOT EXISTS (SELECT 1 FROM sec_published_reports newer WHERE newer.ticker = r.ticker AND newer.period_id = r.period_id AND (newer.generated_at > r.generated_at OR (newer.generated_at = r.generated_at AND newer.rowid > r.rowid)))
     ON CONFLICT(ticker, period_id, report_version) DO NOTHING;`);
   if (result[0]?.meta?.changes !== 1) throw new Error(`Snapshot source changed for ${row.ticker}; inspect before retrying`);

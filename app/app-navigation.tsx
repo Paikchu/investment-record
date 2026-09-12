@@ -1,7 +1,7 @@
 "use client";
 
 import { Component, createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { revealContent } from "./content-motion";
 import { NavigationPlaceholder } from "./navigation-placeholder";
 import { loadAppPage } from "./load-app-page";
@@ -23,6 +23,8 @@ function normalize(href: string, current: string) {
   path = path.replace(/^\/analysis\/stocks\/([^/]+)$/, "/positions/$1");
   path = path.replace(/^\/positions\/([^/]+)\/sec\/([^/]+)$/, "/analysis/stocks/$1/sec/$2");
   if (!/^\/$|^\/(analysis|macro|settings)$|^\/positions\/[^/]+(?:\/sec\/[^/]+)?$|^\/analysis\/stocks\/[^/]+\/sec\/[^/]+$/.test(path)) return null;
+  // Versioned reports must use a document navigation so their query reaches the server.
+  if (path.includes("/sec/") && (url.searchParams.has("reportVersion") || url.searchParams.has("reportDate"))) return null;
   return path + url.hash;
 }
 
@@ -45,7 +47,9 @@ class PageBoundary extends Component<{ children: ReactNode; onError: () => void;
 
 export function AppNavigation({ children, dock }: { children: ReactNode; dock: ReactNode }) {
   const routePath = usePathname();
-  const [initialPath] = useState(routePath);
+  const searchParams = useSearchParams();
+  const pinnedReport = routePath.includes("/sec/") && (searchParams.has("reportVersion") || searchParams.has("reportDate"));
+  const [initialPath] = useState(routePath + (pinnedReport ? `?${searchParams.toString()}` : ""));
   const [path, setPath] = useState(initialPath);
   const [pages, setPages] = useState<Record<string, ReactNode>>({ [initialPath]: children });
   const [pendingPath, setPendingPath] = useState<string | null>(null);
@@ -77,6 +81,7 @@ export function AppNavigation({ children, dock }: { children: ReactNode; dock: R
   const navigate = useCallback(async (href: string) => {
     const next = normalize(href, active.current);
     if (!next) return;
+    window.history.replaceState(window.history.state, "", "/");
     const key = next.split("#")[0];
     const id = ++sequence.current;
     const previousKey = active.current.split("#")[0];
@@ -114,7 +119,7 @@ export function AppNavigation({ children, dock }: { children: ReactNode; dock: R
 
   useEffect(() => {
     if (window.location.hash) { active.current = initialPath + window.location.hash; setPath(active.current); }
-    window.history.replaceState(window.history.state, "", "/");
+    if (!initialPath.includes("?")) window.history.replaceState(window.history.state, "", "/");
     function link(event: MouseEvent) {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const anchor = (event.target as Element).closest?.("a[href]") as HTMLAnchorElement | null;
