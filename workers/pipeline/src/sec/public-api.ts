@@ -88,10 +88,18 @@ export async function getPublicFiling(
   repository: D1SecRepository,
   rawTicker: string,
   rawAccession: string,
+  snapshot?: { reportDate: string; reportVersion: string },
 ): Promise<PublicFilingDetail | null> {
   const ticker = normalizeTrackedTicker(rawTicker);
   const accession = cleanSecAccession(rawAccession);
   if (!ticker || !accession) return null;
+  if (snapshot) {
+    const filing = await repository.getReportSnapshot(ticker, accession, snapshot.reportDate, snapshot.reportVersion);
+    if (!filing) return null;
+    const company = companyFromFiling(filing) ?? companyFromDirectory(ticker);
+    return { apiSchemaVersion: ANALYSIS_API_SCHEMA_VERSION, ticker, company,
+      filing: await toPublicFiling(repository, filing, company?.name ?? ticker) };
+  }
   const cachedFeed = typeof repository.getCache === "function" ? await readCachedSecFeed(repository, ticker) : null;
   const cached = cachedFeed?.filings.find((candidate) => candidate.accessionNumber === accession);
   const filing = cached
@@ -108,6 +116,9 @@ export async function getPublicFiling(
 }
 
 async function toPublicFiling(repository: D1SecRepository, filing: SecFilingWithSummary, companyName: string): Promise<PublicSecFiling> {
+  if (filing.analysis?.publication) {
+    filing = { ...filing.analysis.publication.filing, summary: filing.analysis.publication.summary, analysis: filing.analysis };
+  }
   const job = await readJobSummary(repository, filing.ticker, filing.accessionNumber);
   const report = filing.analysis;
   /**

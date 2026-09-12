@@ -55,8 +55,8 @@ export class AnalysisBackendClient {
     return this.request<PublicFilingPage>(`/api/v1/companies/${encode(ticker)}/filings`, search);
   }
 
-  getFiling(ticker: string, accession: string) {
-    return this.request<PublicFilingDetail>(`/api/v1/companies/${encode(ticker)}/filings/${encode(accession)}`);
+  getFiling(ticker: string, accession: string, snapshot?: { reportDate: string; reportVersion: string }) {
+    return this.request<PublicFilingDetail>(`/api/v1/companies/${encode(ticker)}/filings/${encode(accession)}`, snapshot ? new URLSearchParams(snapshot) : undefined);
   }
 
   getCompanyAnalysis(ticker: string) {

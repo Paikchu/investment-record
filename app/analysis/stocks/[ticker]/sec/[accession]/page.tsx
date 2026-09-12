@@ -13,10 +13,14 @@ export const dynamic = "force-dynamic";
  * there is no database binding in this Worker to fall back to, and deliberately so: a silent
  * fallback would have preserved exactly the coupling this refactor removed.
  */
-export default async function StockSecReportPage({ params }: { params: Promise<{ ticker: string; accession: string }> }) {
+export default async function StockSecReportPage({ params, searchParams }: { params: Promise<{ ticker: string; accession: string }>; searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
   const route = await params;
   const ticker = normalizeTrackedTicker(route.ticker);
-  const result = await loadFiling(ticker, route.accession);
+  const query = await searchParams ?? {};
+  const pinned = query.reportVersion !== undefined || query.reportDate !== undefined;
+  if (pinned && (typeof query.reportVersion !== "string" || typeof query.reportDate !== "string")) notFound();
+  const snapshot = pinned ? { reportVersion: query.reportVersion as string, reportDate: query.reportDate as string } : undefined;
+  const result = await loadFiling(ticker, route.accession, snapshot);
   if (result === "unavailable") throw new Error("The analysis backend is unavailable.");
   if (!result) notFound();
   const security = findSecurity(ticker);
@@ -45,7 +49,7 @@ export default async function StockSecReportPage({ params }: { params: Promise<{
  * answer. Collapsing the third into the second would render an outage as "this report does not
  * exist", which is the one thing a reader must not be told when it is untrue.
  */
-async function loadFiling(ticker: string, accession: string): Promise<PublicFilingDetail | null | "unavailable"> {
+async function loadFiling(ticker: string, accession: string, snapshot?: { reportDate: string; reportVersion: string }): Promise<PublicFilingDetail | null | "unavailable"> {
   if (!ticker) return null;
   const runtime = await getAnalysisBackendRuntime();
   if (!runtime.configured) {
@@ -53,7 +57,7 @@ async function loadFiling(ticker: string, accession: string): Promise<PublicFili
     return "unavailable";
   }
   try {
-    const response = await runtime.client.getFiling(ticker, accession);
+    const response = await runtime.client.getFiling(ticker, accession, snapshot);
     if (response.status === 404) return null;
     if (response.status !== 200 || isAnalysisErrorBody(response.body)) {
       console.error(JSON.stringify({ event: "analysis-backend-refused", status: response.status }));

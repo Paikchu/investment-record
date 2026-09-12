@@ -337,3 +337,23 @@ test("never reads a previously stored failed report as the published report", as
 
   assert.match(selectedSql, /verification_status IN \('verified', 'partial'\)/);
 });
+
+test("pinned report reads its saved body and rejects mismatched identity without latest fallback", async () => {
+  const filing = { ticker: "MSFT", accessionNumber: "0000789019-26-000001", reportDate: "2026-06-30" };
+  const report = { reportVersion: "schema:2026-06-30-old", publication: { filing, summary: { report: "original article" } } };
+  const repository = new D1SecRepository(asDatabase({
+    prepare(sql: string) {
+      assert.match(sql, /report_version = \?/);
+      return { bind(ticker: string, version: string) {
+        return { async first() { return ticker === "MSFT" && version === report.reportVersion ? { payload: JSON.stringify(report) } : null; } };
+      } };
+    },
+  }));
+  const read = (ticker = "MSFT", accession = filing.accessionNumber, date = filing.reportDate, version = report.reportVersion) =>
+    repository.getReportSnapshot(ticker, accession, date, version);
+  assert.equal((await read())?.summary?.report, "original article");
+  assert.equal(await read("AAPL"), null);
+  assert.equal(await read("MSFT", "wrong"), null);
+  assert.equal(await read("MSFT", filing.accessionNumber, "2026-03-31"), null);
+  assert.equal(await read("MSFT", filing.accessionNumber, filing.reportDate, "unknown"), null);
+});

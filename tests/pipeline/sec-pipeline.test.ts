@@ -298,6 +298,8 @@ test("synthesizes one full report from node outputs and verified structured data
     nodes,
   );
 
+  assert.deepEqual(result.artifact.report.publication, { filing: prepared.filing, summary: result.summary });
+  assert.match(result.artifact.report.reportVersion, /:2026-06-30-[0-9a-f-]{36}$/);
   assert.equal(result.artifact.report.presentation?.sections[0].title, "增长驱动");
   assert.equal(result.artifact.report.presentation?.sections[0].blocks[1].type, "sec_chart");
   assert.ok(result.artifact.report.sourceMaterials?.length);
@@ -652,4 +654,18 @@ test("event history excludes later disclosures and bounds comparable history wit
   assert.deepEqual(result.series[0].annual.map((point) => point.value), ["120", "100"]);
   assert.equal(history.series[0].annual.length, 3);
   assert.deepEqual(eventHistoryContext(history, "2024-01-01").series, []);
+});
+
+test("identical generations for one financial date have distinct persistent identities", async () => {
+  const prepared = await prepareSecFiling(filing, {
+    userAgent: "test@example.com",
+    fetcher: async () => new Response("<h1>Revenue</h1><p>Revenue grew.</p>"),
+  });
+  const context = analysisContext(prepared.periodId, xbrlHistory("120", "100"));
+  const model = async () => ({ headline: "Revenue", bullets: completeBullets(), analystView: "Watch demand", report: completeReport() });
+  const generate = () => summarizePreparedSecFiling(prepared, context, model, new Date("2026-08-05T00:00:00.000Z"), normalizePlan(prepared.outline[0].id), [{ id: "revenue-growth", title: "Revenue", status: "complete", findings: [], narrative: "Demand grew", evidence: [] }]);
+  const first = await generate();
+  const second = await generate();
+  assert.notEqual(first.artifact.report.reportVersion, second.artifact.report.reportVersion);
+  assert.equal(first.artifact.report.publication?.summary.report, first.summary.report);
 });

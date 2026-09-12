@@ -54,6 +54,7 @@ export type ComparisonResult = {
 };
 
 export type PublishedSecReport = {
+  publication?: { filing: SecFiling; summary: SecFilingSummary };
   presentation?: SecPresentation;
   sourceMaterials?: SecSourceMaterial[];
   ticker: string;

@@ -1,3 +1,4 @@
+import { ReportShare } from "./ReportShare.tsx";
 import { SecComposedSection } from "@/components/earning-report/report-blocks/SecComposedSection.tsx";
 import type { PublishedSecReport } from "@/shared/analysis-contract/report.ts";
 import type { SecFilingWithSummary, SecNodeResult } from "@/shared/analysis-contract/report.ts";
@@ -135,6 +136,9 @@ export function SecReportDocument({ companyName, filing }: { companyName: string
         </dl>
       </header>
 
+      {report?.publication && <ReportShare ticker={filing.ticker} accession={filing.accessionNumber}
+        reportDate={filing.reportDate || filing.filingDate} reportVersion={report.reportVersion}
+        generatedAt={report.publication.summary.generatedAt} />}
       {!reportReady ? (
         <section className="sec-report-pending" aria-labelledby="sec-report-pending-title">
           <h2 id="sec-report-pending-title">完整报告生成中</h2>

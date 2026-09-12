@@ -5,7 +5,6 @@ import {
   buildPeriodIdentity,
   canonicalMetricKey,
   buildSecAnalysisBrief,
-  hashString,
   normalizeManagerReview,
   normalizePublishedReport,
   SEC_ANALYSIS_SCHEMA_VERSION,
@@ -465,7 +464,7 @@ export async function summarizePreparedSecFiling(
   let report = normalizePublishedReport(summaryValue, {
     ticker: prepared.filing.ticker,
     periodId: prepared.periodId,
-    reportVersion: `${SEC_ANALYSIS_SCHEMA_VERSION}:${hashString(JSON.stringify(summaryPayload))}`,
+    reportVersion: `${SEC_ANALYSIS_SCHEMA_VERSION}:${prepared.filing.reportDate || prepared.filing.filingDate}-${crypto.randomUUID()}`,
   }, new Set(validEvidenceIds));
   report = enforceDeterministicReportQuality(report, finalBrief, nodeFacts);
   report = addDeterministicDeltas(report, qoq, yoy);
@@ -508,6 +507,7 @@ export async function summarizePreparedSecFiling(
     plan,
     managerReview: finalReview,
   };
+  artifact.report.publication = { filing: prepared.filing, summary };
   return { artifact, summary };
 }
 

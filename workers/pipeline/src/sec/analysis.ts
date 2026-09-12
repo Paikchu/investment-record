@@ -222,6 +222,7 @@ export type ComparisonResult = {
 };
 
 export type PublishedSecReport = {
+  publication?: { filing: import("./sec.ts").SecFiling; summary: import("./sec.ts").SecFilingSummary };
   presentation?: SecPresentation;
   sourceMaterials?: SecSourceMaterial[];
   ticker: string;

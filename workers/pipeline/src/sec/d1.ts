@@ -146,10 +146,25 @@ export class D1SecRepository implements SecRepository {
       FROM sec_published_reports
       WHERE ticker = ? AND period_id = ?
         AND verification_status IN ('verified', 'partial')
-      ORDER BY generated_at DESC
+      ORDER BY generated_at DESC, rowid DESC
       LIMIT 1
     `).bind(ticker, periodId).first<{ payload: string }>();
     return row ? parseJson<PublishedSecReport>(row.payload) : null;
+  }
+
+  async getReportSnapshot(ticker: string, accession: string, reportDate: string, reportVersion: string): Promise<SecFilingWithSummary | null> {
+    const row = await this.database.prepare(`
+      SELECT payload FROM sec_published_reports
+      WHERE ticker = ? AND report_version = ?
+        AND verification_status IN ('verified', 'partial')
+      LIMIT 1
+    `).bind(ticker, reportVersion).first<{ payload: string }>();
+    const report = row ? parseJson<PublishedSecReport>(row.payload) : null;
+    const snapshot = report?.publication;
+    if (!report || !snapshot || snapshot.filing.ticker !== ticker
+      || snapshot.filing.accessionNumber !== accession
+      || (snapshot.filing.reportDate || snapshot.filing.filingDate) !== reportDate) return null;
+    return { ...snapshot.filing, summary: snapshot.summary, analysis: report };
   }
 
   async listPublicFilings(rawTicker: string, rawCursor: string | null, rawLimit = 20): Promise<PublicFilingPage> {
@@ -435,8 +450,7 @@ export class D1SecRepository implements SecRepository {
       await this.database.prepare(`
         INSERT INTO sec_published_reports (ticker, period_id, report_version, payload, verification_status)
         VALUES (?, ?, ?, ?, ?)
-        ON CONFLICT(ticker, period_id, report_version) DO UPDATE SET
-          payload = excluded.payload, verification_status = excluded.verification_status
+        ON CONFLICT(ticker, period_id, report_version) DO NOTHING
       `).bind(filing.ticker, artifact.periodId, artifact.report.reportVersion, JSON.stringify(artifact.report), artifact.report.dataQuality.verificationStatus).run();
     }
 
@@ -488,8 +502,7 @@ export class D1SecRepository implements SecRepository {
       this.database.prepare(`
         INSERT INTO sec_published_reports (ticker, period_id, report_version, payload, verification_status)
         VALUES (?, ?, ?, ?, ?)
-        ON CONFLICT(ticker, period_id, report_version) DO UPDATE SET
-          payload = excluded.payload, verification_status = excluded.verification_status
+        ON CONFLICT(ticker, period_id, report_version) DO NOTHING
       `).bind(artifact.filing.ticker, artifact.periodId, artifact.report.reportVersion, JSON.stringify(artifact.report), artifact.report.dataQuality.verificationStatus),
       this.database.prepare(`
         INSERT INTO sec_filing_summaries (ticker, accession_number, generated_at, payload)

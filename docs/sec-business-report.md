@@ -41,3 +41,18 @@ Synthesis 可输出 `presentation`，指定 1–12 个章节、章节顺序、fl
 若合成报告的 presentation 缺失或校验失败，发布前增加独立的 presentation 工作流步骤。该步骤仅接收已完成节点、允许的块类型、可用指标和历史图表引用；模型只输出编排，正文和数据仍由系统解析。候选与通过校验的编排保存到 R2，失败进入工作流重试，耗尽重试后保留完整标准报告并提示。复核与合成请求最多使用四分钟预算，步骤仍受五分钟截止时间约束。
 
 重试间隔采用一次 30/90/180 秒退避并带抖动，显式关闭平台叠加的指数系数；后备模型遭遇 HTTP 429 时，可在剩余步骤预算内尝试原模型一次。复核与其他分析阶段一样排除 Company Memory，避免旧结论进入本期判断。
+
+## 固定版本与分享
+
+新生成的结构化财报报告使用 `reportVersion = schemaVersion:财报日期-UUID`。
+财报日期为 SEC `reportDate`（报告期末日），缺失时使用 `filingDate`；生成时间单独保留在快照摘要的 `generatedAt`。
+即使输入、输出和生成时间相同，两次生成仍有不同编码。发布重试复用已生成的编码。
+
+分享地址为 `/analysis/stocks/{ticker}/sec/{accession}?reportDate={date}&reportVersion={version}`。
+报告页显示分析编码、生成时间、固定版本入口与复制按钮。后端文件详情 API 支持同名查询参数。
+指定版本时只读取持久化快照，并核对 ticker、accession、日期；不存在或不匹配返回 404，绝不退回最新版。
+快照包含完整摘要正文、节点证据及结构化报告，存放在现有 `sec_published_reports.payload`，同版本发布不覆盖，不需要数据库迁移。
+评估可以直接记录完整 `reportVersion`、分享地址与 `periodId`，分别关联某次文章和同一期财报。
+
+首次上线使用 `node --experimental-strip-types workers/pipeline/scripts/snapshot-current-reports.ts --apply`，仅为每只股票目前最新的已生成报告保存快照；不重跑模型、不补历史期。省略 `--apply` 只预览候选。写入会核对原报告和摘要未变，保留原始记录和生成时间；再次执行跳过已保存的快照。更早的旧记录不提供固定版本分享按钮。
+本次不增加评分、反馈或评估执行器。快照固定内容数据；页面渲染样式仍随应用版本变化。

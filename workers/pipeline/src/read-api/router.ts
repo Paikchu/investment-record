@@ -127,7 +127,9 @@ async function handleRoute(request: Request, database: D1Database, route: Exclud
       return dataResponse(request, page);
     }
     case "filing": {
-      const detail = await getPublicFiling(new D1SecRepository(database), route.ticker, route.accession);
+      const detail = await getPublicFiling(new D1SecRepository(database), route.ticker, route.accession,
+        url.searchParams.has("reportVersion") || url.searchParams.has("reportDate")
+          ? { reportVersion: url.searchParams.get("reportVersion") ?? "", reportDate: url.searchParams.get("reportDate") ?? "" } : undefined);
       if (!detail) return errorResponse("FILING_NOT_FOUND", "SEC filing not found.");
       return dataResponse(request, detail);
     }
