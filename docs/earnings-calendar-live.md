@@ -2,7 +2,7 @@
 
 The existing `max-investment-record-sec-cron` Worker runs `15 * * * *` (UTC).
 It calls the website's authenticated POST `/api/internal/earnings/refresh` through
-`PORTFOLIO_SITE`, using the existing server-only `PORTFOLIO_SYNC_KEY`. The IBKR
+the service binding to `investment-record`, using the existing server-only `PORTFOLIO_SYNC_KEY`. The IBKR
 schedule remains separate and unchanged. No earnings request writes portfolio data.
 
 The website reads live held symbols and stores the calendar in D1
@@ -27,3 +27,5 @@ source provenance, not a guarantee against subsequent rescheduling.
 Apply `drizzle/0007_earnings_calendar.sql` through the normal deployment migration
 step. After deployment, an authorized POST to the refresh endpoint can bootstrap
 state without waiting for Cron propagation. The endpoint has a five-minute cooldown.
+
+The planned binding name is `PORTFOLIO_SERVICE`. The rename is not included in this documentation-only release; use `workers/sec-cron/wrangler.jsonc` as the authority for the deployed binding name.

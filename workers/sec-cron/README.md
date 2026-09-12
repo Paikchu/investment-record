@@ -17,7 +17,7 @@ Cloudflare 名称：`max-investment-record-sec-cron`。这是 investment-record 
 - `index.ts`：定时分派与 HTTP 入口。
 - `ibkr-sync.ts`：IBKR 拉取、标准化和发布；复用仓库根目录 `lib/`，部署从根目录执行。
 - `wrangler.jsonc`：Worker 配置和两条 Cron。
-- `PORTFOLIO_SITE` Service Binding 指向 `investment-record`。
+- Service Binding 指向 `investment-record`；`PORTFOLIO_SERVICE` 为计划重命名，本次仅发布文档，实际绑定名以同目录 `wrangler.jsonc` 为准。
 - `IBKR_FLEX_TOKEN`、`PORTFOLIO_SYNC_KEY` 保留在 Worker Secrets 中；同步密钥须与前端一致。
 - 旧 SEC 执行代码和 Workflow/R2 部署绑定已移除；历史 R2 数据未删除。
 - `/health` 返回 `executor: portfolio-cron` 与 `portfolioConfigured`，不暴露凭据。

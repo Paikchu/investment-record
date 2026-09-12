@@ -6,7 +6,7 @@
 
 **Architecture:** Keep IBKR as the accounting source and Yahoo daily closes as the display-only market source. Calculate 14-day Wilder RSI in the existing quote boundary. Store the latest validated review as a versioned JSON artifact, pass it from the server page into the existing dashboard, and let the daily automation replace it only after snapshot and source checks pass.
 
-**Tech Stack:** Next.js 16, React 19, TypeScript, Vinext, Node test runner, Codex automation, Sites private hosting.
+**Tech Stack:** Next.js 16, React 19, TypeScript, Vinext, Node test runner, Codex automation, Cloudflare Workers hosting.
 
 ---
 
@@ -149,7 +149,7 @@ Expected: all pass with no relevant warning or error.
 - Check the homepage review and the MSFT detail header on desktop and mobile.
 - Confirm page identity, meaningful content, no framework overlay, no relevant console errors, and a working position navigation interaction.
 
-**Step 3: Commit, push, package, and deploy**
+**Step 3: Commit, push, and verify automatic deployment**
 
-- Commit the exact validated source, fast-forward `main`, package that HEAD, save one Sites version, deploy privately, and poll to `succeeded`.
-- Recheck that access remains `custom`, one owner, zero groups, and zero external visitors.
+- Commit the validated changes, merge into `main`, and run `git push origin main` to trigger Cloudflare automatic deployment. Verify the build and production result; do not deploy manually.
+- Verify the production page and ensure internal synchronization endpoints still require the server-side synchronization key.

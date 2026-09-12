@@ -21,7 +21,7 @@
 - 当前本地目录：`/Users/max/Investment/investment-record`。
 - 唯一 Git remote：`origin` 指向 `https://github.com/Paikchu/investment-record.git`，发布统一使用 `git push origin main`。
 
-GitHub 是当前维护与自动部署的主仓库。旧 Sites 的部分兼容数据入口仍保留，但旧 Sites 地址、版本号和发布流程不代表当前 Cloudflare 生产状态。`earning-report-analysis` 原仓库保留历史代码与旧 Web 入口，财报 Pipeline 的后续维护在本仓库进行。
+GitHub 是唯一维护与自动部署的主仓库。`earning-report-analysis` 原仓库保留历史代码与旧 Web 入口，财报 Pipeline 的后续维护在本仓库进行。
 
 ## 三个 Worker，一个仓库
 
@@ -40,7 +40,7 @@ GitHub 是当前维护与自动部署的主仓库。旧 Sites 的部分兼容数
 - **财报分析 R2**：`earning-report-analysis-sec-filings`，保存 Pipeline 的原文与分析产物。
 - **历史 SEC R2**：`max-investment-record-sec-filings` 数据保留，已解除 `sec-cron` 绑定；本次清理不删除历史资源。
 - 主应用通过 `EARNING_REPORT_PIPELINE → earning-report-analysis-sec-pipeline` Service Binding 读取分析结果；本地或其他消费者可使用服务端 HTTPS。
-- 定时任务通过 `PORTFOLIO_SITE → investment-record` Service Binding 更新账本和财报日历。
+- 定时任务通过指向 `investment-record` 的 Service Binding 更新账本和财报日历。`PORTFOLIO_SERVICE` 是本地清理后的目标名称；重命名代码尚未提交，当前发布配置以 `workers/sec-cron/wrangler.jsonc` 为准。
 - Pipeline 拥有四个分析 Workflows；`sec-cron` 不再注册或启动历史 SEC Workflows。
 
 分析读取凭据只在服务端使用。读取已发布报告不启动 SEC/Yahoo 抓取、AI 分析或数据库写入。投资账本与分析数据库的迁移命令必须分别执行。
@@ -89,13 +89,13 @@ npx wrangler dev --config workers/pipeline/wrangler.jsonc
 
 | Worker | 关键变量与 Secrets |
 | --- | --- |
-| 主应用 | `HOSTING_PLATFORM`、`PORTFOLIO_SYNC_KEY`、`EARNING_REPORT_READ_TOKEN`；使用 HTTPS 时配置 `EARNING_REPORT_PIPELINE_ORIGIN` |
-| `sec-cron` | `IBKR_FLEX_QUERY_ID`、`IBKR_FLEX_TOKEN`、`PORTFOLIO_SYNC_KEY`、`PORTFOLIO_TARGET_PLATFORM`、`MAX_SITE_ORIGIN` |
+| 主应用 | `PORTFOLIO_SYNC_KEY`、`EARNING_REPORT_READ_TOKEN`；使用 HTTPS 时配置 `EARNING_REPORT_PIPELINE_ORIGIN` |
+| `sec-cron` | `IBKR_FLEX_QUERY_ID`、`IBKR_FLEX_TOKEN`、`PORTFOLIO_SYNC_KEY` |
 | Pipeline | `SEC_USER_AGENT`、`SEC_TRACKED_TICKERS`、`SEC_ANALYSIS_MODEL`、`AI_API_KEY`、`SEC_REFRESH_KEY`、`ANALYSIS_READ_KEYS`、可选 `ANALYSIS_ADDITIONAL_READ_KEYS` |
 
 主应用与 `sec-cron` 的 `PORTFOLIO_SYNC_KEY` 必须一致。前端的读取凭据必须匹配 Pipeline 配置的消费者凭据。生产值保留在对应 Worker 的 Runtime variables / Secrets 中，本地文件不会随部署自动上传。
 
-独立 Cloudflare Worker 不提供 Sites 的 ChatGPT 身份网关。当前持仓计划按 ticker 共享，所有访问者均可编辑，最后一次保存生效；保留同源检查和输入校验。历史记录保留，读取最近更新的记录。内部同步接口仍要求同步密钥。
+当前持仓计划按 ticker 共享，所有访问者均可编辑，最后一次保存生效；保留同源检查和输入校验。历史记录保留，读取最近更新的记录。内部同步接口仍要求同步密钥。
 
 ## 检查命令
 

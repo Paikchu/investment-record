@@ -1,12 +1,14 @@
 # Position Detail Workspace Dialog — Design QA
 
+Historical visual QA record for the retired dialog UI; not a description of the current deployment or authentication model.
+
 - Source visual truth: `/var/folders/49/38jdkjdd6td5m_rltdcm5bgm0000gn/T/codex-clipboard-e248fff2-fa1e-4581-9fd7-03211facd705.png`
 - Final implementation screenshot: `/Users/max/Documents/Codex/2026-07-23/bang/work/design-qa/position-dialog-1440-final.png`
 - Full-view comparison: `/Users/max/Documents/Codex/2026-07-23/bang/work/design-qa/source-vs-dialog-1440-final.jpg`
 - Responsive evidence: `/Users/max/Documents/Codex/2026-07-23/bang/work/design-qa/position-dialog-820.png`, `/Users/max/Documents/Codex/2026-07-23/bang/work/design-qa/position-dialog-390.png`
 - Viewports: desktop `1440 × 1000`, tablet `820 × 1000`, mobile `390 × 844`; device pixel ratio `1`.
 - Source pixels: `1836 × 1340`. Final desktop pixels: `1440 × 1000`. Comparison normalized the source to `1392px` wide and compared it with the `1392 × 952` modal crop at equal density.
-- State: homepage with the NVDA workspace dialog open. The local preview lacks hosted ChatGPT auth and D1, so the plan editor correctly renders its unavailable state.
+- State: homepage with the NVDA workspace dialog open. The historical local preview did not have the hosted runtime bindings, so the plan editor rendered its unavailable state.
 
 ## Fidelity Review
 
@@ -33,6 +35,6 @@
 
 ## Residual Test Gap
 
-- Authenticated plan loading and saving cannot be exercised in the local browser because the hosted ChatGPT auth header and D1 binding are unavailable; the unavailable state and storage/API tests pass.
+- Plan loading and saving were not exercised in that historical local browser session because runtime bindings were unavailable; the unavailable state and storage/API tests passed.
 
 final result: passed
