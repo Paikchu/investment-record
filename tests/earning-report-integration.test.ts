@@ -93,3 +93,10 @@ test("service binding works without an origin and preserves receiver and credent
   assert.deepEqual(createAnalysisBackendRuntime({ EARNING_REPORT_PIPELINE: binding }), { configured: false, reason: "missing_token" });
   assert.deepEqual(createAnalysisBackendRuntime({ EARNING_REPORT_READ_TOKEN: token }), { configured: false, reason: "missing_origin" });
 });
+
+test("pinned filing reads preserve the financial date and unique version for downstream evaluation", async () => {
+  const { client, seen } = setup();
+  const snapshot = { reportDate: "2026-06-30", reportVersion: "sec-analysis.v3:2026-06-30-unique" };
+  await client.getFiling("MSFT", "0001193125-26-323660", snapshot);
+  assert.deepEqual(Object.fromEntries(new URL(seen[0].url).searchParams), snapshot);
+});
